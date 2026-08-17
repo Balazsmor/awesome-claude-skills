@@ -21,3 +21,4 @@ npx --yes esbuild@0.23.1 lernplan.jsx \
 
 node test/lernplan.test.mjs
 node test/shell.test.mjs
+node test/mobile.test.mjs

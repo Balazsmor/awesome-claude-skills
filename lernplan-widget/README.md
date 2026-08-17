@@ -9,8 +9,14 @@ bestraft Erholung nicht.
 lernplan-widget/
 ├── lernplan.jsx                    → in den Übersicht-Widgets-Ordner
 ├── lernplan-config.example.json    → nach ~/.lernplan-config.json kopieren
-└── test/run.sh                     → Rechenlogik prüfen (nur Node nötig)
+├── mobile/Lernplan.js              → iPhone-Fassung für Scriptable
+└── test/run.sh                     → alles prüfen (nur Node nötig)
 ```
+
+Fürs iPhone gibt es eine eigene Fassung: [`mobile/`](mobile/README.md) —
+mittleres Widget auf dem Home-Bildschirm, rechteckiges auf dem Sperrbildschirm,
+Abhaken per Tipp. Sie liest dasselbe Dateiformat; mit `statePath` teilen sich
+beide denselben Stand über iCloud Drive.
 
 ## Einrichten
 
@@ -129,6 +135,7 @@ Die wichtigsten Schlüssel, alle optional:
 | `overdueAfterMin` | ab wann ein Block als `offen` gilt |
 | `autoBackup` | tägliche Sicherung an/aus |
 | `breakMin`, `extendMin` | Länge der Pause und Schrittweite von `+10′` |
+| `statePath` | anderer Ort für die Zustandsdatei, z. B. iCloud Drive fürs iPhone |
 | `durations` | Standarddauer je Art, wenn im Namen keine steht |
 | `exams` | `[{ "date": "2027-02-25", "label": "IHK Teil 1" }]` |
 | `vacations` | `[["von", "bis", "Name"], …]` |
@@ -157,7 +164,7 @@ steht deshalb weiterhin oben in den `DEFAULTS`.
 sh test/run.sh
 ```
 
-Zwei Durchgänge, zusammen 241 Zusicherungen, beide brauchen nur Node und
+Drei Durchgänge, zusammen 322 Zusicherungen, alle brauchen nur Node und
 einmalig esbuild über `npx`:
 
 * **Rechenlogik** — Osterformel und Feiertage, Ferien- und Wochenendlogik,
@@ -168,6 +175,8 @@ einmalig esbuild über `npx`:
   aus: atomares Schreiben, Rettung einer defekten Datei, Anlegen der
   Konfiguration samt Überschreibschutz, Rotation der Sicherungen, CSV. Inklusive
   Anführungszeichen, Zeilenumbrüchen und `$(…)` im Text.
+* **iOS** — baut `mobile/Lernplan.js` in einer nachgebauten Scriptable-Umgebung
+  wirklich auf und liest den fertigen Widget-Baum aus, für alle vier Größen.
 
 ## Änderungen
 

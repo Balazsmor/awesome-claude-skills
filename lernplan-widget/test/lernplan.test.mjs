@@ -341,5 +341,24 @@ const staleView = L.updateState({ type: "NOTE", note: "n" },
   { ...s0, view: "2026-01-01", viewAt: Date.now() - 999 * 60000 });
 eq(staleView.view, null, "alte Nachtragsansicht läuft ab");
 
+// Verlegt die Konfiguration die Zustandsdatei, darf der mitgelieferte Zustand
+// nicht übernommen werden — er kommt noch aus der alten Datei.
+const moved = L.updateState({
+  type: "LOAD",
+  raw: '{"statePath":"$HOME/woanders.json"}' + L.SPLIT + '{"d":{"2026-01-01":["falsch"]}}',
+  rev: 0,
+  path: "$HOME/.lernplan-widget.json",
+}, s0);
+eq(moved.data.d["2026-01-01"], undefined, "Zustand aus der alten Datei verworfen");
+eq(moved.err, null, "und kein Fehler daraus gemacht");
+// Beim nächsten Lesen stimmt der Pfad, dann wird übernommen
+const settled = L.updateState({
+  type: "LOAD",
+  raw: '{"statePath":"$HOME/woanders.json"}' + L.SPLIT + '{"d":{"2026-01-01":["richtig"]}}',
+  rev: 0,
+  path: "$HOME/woanders.json",
+}, s0);
+eq(settled.data.d["2026-01-01"], ["richtig"], "Zustand vom richtigen Pfad übernommen");
+
 console.log(`\n${pass} bestanden, ${fail} fehlgeschlagen`);
 process.exit(fail ? 1 : 0);

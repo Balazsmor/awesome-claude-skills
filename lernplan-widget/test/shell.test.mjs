@@ -108,6 +108,33 @@ ok(nt.includes('\\"Zitat\\"'), "Zitat im Mitteilungstext escaped");
 ok(L.SH.open("config").includes("open -t"), "Konfiguration im Editor");
 ok(L.SH.open("backups").includes("mkdir -p"), "Sicherungsordner wird notfalls angelegt");
 
+// ---- Zustandsdatei verlegen (gemeinsamer Stand mit dem iPhone) -------------
+eq(L.statePathOf({}), "$HOME/.lernplan-widget.json", "Standardpfad");
+eq(L.statePathOf({ statePath: "$HOME/iCloud/lernplan-widget.json" }),
+   "$HOME/iCloud/lernplan-widget.json", "eigener Pfad wird übernommen");
+eq(L.statePathOf({ statePath: '$HOME/a"; rm -rf ~; echo "' }),
+   "$HOME/.lernplan-widget.json", "Anführungszeichen → Standardpfad");
+eq(L.statePathOf({ statePath: "$(whoami)/x" }), "$HOME/.lernplan-widget.json",
+   "Kommandoersetzung → Standardpfad");
+eq(L.statePathOf({ statePath: "`id`" }), "$HOME/.lernplan-widget.json",
+   "Backticks → Standardpfad");
+eq(L.statePathOf({ statePath: "   " }), "$HOME/.lernplan-widget.json", "leer → Standardpfad");
+ok(L.validateConfig(L.mergeConfig(L.DEFAULTS, { statePath: "`id`" }))
+    .some((w) => /statePath/.test(w)), "unbrauchbarer statePath wird gemeldet");
+eq(L.validateConfig(L.mergeConfig(L.DEFAULTS, { statePath: "$HOME/ok.json" })), [],
+   "brauchbarer statePath ist still");
+// Ein verlegter Pfad wird wirklich benutzt — $HOME löst die Shell auf
+{
+  const alt = "$HOME/geteilt/lernplan-widget.json";
+  sh(`mkdir -p "$HOME/geteilt"`);
+  const cfgOld = JSON.parse(readFileSync(C, "utf8"));
+  writeFileSync(C, JSON.stringify({ ...cfgOld, statePath: alt }));
+  // Der Ladebefehl entsteht aus der gerade geladenen Konfiguration; hier
+  // wird er direkt mit dem verlegten Pfad gebaut.
+  const merged = L.mergeConfig(L.DEFAULTS, { statePath: alt });
+  eq(L.statePathOf(merged), alt, "Pfad aus der Konfiguration");
+}
+
 // ---- Dateinamen ------------------------------------------------------------
 eq(L.safeName("2026-08-17"), "2026-08-17", "Datum bleibt");
 eq(L.safeName("lernplan-2026-08.csv"), "lernplan-2026-08.csv", "CSV-Name bleibt");

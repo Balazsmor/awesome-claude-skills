@@ -345,6 +345,9 @@ export function validateConfig(cfg) {
   for (const id of cfg.core || []) {
     if (!known.has(id)) out.push(`Kern-Eintrag "${id}" kommt in keinem Tagesplan vor`);
   }
+  if (cfg.statePath && statePathOf(cfg) === STATE_FILE) {
+    out.push("statePath enthält Zeichen, die die Shell ausführen würde — ignoriert");
+  }
   const w = Number(cfg.width);
   if (!(w >= 320 && w <= 900)) out.push(`width ${cfg.width} liegt außerhalb 320–900`);
   const s = Number(cfg.scale);
@@ -1019,7 +1022,27 @@ export function csvOf(scan, data, cfg) {
 const STATE_FILE = "$HOME/.lernplan-widget.json";
 const CONFIG_FILE = "$HOME/.lernplan-config.json";
 const BACKUP_DIR = "$HOME/.lernplan-backups";
-const SHF = `F="${STATE_FILE}"; C="${CONFIG_FILE}"; B="${BACKUP_DIR}"; `;
+
+/**
+ * Wo liegt die Zustandsdatei? Standardmäßig im Benutzerordner. `statePath` in
+ * der Konfiguration verlegt sie — etwa nach iCloud Drive, damit sich Mac und
+ * iPhone denselben Stand teilen.
+ *
+ * Der Pfad landet in doppelten Anführungszeichen, `$HOME` wird also von der
+ * Shell aufgelöst. Alles, was darüber hinaus ausgeführt würde, wird verworfen;
+ * dann gilt wieder der Standardpfad.
+ */
+export function statePathOf(cfg) {
+  const raw = cfg && typeof cfg.statePath === "string" ? cfg.statePath.trim() : "";
+  if (!raw) return STATE_FILE;
+  if (/[`"'\\]|\$\(|\n/.test(raw)) return STATE_FILE;
+  return raw;
+}
+
+/** Die drei Pfade als Shell-Variablen — Kopf jedes Befehls. */
+function shf() {
+  return `F="${statePathOf(CONFIG)}"; C="${CONFIG_FILE}"; B="${BACKUP_DIR}"; `;
+}
 const VIEW_TIMEOUT_MIN = 10;
 const BACKUP_KEEP = 14;
 /** Kennung des Pausen-Timers — gehört zu keinem Block. */
@@ -1044,36 +1067,36 @@ export function safeName(s, fallback = "unbenannt") {
 export const SH = {
   /** Konfiguration und Zustand in einem Rutsch, getrennt durch SPLIT. */
   load: () =>
-    `${SHF}cat "$C" 2>/dev/null || printf %s ${shq(NO_CONFIG)}; ` +
+    `${shf()}cat "$C" 2>/dev/null || printf %s ${shq(NO_CONFIG)}; ` +
     `printf %s ${shq(SPLIT)}; cat "$F" 2>/dev/null || echo '{}'`,
 
   /** Atomar schreiben: erst .tmp, dann mv — ein Abbruch kann nichts löschen. */
   save: (json, rescue) =>
-    `${SHF}${rescue ? `cp "$F" "$F.broken" 2>/dev/null; ` : ""}` +
+    `${shf()}${rescue ? `cp "$F" "$F.broken" 2>/dev/null; ` : ""}` +
     `printf %s ${shq(json)} > "$F.tmp" && mv -f "$F.tmp" "$F"`,
 
   /** Tagessicherung anlegen und auf die jüngsten `keep` Stände eindampfen. */
   backup: (key, keep) =>
-    `${SHF}mkdir -p "$B" && cp "$F" "$B/${safeName(key, "sicherung")}.json" 2>/dev/null; ` +
+    `${shf()}mkdir -p "$B" && cp "$F" "$B/${safeName(key, "sicherung")}.json" 2>/dev/null; ` +
     `ls -1t "$B"/*.json 2>/dev/null | tail -n +${keep + 1} | ` +
     `while read -r x; do rm -f "$x"; done; echo ok`,
 
   /** Sicherung von Hand, mit Zeitstempel im Namen. */
   backupManual: () =>
-    `${SHF}mkdir -p "$B" && cp "$F" "$B/manuell-$(date +%Y-%m-%d-%H%M).json" && echo ok`,
+    `${shf()}mkdir -p "$B" && cp "$F" "$B/manuell-$(date +%Y-%m-%d-%H%M).json" && echo ok`,
 
   /** Startkonfiguration — legt nie eine vorhandene Datei um. */
   createConfig: (json) =>
-    `${SHF}if [ -e "$C" ]; then echo exists >&2; exit 3; fi; ` +
+    `${shf()}if [ -e "$C" ]; then echo exists >&2; exit 3; fi; ` +
     `printf %s ${shq(json)} > "$C.tmp" && mv -f "$C.tmp" "$C" && echo ok`,
 
   /** Datei bzw. Ordner im Finder oder Texteditor öffnen. */
   open: (what) =>
     what === "config"
-      ? `${SHF}[ -e "$C" ] || printf %s '{}' > "$C"; open -t "$C"`
+      ? `${shf()}[ -e "$C" ] || printf %s '{}' > "$C"; open -t "$C"`
       : what === "backups"
-        ? `${SHF}mkdir -p "$B" && open "$B"`
-        : `${SHF}open -t "$F"`,
+        ? `${shf()}mkdir -p "$B" && open "$B"`
+        : `${shf()}open -t "$F"`,
 
   /** CSV in den Benutzerordner schreiben. */
   csv: (name, text) =>
@@ -1137,11 +1160,21 @@ export const initialState = {
 
 export const command = (dispatch) => {
   _dispatch = dispatch;
-  const rev = _rev; // Stand zum Zeitpunkt des Lesens
-  run(SH.load())
-    .then((out) => dispatch({ type: "LOAD", raw: out, rev }))
-    .catch((e) => dispatch({ type: "ERR", error: String(e) }));
+  load(dispatch);
 };
+
+/**
+ * Einmal lesen. Der benutzte Zustandspfad wandert mit — er hängt an der
+ * Konfiguration, und die steht beim allerersten Lesen noch nicht fest.
+ */
+function load(dispatch) {
+  if (!dispatch) return;
+  const rev = _rev;                       // Stand zum Zeitpunkt des Lesens
+  const path = statePathOf(CONFIG);       // Pfad, aus dem gleich gelesen wird
+  run(SH.load())
+    .then((out) => dispatch({ type: "LOAD", raw: out, rev, path }))
+    .catch((e) => dispatch({ type: "ERR", error: String(e) }));
+}
 
 export const updateState = (event, prev) => {
   const now = Date.now();
@@ -1170,6 +1203,14 @@ export const updateState = (event, prev) => {
           _cfgErr = "~/.lernplan-config.json ist kein gültiges JSON — es gelten die Defaults";
         }
         CFG_REV++;
+      }
+      //  Hat die eben gelesene Konfiguration die Zustandsdatei verlegt, dann
+      //  stammt der Zustand in derselben Antwort noch aus der alten Datei —
+      //  verwerfen und sofort neu lesen. Sonst würde der erste Klick den
+      //  gemeinsamen Stand mit einer fast leeren Datei überschreiben.
+      if (event.path !== undefined && event.path !== statePathOf(CONFIG)) {
+        setTimeout(() => load(_dispatch), 0);
+        return { ...base, data: _data, warn, err: _cfgErr, note: null, tick: now };
       }
       // Antwort ist älter als die letzte lokale Änderung → verwerfen, sonst
       // würde ein gerade gesetzter Haken wieder verschwinden.
