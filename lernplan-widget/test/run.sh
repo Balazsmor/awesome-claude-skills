@@ -19,6 +19,7 @@ npx --yes esbuild@0.23.1 lernplan.jsx \
   --alias:uebersicht=./test/uebersicht-stub.mjs \
   --outfile=test/.bundle.mjs >/dev/null
 
+node test/jsx.test.mjs
 node test/lernplan.test.mjs
 node test/shell.test.mjs
 node test/mobile.test.mjs

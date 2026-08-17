@@ -1,4 +1,4 @@
-# Lernplan-Widget v7.1 · Übersicht
+# Lernplan-Widget v7.2 · Übersicht
 
 Ein Schreibtisch-Widget für [Übersicht](https://tracesof.net/uebersicht/), das den
 Wochenplan einer dualen Ausbildung anzeigt, abhakbar macht und auswertet. Es kennt
@@ -164,8 +164,13 @@ steht deshalb weiterhin oben in den `DEFAULTS`.
 sh test/run.sh
 ```
 
-Vier Durchgänge, zusammen 386 Zusicherungen, alle brauchen nur Node und
+Fünf Durchgänge, zusammen 391 Zusicherungen, alle brauchen nur Node und
 einmalig esbuild über `npx`:
+
+* **JSX wie bei Übersicht** — übersetzt `lernplan.jsx` mit genau den
+  Einstellungen der App (Pragma `html`, *kein* Fragment-Pragma) und prüft, dass
+  im Ergebnis kein `React` mehr vorkommt. Ohne diesen Durchgang fällt ein
+  einzelnes `<>…</>` erst beim Laden auf dem Mac auf.
 
 * **Rechenlogik** — Osterformel und Feiertage, Ferien- und Wochenendlogik,
   Kalenderwochen über den Jahreswechsel, Quoten, Streak über Krankheitstage
@@ -202,7 +207,27 @@ Was bewusst fehlt: ARIA-Rollen, Tastaturbedienung und Fokusringe. Ein
 und wird von Bildschirmlesern nicht erreicht — dort Rollen hineinzuschreiben,
 sähe nach Barrierefreiheit aus, ohne welche zu sein.
 
+## Eine Falle beim Ändern
+
+Übersicht übersetzt `.jsx`-Widgets mit `@babel/preset-react` und dem Pragma
+**`html`** — global steht `window.html = React.createElement`. Ein `React` gibt
+es im Widget nicht.
+
+Für Fragmente (`<>…</>`) setzt Babel aber unabhängig davon `React.Fragment`
+ein. Ein einziges Fragment im Code, und das Widget lädt gar nicht mehr:
+
+```
+ReferenceError: Can't find variable: React
+```
+
+Also **keine Fragmente** — stattdessen ein echtes Element oder die Bedingung
+weiter nach innen ziehen. `sh test/run.sh` prüft das mit.
+
 ## Änderungen
+
+**v7.2 — Absturz behoben.** Zwei `<>…</>` im „Jetzt / Gleich"-Streifen (neu in
+v7) verhinderten, dass das Widget überhaupt lud. Ersetzt durch ein normales
+Element; neuer Testdurchgang, der genau diesen Fall abfängt.
 
 **v7.1 — Lesbarkeit.** Kontrast und Klickflächen nach WCAG 2.2 AA, siehe oben.
 Alle Textfarben, die die Grenze rissen, haben eigene Textvarianten bekommen

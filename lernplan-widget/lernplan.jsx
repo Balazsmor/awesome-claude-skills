@@ -1,5 +1,5 @@
 // ============================================================================
-//  LERNPLAN-WIDGET v7.1  ·  Übersicht (tracesof.net/uebersicht)
+//  LERNPLAN-WIDGET v7.2  ·  Übersicht (tracesof.net/uebersicht)
 //
 //  Interaktiv abhakbar · Tagesplan aus Wochenplan v2 · Monats-Heatmap
 //  Kennt Schulferien und Feiertage in Baden-Württemberg · Prüfungs-Countdown
@@ -2010,17 +2010,13 @@ function view({ data, err, note, view: viewKey, mOff, warn }) {
         </div>
       ) : !back && shows(cfg, "now") && (tl.cur || tl.next) ? (
         <div className="strip">
-          {tl.cur ? (
-            <>
-              <span className="lead">Jetzt</span>
-              <span className="val">{shortName(tl.cur.nm, 22)}</span>
-            </>
-          ) : (
-            <>
-              <span className="lead">Gleich</span>
-              <span className="val">{shortName(tl.next.nm, 22)}</span>
-            </>
-          )}
+          {/*  Keine JSX-Fragmente (<>…</>) hier oder sonstwo: Übersicht
+               übersetzt JSX mit dem Pragma `html`, für Fragmente setzt Babel
+               aber `React.Fragment` ein — und React gibt es im Widget nicht.
+               Das Widget stirbt sonst mit "Can't find variable: React".
+               test/jsx.test.mjs wacht darüber.                             */}
+          <span className="lead">{tl.cur ? "Jetzt" : "Gleich"}</span>
+          <span className="val">{shortName((tl.cur || tl.next).nm, 22)}</span>
           <span className="rest">
             {tl.cur && tl.curLeft !== null
               ? `noch ${tl.curLeft} min`
