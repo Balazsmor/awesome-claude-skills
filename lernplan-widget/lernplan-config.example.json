@@ -1,0 +1,108 @@
+{
+  "_hinweis": [
+    "Diese Datei nach ~/.lernplan-config.json kopieren und anpassen.",
+    "Alles, was hier steht, gewinnt gegen die Defaults im Widget — ein Update",
+    "des Widgets löscht deine Einstellungen also nicht. Was du NICHT brauchst,",
+    "löschst du einfach raus; dann greift die Voreinstellung.",
+    "",
+    "Ausnahme: 'pos' (Position auf dem Schreibtisch) liest Übersicht einmal",
+    "beim Laden aus lernplan.jsx, bevor es diese Datei gibt — das bleibt oben",
+    "in den DEFAULTS des Widgets.",
+    "",
+    "Nach dem Speichern dauert es maximal 20 Sekunden, bis das Widget nachzieht.",
+    "Tippfehler (doppelte Block-IDs, kaputte Datumsangaben, Kern-Einträge ohne",
+    "Block) meldet das Widget selbst in einem gelben Kasten."
+  ],
+
+  "width": 470,
+  "scale": 1.0,
+
+  "show": {
+    "now": true,
+    "countdown": true,
+    "budget": true,
+    "week": true,
+    "peek": true,
+    "month": true,
+    "timer": true,
+    "notes": true,
+    "bedtime": true
+  },
+
+  "core": ["morgen", "anki", "lesen"],
+
+  "weeklyGoalMin": 900,
+  "sleepHours": 7.5,
+  "overdueAfterMin": 60,
+  "autoBackup": true,
+
+  "durations": {
+    "morg": 30,
+    "anki": 15,
+    "deep": 60,
+    "wdh": 45,
+    "lese": 45,
+    "frei": 0,
+    "fix": 0
+  },
+
+  "exams": [
+    { "date": "2026-10-01", "label": "IHK Teil 1 (falls verkürzt)" },
+    { "date": "2027-02-25", "label": "IHK Teil 1" }
+  ],
+
+  "vacations": [
+    ["2026-07-30", "2026-09-12", "Sommerferien"],
+    ["2026-10-26", "2026-10-30", "Herbstferien"],
+    ["2026-12-23", "2027-01-09", "Weihnachtsferien"],
+    ["2027-03-30", "2027-04-03", "Osterferien"],
+    ["2027-05-18", "2027-05-29", "Pfingstferien"]
+  ],
+
+  "_beispiel_einzelner_tag": [
+    "Du musst nie alle sieben Tage angeben. Was hier steht, ersetzt genau",
+    "diesen einen Tag; der Rest bleibt wie im Widget hinterlegt.",
+    "",
+    "kind:  morg | anki | deep | wdh | lese | frei | fix",
+    "track: true  = abhakbar, zählt in die Quote",
+    "opt:   true  = abhakbar, zählt aber nicht in die Quote",
+    "min:   Dauer in Minuten; fehlt sie, wird '45′' aus dem Namen gelesen,",
+    "       sonst greift 'durations' oben.",
+    "t:     '17:15', 'ab 19', 'opt.' oder '—'"
+  ],
+
+  "days": {
+    "mo": {
+      "label": "Montag",
+      "tag": "SCHULTAG",
+      "hot": true,
+      "note": "Dein bester Lerntag · gehört Deutsch",
+      "blocks": [
+        { "id": "morgen", "t": "5:30", "nm": "Morgenroutine", "kind": "morg", "track": true },
+        { "id": "schule", "t": "7:45", "nm": "Schule", "sub": "bis 14:45 · 15:15 daheim", "kind": "fix" },
+        { "id": "anki", "t": "15:20", "nm": "Anki 15′", "sub": "direkt nach Ankunft", "kind": "anki", "track": true },
+        { "id": "deutsch", "t": "16:00", "nm": "Deutsch-Schreibtraining", "sub": "FOKUS 90′ · Erörterung unter Zeit", "kind": "deep", "track": true },
+        { "id": "lesen", "t": "18:00", "nm": "Lesen 45′", "kind": "lese", "track": true },
+        { "id": "nachber", "t": "19:30", "nm": "Nachbereiten", "sub": "Mitschrift → 5–10 Anki-Karten", "kind": "wdh", "track": true, "min": 30 },
+        { "id": "frei", "t": "20:00", "nm": "Frei", "kind": "frei" }
+      ]
+    }
+  },
+
+  "vacationDays": {
+    "mo": {
+      "label": "Montag",
+      "tag": "FERIEN · BETRIEB",
+      "hot": true,
+      "note": "Keine Schule — Deutschblock am Abend",
+      "blocks": [
+        { "id": "morgen", "t": "5:30", "nm": "Morgenroutine", "sub": "Kurzversion", "kind": "morg", "track": true, "min": 20 },
+        { "id": "betrieb", "t": "7:00", "nm": "Betrieb", "sub": "bis 16:00 · 16:40 daheim", "kind": "fix" },
+        { "id": "anki", "t": "17:00", "nm": "Anki 15′", "kind": "anki", "track": true },
+        { "id": "deutsch", "t": "17:15", "nm": "Deutsch-Schreibtraining", "sub": "FOKUS 60′ · Ferienversion", "kind": "deep", "track": true },
+        { "id": "lesen", "t": "18:30", "nm": "Lesen 45′", "kind": "lese", "track": true },
+        { "id": "frei", "t": "ab 19:30", "nm": "Frei", "kind": "frei" }
+      ]
+    }
+  }
+}
