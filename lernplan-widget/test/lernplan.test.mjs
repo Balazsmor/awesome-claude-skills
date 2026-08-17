@@ -209,7 +209,14 @@ eq(L.freePlanOf(thin, "mo").label, "Montag", "Frei-Plan trägt den Wochentag");
 eq(L.freePlanOf({ freeDay: {} }, "mo").blocks.length, 4, "kaputter freeDay → Default");
 
 // ---- Statusdatei -----------------------------------------------------------
-eq(L.parseState(""), { v: 3, d: {}, f: {}, n: {}, t: null, b: "", broken: false }, "leer");
+eq(L.parseState(""),
+   { v: 4, d: {}, f: {}, n: {}, t: null, b: "", w: {},
+     u: { compact: false, help: false }, broken: false }, "leer");
+eq(L.parseState('{"w":{"2026-W34":["Deutsch","ReWe"]}}').w, { "2026-W34": ["Deutsch", "ReWe"] },
+   "Wochenschwerpunkte gelesen");
+eq(L.parseState('{"w":{"x":"kaputt","y":["a",7,""]}}').w, { y: ["a"] }, "nur Text-Schwerpunkte");
+eq(L.parseState('{"u":{"compact":1,"help":false,"quatsch":9}}').u, { compact: true, help: false },
+   "UI-Zustand normalisiert");
 eq(L.parseState('{"d":{"2026-01-01":["a"]}}').d, { "2026-01-01": ["a"] }, "v1 gelesen");
 eq(L.parseState('{"d":{},"f":{"2026-01-01":1}}').f, { "2026-01-01": "frei" }, "v2 migriert");
 eq(L.parseState('{"f":{"x":"krank"}}').f, { x: "krank" }, "krank bleibt");
@@ -253,6 +260,43 @@ eq(g.length, 1 + 30, "September 2026 beginnt an einem Dienstag");
 eq(g[0], null, "eine Leerzelle vorweg");
 eq(L.monthGrid(new Date(2026, 1, 1, 12)).length, 6 + 28, "Februar 2026 beginnt Sonntag");
 
+// ---- Kalenderwoche ---------------------------------------------------------
+// 1.1.2026 ist ein Donnerstag, gehört also samt Vorjahresrest in die KW 1.
+eq(L.isoWeek(L.fromYmd("2026-01-01")), "2026-W01", "1.1.2026 = KW 1");
+eq(L.isoWeek(L.fromYmd("2025-12-29")), "2026-W01", "29.12.2025 zählt schon zu 2026");
+eq(L.isoWeek(L.fromYmd("2025-12-28")), "2025-W52", "28.12.2025 noch KW 52");
+eq(L.isoWeek(L.fromYmd("2026-12-31")), "2026-W53", "2026 hat 53 Wochen");
+eq(L.isoWeek(L.fromYmd("2027-01-01")), "2026-W53", "1.1.2027 gehört noch zu 2026");
+eq(L.isoWeek(L.fromYmd("2026-08-17")), "2026-W34", "17.8.2026 = KW 34");
+// Alle sieben Tage einer Woche ergeben denselben Schlüssel
+const wkKeys = new Set();
+for (let i = 0; i < 7; i++) wkKeys.add(L.isoWeek(L.fromYmd(`2026-08-${17 + i}`)));
+eq(wkKeys.size, 1, "Mo–So teilen einen Wochenschlüssel");
+eq(L.ymd(L.mondayOf(L.fromYmd("2026-08-20"))), "2026-08-17", "Montag der Woche");
+eq(L.ymd(L.mondayOf(L.fromYmd("2026-08-16"))), "2026-08-10", "Sonntag gehört zur Vorwoche");
+
+// ---- Feierabend / Nachtrags-Erinnerung -------------------------------------
+eq(L.allDone(plan, ["morgen", "anki", "deutsch", "lesen", "nachber"]), true, "alles erledigt");
+eq(L.allDone(plan, ["morgen", "anki", "lesen"]), false, "Kern ist nicht alles");
+eq(L.allDone({ blocks: [] }, []), false, "ohne Blöcke kein Feierabend");
+// 19.9. (Sa) und 18.9. (Fr) haben keine Einträge → der jüngste zählende Tag meldet sich
+const miss = L.missedYesterday(data, C, new Date(2026, 8, 20, 12));
+eq(miss && miss.key, "2026-09-19", "gestern nichts eingetragen");
+eq(miss.days, 1, "ein Tag her");
+// Krank am 17.: wird übersprungen, der 16. hat Einträge → keine Erinnerung
+eq(L.missedYesterday(data, C, new Date(2026, 8, 18, 12)), null,
+   "kranker Tag löst keine Erinnerung aus");
+eq(L.missedYesterday({ d: {}, f: {} }, C, new Date(2026, 8, 20, 12)).days, 1,
+   "leerer Zustand meldet den Vortag");
+
+// ---- Wochenvergleich -------------------------------------------------------
+const pw = L.prevWeekStats(data, C, new Date(2026, 8, 16, 12));
+eq(L.ymd(pw.monday), "2026-09-07", "Vorwoche beginnt am 7.9.");
+eq(pw.days.length, 7, "Vorwoche hat auch sieben Tage");
+eq(pw.doneMin, 0, "in der Vorwoche war nichts eingetragen");
+eq(wk.week, "2026-W38", "Wochenschlüssel der laufenden Woche");
+ok(wk.doneMin - pw.doneMin > 0, "diese Woche liegt vorn");
+
 // ---- Render (Rauchtest) ----------------------------------------------------
 globalThis.h = (tag, props, ...kids) => ({ tag, props, kids });
 globalThis.Fragment = "frag";
@@ -265,6 +309,20 @@ ok(L.render({ ...st, data: { d: {}, f: {}, t: { id: "x", nm: "X", mins: 60, star
    "laufender Timer rendert");
 ok(L.render({ ...st, warn: ["a", "b", "c", "d"], err: "x", note: "y" }).tag === "div", "Hinweise rendern");
 ok(L.render(null).tag === "div", "kaputter Zustand fällt auf die Fehlerbremse");
+// Neue Bedienelemente
+ok(L.render({ ...st, data: { ...data, u: { compact: true } } }).tag === "div", "Kompaktmodus rendert");
+ok(L.render({ ...st, data: { ...data, u: { help: true } } }).tag === "div", "Hilfe rendert");
+ok(L.render({ ...st, data: { ...data, w: { "2026-W38": ["Deutsch", "ReWe"] } } }).tag === "div",
+   "Schwerpunkte rendern");
+ok(L.render({ ...st, data: { ...data, t: { id: L.BREAK_ID, nm: "Pause", mins: 5, start: Date.now() } } }).tag === "div",
+   "Pausen-Timer rendert");
+// Fehlende Konfiguration schaltet den Einrichtungskasten frei
+const noCfg = L.updateState({ type: "LOAD", raw: L.NO_CONFIG + L.SPLIT + "{}", rev: 0 }, L.initialState);
+eq(noCfg.err, null, "fehlende Konfiguration ist kein Fehler");
+eq(noCfg.warn, [], "und keine Warnung");
+ok(L.render(noCfg).tag === "div", "Einrichtungskasten rendert");
+// Rückgängig ist ohne Klick nicht verfügbar
+eq(L.undoable(Date.now()), null, "kein Rückgängig ohne Änderung");
 
 // ---- Updatestate / Reducer -------------------------------------------------
 const s0 = L.initialState;

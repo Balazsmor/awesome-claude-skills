@@ -1,4 +1,4 @@
-# Lernplan-Widget v6 · Übersicht
+# Lernplan-Widget v7 · Übersicht
 
 Ein Schreibtisch-Widget für [Übersicht](https://tracesof.net/uebersicht/), das den
 Wochenplan einer dualen Ausbildung anzeigt, abhakbar macht und auswertet. Es kennt
@@ -15,13 +15,18 @@ lernplan-widget/
 ## Einrichten
 
 1. **Ablegen** — Übersicht-Menüleistensymbol → *Open Widgets Folder* → `lernplan.jsx`
-   hineinlegen.
+   hineinlegen. Es läuft sofort, eine Konfigurationsdatei ist nicht nötig.
 2. **Klickbar machen** — Übersicht-Einstellungen → Interaktions-Shortcut festlegen,
    dazu Systemeinstellungen → Datenschutz & Sicherheit → Bedienungshilfen für
    Übersicht freigeben. Shortcut halten, dann heben sich die Zeilen hervor.
-3. **Anpassen** — `lernplan-config.example.json` nach `~/.lernplan-config.json`
-   kopieren und ändern. Alles dort gewinnt gegen die Defaults im Widget, ein
-   Update überschreibt deine Einstellungen also nicht.
+3. **Anpassen** — beim ersten Start bietet das Widget selbst an, die
+   Konfiguration anzulegen; ein zweiter Knopf öffnet sie im Texteditor.
+   Wer lieber von Hand anfängt, kopiert `lernplan-config.example.json` nach
+   `~/.lernplan-config.json`. Alles dort gewinnt gegen die Defaults im Widget,
+   ein Update überschreibt deine Einstellungen also nicht.
+
+Der Knopf `?` im Kopf blendet jederzeit eine Kurzhilfe ein, die alle Klickziele
+aufzählt — das ist der schnellste Einstieg.
 
 Mehr als das legt das Widget im Benutzerordner nicht an:
 
@@ -31,11 +36,31 @@ Mehr als das legt das Widget im Benutzerordner nicht an:
 | `~/.lernplan-widget.json` | Häkchen, Markierungen, Notizen, laufender Timer |
 | `~/.lernplan-backups/` | tägliche Sicherung, 14 Stände rollierend |
 
+## Bedienung auf einen Blick
+
+| Klick auf | passiert |
+|---|---|
+| Zeile im Tagesplan | Häkchen setzen oder wegnehmen |
+| `▶` in der Zeile | Fokus-Timer über die Blockdauer starten |
+| `Kern ✓` | Morgenroutine, Anki und Lesen auf einmal abhaken |
+| `frei setzen` | weiterschalten: frei → krank → normal |
+| `?` | Kurzhilfe ein- und ausblenden |
+| `⌃ kompakt` | Woche und Monat ausblenden — halbe Höhe |
+| Notizzeile | Tagesnotiz schreiben |
+| `Fokus der Woche` | zwei Schwerpunkte für die Woche festlegen |
+| Tag im Monatsgitter | Tag zum Nachtragen öffnen |
+| `‹` `›` | durch die Monate blättern |
+| `↩ Rückgängig` | den letzten Klick zurücknehmen (60 Sekunden lang) |
+
+Klicken funktioniert nur, solange der Übersicht-Interaktions-Shortcut gedrückt
+ist. Kompaktmodus und Hilfe merkt sich das Widget über Neustarts hinweg.
+
 ## Was drin steckt
 
 **Tag.** Der Plan des Tages als Liste, Klick setzt das Häkchen. Fixtermine
 (Schule, Betrieb, Pizzeria) sind nur Kontext und nicht abhakbar. Ein Block, der
-mehr als eine Stunde überfällig ist, bekommt ein `offen`.
+mehr als eine Stunde überfällig ist, bekommt ein `offen`. Sind alle wertbaren
+Blöcke erledigt, steht dort `Feierabend`.
 
 **Minimal-Kern.** Drei Blöcke (`morgen`, `anki`, `lesen`) entscheiden über
 „Tag gerettet" und über die Streak — das Sicherheitsnetz für schlechte Tage.
@@ -44,12 +69,27 @@ mehr als eine Stunde überfällig ist, bekommt ein `offen`.
 **Fokus-Timer.** `▶` an einem Block startet einen Timer über dessen Dauer; die
 Dauer kommt aus dem Namen (`Lesen 45′`), aus `min` oder aus `durations`. Der Timer
 liegt in der Statusdatei, überlebt also jedes Neuladen, und meldet sich am Ende
-per macOS-Mitteilung. Häkchen setzen beendet ihn.
+per macOS-Mitteilung. Häkchen setzen beendet ihn. `+10′` verlängert ihn,
+`Pause` beendet den Block und startet stattdessen eine kurze Pause, die sich
+ebenfalls meldet.
+
+**Schwerpunkte der Woche.** Zwei Themen, die in der Sonntagsplanung festgelegt
+werden und die ganze Woche über dem Tagesplan stehen. Der Schlüssel ist die
+ISO-Kalenderwoche, der Jahreswechsel mitten in der Woche macht also nichts.
+
+**Rückgängig.** Der letzte Klick — Häkchen, Kern, Markierung, Notiz — lässt sich
+60 Sekunden lang zurücknehmen. Bewusst nur im Speicher: nach einem Neustart will
+niemand mehr einen Klick von vorgestern rückgängig machen.
 
 **Zeitbudget.** Statt nur „3 von 5 Tasks" auch „1 h 30 von 3 h 45" — für den Tag,
 für die Woche, für den Monat. Optional mit Wochenziel (`weeklyGoalMin`).
 
-**Woche.** Mo–So als Balken, heute hervorgehoben, freie Tage ausgegraut.
+**Woche.** Mo–So als Balken, heute hervorgehoben, freie Tage ausgegraut. Daneben
+der Vergleich mit der Vorwoche — gemessen am gleichen Wochentag, damit Montag
+nicht gegen eine volle Woche antritt.
+
+**Nachtragen.** Wurde am Vortag nichts eingetragen, weist der Fuß darauf hin und
+öffnet den Tag auf Klick.
 
 **Monat.** Heatmap mit ‹ › zum Blättern. Klick auf einen Tag öffnet ihn zum
 Nachtragen, ein Punkt in der Ecke markiert Tage mit Notiz. Dazu Streak,
@@ -88,6 +128,7 @@ Die wichtigsten Schlüssel, alle optional:
 | `sleepHours` | für den Schlafenszeit-Hinweis am Abend |
 | `overdueAfterMin` | ab wann ein Block als `offen` gilt |
 | `autoBackup` | tägliche Sicherung an/aus |
+| `breakMin`, `extendMin` | Länge der Pause und Schrittweite von `+10′` |
 | `durations` | Standarddauer je Art, wenn im Namen keine steht |
 | `exams` | `[{ "date": "2027-02-25", "label": "IHK Teil 1" }]` |
 | `vacations` | `[["von", "bis", "Name"], …]` |
@@ -116,20 +157,31 @@ steht deshalb weiterhin oben in den `DEFAULTS`.
 sh test/run.sh
 ```
 
-Übersetzt `lernplan.jsx`, ersetzt das `uebersicht`-Modul durch einen Platzhalter
-und prüft die reine Rechenlogik: Osterformel und Feiertage, Ferien- und
-Wochenendlogik, Quoten, Streak über Krankheitstage hinweg, Zeitbudget, Timeline,
-Timer, CSV, Migration alter Statusdateien und die Prüfung der Konfiguration.
-Braucht nur Node und einmalig esbuild über `npx`.
+Zwei Durchgänge, zusammen 241 Zusicherungen, beide brauchen nur Node und
+einmalig esbuild über `npx`:
 
-## Änderungen gegenüber v5
+* **Rechenlogik** — Osterformel und Feiertage, Ferien- und Wochenendlogik,
+  Kalenderwochen über den Jahreswechsel, Quoten, Streak über Krankheitstage
+  hinweg, Zeitbudget, Timeline, Timer, CSV, Migration alter Statusdateien und
+  die Prüfung der Konfiguration.
+* **Shell** — führt jeden Aufruf aus `SH` gegen ein Wegwerf-`$HOME` wirklich
+  aus: atomares Schreiben, Rettung einer defekten Datei, Anlegen der
+  Konfiguration samt Überschreibschutz, Rotation der Sicherungen, CSV. Inklusive
+  Anführungszeichen, Zeilenumbrüchen und `$(…)` im Text.
 
-Neu: Fokus-Timer, Jetzt-/Als-Nächstes-Streifen, Zeitbudget, Wochenleiste mit
-Ziel, Monatsnavigation, Tagesnotizen, `krank` als eigene Markierung,
-`Kern ✓`-Knopf, CSV-Export, automatische Sicherung, Konfigurationsprüfung,
-Schlafenszeit-Hinweis, Vorschau auf den nächsten freien Tag.
+## Änderungen
 
-Behoben und aufgeräumt:
+**v7 — Bedienung.** `?`-Kurzhilfe, Kompaktmodus, Rückgängig für den letzten
+Klick, Einrichtungshilfe beim ersten Start, Wochenschwerpunkte, Pause und
+`+10′` am Timer, Nachtrags-Erinnerung, `Feierabend`, Wochenvergleich, Knopf zum
+Öffnen der Konfiguration. Innen: alle Shell-Aufrufe liegen jetzt gesammelt in
+`SH` und werden von den Tests wirklich ausgeführt; Dateinamen gehen durch
+`safeName`.
+
+**v6 — Funktion.** Fokus-Timer, Jetzt-/Als-Nächstes-Streifen, Zeitbudget,
+Wochenleiste mit Ziel, Monatsnavigation, Tagesnotizen, `krank` als eigene
+Markierung, `Kern ✓`, CSV-Export, automatische Sicherung, Konfigurationsprüfung,
+Schlafenszeit-Hinweis, Vorschau auf den nächsten freien Tag. Dazu behoben:
 
 * Fehlt ein Wochentag in der Konfiguration, stürzte der Kopf ab (`cfg.days[dk].label`
   ohne Rückfall) — geht jetzt über `labelOf`.
@@ -144,3 +196,13 @@ Behoben und aufgeräumt:
   sie wandert jetzt vorher als `.broken` zur Seite.
 * Ein Fehler beim Aufbau nahm das ganze Widget vom Schreibtisch — jetzt fängt
   eine Fehlerbremse ihn ab und zeigt die Meldung.
+
+## Bewusst nicht drin
+
+* **Helles Erscheinungsbild.** Die Farbflächen sitzen als `rgba(255,255,255,…)`
+  im Stylesheet; ein sauberes helles Thema hieße, die halbe CSS auf Variablen
+  umzustellen. Lohnt erst, wenn es wirklich gebraucht wird.
+* **`pos` in der Konfiguration.** Übersicht liest `className` einmal beim Laden
+  aus, bevor die Konfigurationsdatei existiert. Dynamisch ginge nur über eine
+  fest positionierte innere Karte — die würde das Verschieben per Maus in
+  Übersicht kaputt machen.

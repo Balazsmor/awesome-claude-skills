@@ -1,28 +1,28 @@
 // ============================================================================
-//  LERNPLAN-WIDGET v6  ·  Übersicht (tracesof.net/uebersicht)
+//  LERNPLAN-WIDGET v7  ·  Übersicht (tracesof.net/uebersicht)
 //
 //  Interaktiv abhakbar · Tagesplan aus Wochenplan v2 · Monats-Heatmap
 //  Kennt Schulferien und Feiertage in Baden-Württemberg · Prüfungs-Countdown
 //
-//  Neu gegenüber v5
-//    · Fokus-Timer je Block, überlebt Neuladen, meldet sich per Mitteilung
-//    · "Jetzt / als Nächstes" mit Restzeit statt bloßer Hervorhebung
-//    · Zeitbudget in Minuten — geplant gegen erledigt, Tag und Woche
-//    · Wochenleiste Mo–So mit Wochenziel
-//    · Monatsnavigation ‹ › — Vormonate nachlesen und nachtragen
-//    · Tagesnotiz per Dialog (Fehlerprotokoll), Notizen landen im CSV-Export
-//    · "frei" unterscheidet jetzt frei / krank
-//    · Kern-Knopf hakt den Minimal-Kern in einem Klick ab
-//    · Tägliche Sicherung im Hintergrund, 14 Stände rollierend
-//    · Konfiguration wird geprüft: doppelte IDs, kaputte Daten, tote Kern-IDs
+//  Neu gegenüber v6 — dieser Durchgang ging auf die Bedienung
+//    · "?" blendet eine Kurzhilfe ein: was ist wo klickbar
+//    · Kompaktmodus "⌄" klappt Woche und Monat weg — halbe Höhe
+//    · Rückgängig für den letzten Klick (60 Sekunden lang)
+//    · Erster Start ohne Konfiguration: ein Knopf legt sie an, einer öffnet sie
+//    · Wochenschwerpunkte — zwei Themen, die ganze Woche im Blick
+//    · Fokus-Timer: "+10′" verlängern, "Pause" als eigener Timer
+//    · Erinnerung, wenn gestern nichts eingetragen wurde
+//    · "Feierabend", sobald alles Wertbare erledigt ist
+//    · Wochenvergleich: gleicher Wochentag gegen die Vorwoche
 //
 //  Ablage:  Übersicht-Menüleistensymbol → "Open Widgets Folder" → hier ablegen
 //  Klicken: Übersicht-Einstellungen → Interaktions-Shortcut festlegen +
 //           Systemeinstellungen → Datenschutz & Sicherheit → Bedienungshilfen
 //
-//  ANPASSEN: nicht in dieser Datei, sondern in  ~/.lernplan-config.json
-//  (Vorlage liegt bei). Alles, was dort steht, überschreibt die Defaults
-//  unten — ein Update des Widgets löscht deine Einstellungen also nicht.
+//  ANPASSEN: nicht in dieser Datei, sondern in  ~/.lernplan-config.json.
+//  Fehlt sie, bietet das Widget beim Start an, sie anzulegen. Alles, was dort
+//  steht, überschreibt die Defaults unten — ein Update des Widgets löscht
+//  deine Einstellungen also nicht.
 //  Einzige Ausnahme bleibt `pos`: die Position wird von Übersicht einmal beim
 //  Laden gelesen, bevor die Konfigurationsdatei da ist, und steht deshalb
 //  weiterhin hier unten in den DEFAULTS.
@@ -54,7 +54,13 @@ export const DEFAULTS = {
     timer: true,      // Fokus-Timer je Block
     notes: true,      // Tagesnotiz
     bedtime: true,    // Hinweis auf die Schlafenszeit am Abend
+    topics: true,     // Schwerpunkte der Woche
+    remind: true,     // Erinnerung, wenn gestern nichts eingetragen wurde
   },
+
+  // ---- Pausen --------------------------------------------------------------
+  breakMin: 5,        // Länge der Pause, die der Timer-Streifen anbietet
+  extendMin: 10,      // Schrittweite von "+10′"
 
   // ---- Minimal-Kern: entscheidet über Streak und "Tag gerettet" ------------
   core: ["morgen", "anki", "lesen"],
@@ -366,6 +372,26 @@ export function dayKey(d) {
   return DAY_KEYS[d.getDay()];
 }
 
+/**
+ * ISO-Kalenderwoche als "2026-W34" — Schlüssel für die Wochenschwerpunkte.
+ * Maßgeblich ist der Donnerstag der Woche, deshalb kann der Jahreswechsel
+ * mitten in einer Woche liegen, ohne dass zwei Schlüssel entstehen.
+ */
+export function isoWeek(d) {
+  const thu = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 12);
+  thu.setDate(thu.getDate() - ((thu.getDay() + 6) % 7) + 3);
+  const year = thu.getFullYear();
+  const jan4 = new Date(year, 0, 4, 12);
+  const week1 = new Date(year, 0, 4 - ((jan4.getDay() + 6) % 7) + 3, 12);
+  const n = Math.round((thu.getTime() - week1.getTime()) / (7 * 86400000)) + 1;
+  return `${year}-W${String(n).padStart(2, "0")}`;
+}
+
+/** Montag der Woche, in der das Datum liegt. */
+export function mondayOf(d) {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate() - ((d.getDay() + 6) % 7), 12);
+}
+
 /** Ostersonntag nach der Gaußschen Osterformel (gregorianisch). */
 export function easterSunday(y) {
   const a = y % 19;
@@ -661,11 +687,12 @@ export function weakestTask(data, today, cfg, minN = 3) {
 export function weekStats(data, cfg, today) {
   const marks = (data && data.f) || {};
   const dow = (today.getDay() + 6) % 7; // Montag = 0
+  const mon = mondayOf(today);
   const days = [];
   let doneMin = 0, planMin = 0, weekPlan = 0, hitN = 0, possN = 0;
 
   for (let i = 0; i < 7; i++) {
-    const d = new Date(today.getFullYear(), today.getMonth(), today.getDate() - dow + i, 12);
+    const d = new Date(mon.getFullYear(), mon.getMonth(), mon.getDate() + i, 12);
     const info = dayInfo(d, cfg, marks);
     const ids = doneOf(data, info.key);
     const set = new Set(ids);
@@ -691,8 +718,40 @@ export function weekStats(data, cfg, today) {
   const goal = Number(cfg.weeklyGoalMin) || 0;
   return {
     days, doneMin, planMin, weekPlan, goal, hitN, possN,
+    week: isoWeek(today), monday: mon,
     goalPct: goal ? Math.min(100, Math.round((doneMin / goal) * 100)) : null,
   };
+}
+
+/** Dieselbe Woche eine Woche früher — bis zum gleichen Wochentag. */
+export function prevWeekStats(data, cfg, today) {
+  return weekStats(data, cfg,
+    new Date(today.getFullYear(), today.getMonth(), today.getDate() - 7, 12));
+}
+
+/** Ist an diesem Tag alles Wertbare erledigt? */
+export function allDone(plan, doneIds) {
+  const blocks = scoredBlocks(plan);
+  if (!blocks.length) return false;
+  const set = new Set(doneIds || []);
+  return blocks.every((b) => set.has(b.id));
+}
+
+/**
+ * Der letzte zählende Tag vor heute, an dem nichts eingetragen wurde — die
+ * Grundlage für die sanfte Nachtrags-Erinnerung. `null`, wenn alles gepflegt
+ * ist oder der Tag ohnehin nicht zählt.
+ */
+export function missedYesterday(data, cfg, today) {
+  const marks = (data && data.f) || {};
+  for (let i = 1; i <= 3; i++) {
+    const d = new Date(today.getFullYear(), today.getMonth(), today.getDate() - i, 12);
+    const info = dayInfo(d, cfg, marks);
+    if (!info.counts) continue;
+    if (!scoredBlocks(info.plan).length) continue;
+    return doneOf(data, info.key).length ? null : { key: info.key, date: d, days: i };
+  }
+  return null;
 }
 
 //  Der Blick bis zur Prüfung läuft über bis zu ein halbes Jahr Tagespläne.
@@ -877,11 +936,12 @@ export function asq(s) {
 }
 
 /**
- * Statusdatei lesen. v1 (nur `d`) und v2 (`d` + `f: 1`) werden mitgelesen,
+ * Statusdatei lesen. v1 (nur `d`), v2 (`d` + `f: 1`) und v3 werden mitgelesen,
  * die alten Frei-Markierungen werden zu "frei".
  */
 export function parseState(raw) {
-  const empty = { v: 3, d: {}, f: {}, n: {}, t: null, b: "", broken: false };
+  const empty = { v: 4, d: {}, f: {}, n: {}, t: null, b: "",
+                  w: {}, u: { compact: false, help: false }, broken: false };
   const txt = String(raw || "").trim();
   if (!txt || txt === "{}") return empty;
   try {
@@ -897,8 +957,16 @@ export function parseState(raw) {
     const nIn = obj(o.n);
     const n = {};
     for (const k of Object.keys(nIn)) if (typeof nIn[k] === "string") n[k] = nIn[k];
+    const wIn = obj(o.w);
+    const w = {};
+    for (const k of Object.keys(wIn)) {
+      if (Array.isArray(wIn[k])) w[k] = wIn[k].filter((x) => typeof x === "string" && x.trim());
+    }
+    const uIn = obj(o.u);
+    const u = { compact: !!uIn.compact, help: !!uIn.help };
     const t = (o.t && typeof o.t === "object" && o.t.id && o.t.start) ? o.t : null;
-    return { v: 3, d: obj(o.d), f, n, t, b: typeof o.b === "string" ? o.b : "", broken: false };
+    return { v: 4, d: obj(o.d), f, n, t, w, u,
+             b: typeof o.b === "string" ? o.b : "", broken: false };
   } catch (e) {
     // Defekte Datei: leer weitermachen, aber merken — vor dem ersten
     // Überschreiben legen wir eine Kopie als .broken daneben.
@@ -954,36 +1022,123 @@ const BACKUP_DIR = "$HOME/.lernplan-backups";
 const SHF = `F="${STATE_FILE}"; C="${CONFIG_FILE}"; B="${BACKUP_DIR}"; `;
 const VIEW_TIMEOUT_MIN = 10;
 const BACKUP_KEEP = 14;
+/** Kennung des Pausen-Timers — gehört zu keinem Block. */
+export const BREAK_ID = "__pause";
+
+/**
+ * Alle Shell-Aufrufe an einer Stelle. Jeder String geht ungeprüft an die
+ * Kommandozeile, deshalb liegt hier alles beieinander, wo man es am Stück
+ * lesen kann — und wo die Tests es gegen ein Wegwerf-$HOME laufen lassen.
+ * Alles, was von außen kommt, geht durch shq() bzw. asq().
+ */
+/**
+ * Dateinamen, die in einen doppelt gequoteten Pfad eingesetzt werden, dürfen
+ * nichts enthalten, was die Shell noch einmal anfasst. Alles Fremde fliegt
+ * raus — die Namen entstehen ohnehin aus Datum und Monat.
+ */
+export function safeName(s, fallback = "unbenannt") {
+  const t = String(s == null ? "" : s).replace(/[^A-Za-z0-9._-]/g, "");
+  return t && !t.startsWith("-") && t !== "." && t !== ".." ? t : fallback;
+}
+
+export const SH = {
+  /** Konfiguration und Zustand in einem Rutsch, getrennt durch SPLIT. */
+  load: () =>
+    `${SHF}cat "$C" 2>/dev/null || printf %s ${shq(NO_CONFIG)}; ` +
+    `printf %s ${shq(SPLIT)}; cat "$F" 2>/dev/null || echo '{}'`,
+
+  /** Atomar schreiben: erst .tmp, dann mv — ein Abbruch kann nichts löschen. */
+  save: (json, rescue) =>
+    `${SHF}${rescue ? `cp "$F" "$F.broken" 2>/dev/null; ` : ""}` +
+    `printf %s ${shq(json)} > "$F.tmp" && mv -f "$F.tmp" "$F"`,
+
+  /** Tagessicherung anlegen und auf die jüngsten `keep` Stände eindampfen. */
+  backup: (key, keep) =>
+    `${SHF}mkdir -p "$B" && cp "$F" "$B/${safeName(key, "sicherung")}.json" 2>/dev/null; ` +
+    `ls -1t "$B"/*.json 2>/dev/null | tail -n +${keep + 1} | ` +
+    `while read -r x; do rm -f "$x"; done; echo ok`,
+
+  /** Sicherung von Hand, mit Zeitstempel im Namen. */
+  backupManual: () =>
+    `${SHF}mkdir -p "$B" && cp "$F" "$B/manuell-$(date +%Y-%m-%d-%H%M).json" && echo ok`,
+
+  /** Startkonfiguration — legt nie eine vorhandene Datei um. */
+  createConfig: (json) =>
+    `${SHF}if [ -e "$C" ]; then echo exists >&2; exit 3; fi; ` +
+    `printf %s ${shq(json)} > "$C.tmp" && mv -f "$C.tmp" "$C" && echo ok`,
+
+  /** Datei bzw. Ordner im Finder oder Texteditor öffnen. */
+  open: (what) =>
+    what === "config"
+      ? `${SHF}[ -e "$C" ] || printf %s '{}' > "$C"; open -t "$C"`
+      : what === "backups"
+        ? `${SHF}mkdir -p "$B" && open "$B"`
+        : `${SHF}open -t "$F"`,
+
+  /** CSV in den Benutzerordner schreiben. */
+  csv: (name, text) =>
+    `printf %s ${shq(text)} > "$HOME/${safeName(name, "lernplan.csv")}" && echo ok`,
+
+  /** Kurzmitteilung über osascript. */
+  notify: (title, text, sound) =>
+    `osascript -e ${shq(`display notification ${asq(text)} with title ${asq(title)}` +
+      ` sound name ${asq(sound)}`)}`,
+
+  /** Einzeiliger Eingabedialog; "@@CANCEL@@" heißt abgebrochen. */
+  dialog: (prompt, def, title) =>
+    `osascript -e ${shq([
+      "try",
+      `  set r to text returned of (display dialog ${asq(prompt)}` +
+      ` default answer ${asq(def)} with title ${asq(title)}` +
+      ` buttons {"Abbrechen", "Sichern"} default button "Sichern")`,
+      "  return r",
+      "on error",
+      '  return "@@CANCEL@@"',
+      "end try",
+    ].join("\n"))}`,
+};
+
+/** Antwort eines Dialogs auswerten: null = abgebrochen. */
+export function dialogResult(out) {
+  const txt = String(out || "").replace(/\n+$/, "");
+  return txt === "@@CANCEL@@" ? null : txt;
+}
 
 let _dispatch = null;
 // Letzter lokal bekannter Datenstand + Generationszähler. Beides liegt bewusst
 // außerhalb des React-Zustands: ein Klick muss auf dem AKTUELLEN Stand rechnen,
 // auch wenn der Re-Render noch aussteht — und eine Ladeantwort, die vor dem
 // Klick abgeschickt wurde, darf den Klick nicht wieder überschreiben.
-let _data = { v: 3, d: {}, f: {}, n: {}, t: null, b: "" };
+let _data = { v: 4, d: {}, f: {}, n: {}, t: null, b: "", w: {}, u: {} };
 let _rev = 0;
 let _needRescue = false; // defekte Statusdatei vor dem Überschreiben kopieren?
 let _rang = "";          // für welchen Timer hat es schon geklingelt?
 let _dialog = false;     // läuft gerade ein Dialog? (kein zweiter obendrauf)
 let _cfgRaw = "";        // zuletzt gesehener Text der Konfigurationsdatei
 let _cfgErr = null;      // steht die Konfigurationsdatei quer?
+let _noCfg = false;      // gibt es überhaupt eine Konfigurationsdatei?
+//  Einstufiges Rückgängig. Bewusst nur im Speicher: Ein Fehlklick fällt
+//  sofort auf, und nach einem Neustart will niemand mehr einen Klick von
+//  vorgestern zurücknehmen.
+let _undo = null;        // { data, at, what }
+const UNDO_MS = 60000;
+
+/** Kennung im Ladebefehl, wenn die Konfigurationsdatei fehlt. */
+export const NO_CONFIG = "@@LERNPLAN-NO-CONFIG@@";
 
 //  20 Sekunden: schnell genug, dass der Fokus-Timer nicht stehenbleibt und
 //  die Mitteilung pünktlich kommt, und trotzdem nur zwei `cat` pro Runde.
 export const refreshFrequency = 20000;
 
 export const initialState = {
-  data: { v: 3, d: {}, f: {}, n: {}, t: null, b: "" },
+  data: { v: 4, d: {}, f: {}, n: {}, t: null, b: "", w: {}, u: {} },
   err: null, note: null, tick: 0, view: null, viewAt: 0, mOff: 0, warn: [],
 };
 
 export const command = (dispatch) => {
   _dispatch = dispatch;
   const rev = _rev; // Stand zum Zeitpunkt des Lesens
-  run(
-    `${SHF}cat "$C" 2>/dev/null || echo '{}'; printf %s ${shq(SPLIT)}; ` +
-    `cat "$F" 2>/dev/null || echo '{}'`
-  )
+  run(SH.load())
     .then((out) => dispatch({ type: "LOAD", raw: out, rev }))
     .catch((e) => dispatch({ type: "ERR", error: String(e) }));
 };
@@ -999,7 +1154,9 @@ export const updateState = (event, prev) => {
       //  Die Konfigurationsdatei wird nur neu ausgewertet, wenn sie sich
       //  wirklich geändert hat — sonst liefe alle 20 Sekunden ein komplettes
       //  Merge samt Prüfung, obwohl nichts passiert ist.
-      const raw = String(config).trim() || "{}";
+      const rawIn = String(config).trim();
+      _noCfg = rawIn === NO_CONFIG;
+      const raw = _noCfg || !rawIn ? "{}" : rawIn;
       let warn = base.warn || [];
       if (raw !== _cfgRaw) {
         _cfgRaw = raw;
@@ -1047,11 +1204,9 @@ export const updateState = (event, prev) => {
 function persist(next) {
   // War die Datei unlesbar, wandert sie einmalig als .broken zur Seite —
   // überschrieben wird also nie etwas, das man noch retten könnte.
-  const rescue = _needRescue ? `cp "$F" "$F.broken" 2>/dev/null; ` : "";
+  const rescue = _needRescue;
   _needRescue = false;
-  return run(
-    `${SHF}${rescue}printf %s ${shq(JSON.stringify(strip(next)))} > "$F.tmp" && mv -f "$F.tmp" "$F"`
-  ).catch((e) => {
+  return run(SH.save(JSON.stringify(strip(next)), rescue)).catch((e) => {
     if (_dispatch) _dispatch({ type: "ERR", error: "Speichern fehlgeschlagen: " + e });
   });
 }
@@ -1062,24 +1217,48 @@ function strip(s) {
   return rest;
 }
 
-function commit(next) {
+/**
+ * Schreibt einen neuen Stand. `what` beschreibt die Änderung in Worten und
+ * schaltet damit das Rückgängig frei — interne Schritte (Sicherungsmarke,
+ * abgelaufener Timer) lassen es weg, die will niemand zurücknehmen.
+ */
+function commit(next, what) {
+  if (what) _undo = { data: _data, at: Date.now(), what };
   _data = next;
   _rev++;
   if (_dispatch) _dispatch({ type: "SET", data: next });
   persist(next);
 }
 
+/** Steht ein Rückgängig bereit — und wie heißt es? */
+export function undoable(nowMs) {
+  return _undo && nowMs - _undo.at < UNDO_MS ? _undo.what : null;
+}
+
+function undo() {
+  if (!_undo) return;
+  const prev = _undo.data;
+  const what = _undo.what;
+  _undo = null;
+  commit(prev);
+  say(`Zurückgenommen: ${what}`);
+}
+
 /** Häkchen setzen oder zurücknehmen — immer auf dem aktuellen Stand. */
-function toggle(key, id) {
+function toggle(key, b) {
+  const id = b.id;
   const d = { ...(_data.d || {}) };
   const set = new Set(d[key] || []);
-  if (set.has(id)) set.delete(id); else set.add(id);
+  const was = set.has(id);
+  if (was) set.delete(id); else set.add(id);
   const arr = Array.from(set);
   if (arr.length) d[key] = arr; else delete d[key];
   // Läuft für genau diesen Block ein Timer, ist er mit dem Haken erledigt.
   const t = _data.t;
-  const stop = t && t.key === key && t.id === id && set.has(id);
-  commit({ ..._data, d, t: stop ? null : t });
+  const stop = t && t.key === key && t.id === id && !was;
+  const name = shortName(b.nm, 22);
+  commit({ ..._data, d, t: stop ? null : t },
+    was ? `Haken weg bei ${name}` : `${name} abgehakt`);
 }
 
 /** Alle Kern-Blöcke des Tages auf einmal abhaken. */
@@ -1092,7 +1271,7 @@ function completeCore(key, plan, cfg) {
   for (const id of ids) if (all) set.delete(id); else set.add(id);
   const arr = Array.from(set);
   if (arr.length) d[key] = arr; else delete d[key];
-  commit({ ..._data, d });
+  commit({ ..._data, d }, all ? "Kern zurückgenommen" : "Kern abgehakt");
 }
 
 /** Markierung des Tages weiterschalten: nichts → frei → krank → nichts. */
@@ -1101,7 +1280,15 @@ function cycleMark(key) {
   const cur = f[key] ? (f[key] === "krank" ? "krank" : "frei") : null;
   const next = MARK_CYCLE[(MARK_CYCLE.indexOf(cur) + 1) % MARK_CYCLE.length];
   if (next) f[key] = next; else delete f[key];
-  commit({ ..._data, f });
+  commit({ ..._data, f },
+    next ? `Tag als ${next} markiert` : "Markierung entfernt");
+}
+
+/** Kompaktmodus und Hilfe umschalten — der Zustand hält über Neustarts. */
+function toggleUi(k) {
+  const u = { ...(_data.u || {}) };
+  u[k] = !u[k];
+  commit({ ..._data, u });
 }
 
 function setView(key) {
@@ -1139,10 +1326,76 @@ function stopFocus() {
   commit({ ..._data, t: null });
 }
 
+/** Laufenden Timer verlängern, ohne ihn neu zu starten. */
+function extendFocus(cfg) {
+  const t = _data.t;
+  if (!t) return;
+  const step = Number(cfg.extendMin) || 10;
+  commit({ ..._data, t: { ...t, mins: t.mins + step } });
+}
+
+/** Pause als eigener Timer — beendet einen laufenden Fokusblock. */
+function startBreak(cfg) {
+  const mins = Number(cfg.breakMin) || 5;
+  commit({ ..._data, t: { key: ymd(new Date()), id: BREAK_ID, nm: "Pause", mins, start: Date.now() } });
+  notify("Pause", `${mins} Minuten — dann geht es weiter`, "Pop");
+}
+
+/** Zwei Schwerpunkte für die Woche festlegen (Sonntagsplanung). */
+function editTopics(weekKey) {
+  if (_dialog) return;
+  _dialog = true;
+  const old = ((_data.w || {})[weekKey] || []).join(" · ");
+  run(SH.dialog(`Zwei Schwerpunkte für ${weekKey}, getrennt mit  ·  oder  ;`,
+                old, "Lernplan · Wochenplanung"))
+    .then((out) => {
+      const txt = dialogResult(out);
+      if (txt === null) return;
+      const list = txt.split(/[·;|]/).map((s) => s.trim()).filter(Boolean).slice(0, 3);
+      const w = { ...(_data.w || {}) };
+      if (list.length) w[weekKey] = list; else delete w[weekKey];
+      commit({ ..._data, w }, "Schwerpunkte geändert");
+    })
+    .catch((e) => fail("Schwerpunkte fehlgeschlagen: " + e))
+    .then(() => { _dialog = false; });
+}
+
+/**
+ * Startkonfiguration schreiben. Bewusst klein gehalten: nur die Schalter, an
+ * denen man wirklich dreht. Alles Weitere bleibt bei den Defaults und zieht
+ * damit bei einem Update des Widgets automatisch mit.
+ */
+function createConfig(cfg) {
+  const starter = {
+    _hinweis: [
+      "Konfiguration des Lernplan-Widgets. Alles hier gewinnt gegen die",
+      "Defaults im Widget — ein Update überschreibt diese Datei nicht.",
+      "Was du nicht brauchst, kannst du löschen; dann greift die Voreinstellung.",
+      "Tagespläne (days, vacationDays, freeDay) lassen sich hier ebenfalls",
+      "überschreiben, siehe README. Änderungen greifen nach etwa 20 Sekunden.",
+    ],
+    width: cfg.width, scale: cfg.scale,
+    core: cfg.core,
+    weeklyGoalMin: cfg.weeklyGoalMin,
+    sleepHours: cfg.sleepHours,
+    overdueAfterMin: cfg.overdueAfterMin,
+    autoBackup: cfg.autoBackup,
+    show: cfg.show,
+    exams: cfg.exams,
+    vacations: cfg.vacations,
+  };
+  run(SH.createConfig(JSON.stringify(starter, null, 2)))
+    .then(() => say("~/.lernplan-config.json angelegt — jetzt anpassen"))
+    .catch(() => fail("Anlegen fehlgeschlagen — existiert die Datei schon?"));
+}
+
+function openPath(what) {
+  run(SH.open(what)).catch((e) => fail("Öffnen fehlgeschlagen: " + e));
+}
+
 function notify(title, text, sound = "Glass") {
-  const s = `display notification ${asq(text)} with title ${asq(title)}` +
-            ` sound name ${asq(sound)}`;
-  run(`osascript -e ${shq(s)}`).catch(() => { /* Mitteilungen sind Beiwerk */ });
+  run(SH.notify(title, text, sound))
+    .catch(() => { /* Mitteilungen sind Beiwerk, kein Grund für einen Fehler */ });
 }
 
 /**
@@ -1155,13 +1408,16 @@ function afterLoad(broken) {
   }
   const t = _data.t;
   if (t) {
-    const token = `${t.key}|${t.id}|${t.start}`;
+    // Die Dauer gehört in die Kennung, sonst schweigt ein verlängerter Timer.
+    const token = `${t.key}|${t.id}|${t.start}|${t.mins}`;
     const left = timerLeft(t, Date.now());
     if (left !== null && left <= 0 && _rang !== token) {
       _rang = token;
-      notify("Fokusblock fertig", `${t.nm} · ${t.mins} Minuten geschafft`);
+      const pause = t.id === BREAK_ID;
+      notify(pause ? "Pause vorbei" : "Fokusblock fertig",
+             pause ? "Weiter geht's" : `${t.nm} · ${t.mins} Minuten geschafft`);
       commit({ ..._data, t: null });
-      say(`Fokus fertig: ${t.nm} — Haken setzen`);
+      say(pause ? "Pause vorbei" : `Fokus fertig: ${t.nm} — Haken setzen`);
       return;
     }
   }
@@ -1174,17 +1430,13 @@ function maybeBackup() {
   const key = ymd(new Date());
   if (_data.b === key) return;
   if (!Object.keys(_data.d || {}).length) return; // nichts zu sichern
-  run(
-    `${SHF}mkdir -p "$B" && cp "$F" "$B/${key}.json" 2>/dev/null; ` +
-    `ls -1t "$B"/*.json 2>/dev/null | tail -n +${BACKUP_KEEP + 1} | ` +
-    `while read -r x; do rm -f "$x"; done; echo ok`
-  )
+  run(SH.backup(key, BACKUP_KEEP))
     .then(() => commit({ ..._data, b: key }))
     .catch(() => { /* Sicherung ist Komfort, kein Grund für eine Fehlermeldung */ });
 }
 
 function backup() {
-  run(`${SHF}mkdir -p "$B" && cp "$F" "$B/manuell-$(date +%Y-%m-%d-%H%M).json" && echo ok`)
+  run(SH.backupManual())
     .then(() => say("Sicherung in ~/.lernplan-backups abgelegt"))
     .catch((e) => fail("Sicherung fehlgeschlagen: " + e));
 }
@@ -1194,24 +1446,13 @@ function editNote(key, label) {
   if (_dialog) return;
   _dialog = true;
   const old = ((_data.n || {})[key]) || "";
-  const script = [
-    "try",
-    `  set r to text returned of (display dialog ${asq("Notiz für " + label + " (" + key + ")")}` +
-    ` default answer ${asq(old)} with title ${asq("Lernplan")}` +
-    ` buttons {"Abbrechen", "Sichern"} default button "Sichern")`,
-    "  return r",
-    "on error",
-    '  return "@@CANCEL@@"',
-    "end try",
-  ].join("\n");
-
-  run(`osascript -e ${shq(script)}`)
+  run(SH.dialog(`Notiz für ${label} (${key})`, old, "Lernplan"))
     .then((out) => {
-      const txt = String(out || "").replace(/\n+$/, "");
-      if (txt === "@@CANCEL@@") return;
+      const txt = dialogResult(out);
+      if (txt === null) return;
       const n = { ...(_data.n || {}) };
       if (txt.trim()) n[key] = txt.trim(); else delete n[key];
-      commit({ ..._data, n });
+      commit({ ..._data, n }, "Notiz geändert");
     })
     .catch((e) => fail("Notiz fehlgeschlagen: " + e))
     .then(() => { _dialog = false; });
@@ -1220,7 +1461,7 @@ function editNote(key, label) {
 /** Monat als CSV in den Benutzerordner schreiben. */
 function exportCsv(scan, cfg) {
   const name = `lernplan-${scan.year}-${String(scan.month + 1).padStart(2, "0")}.csv`;
-  run(`printf %s ${shq(csvOf(scan, _data, cfg))} > "$HOME/${name}" && echo ok`)
+  run(SH.csv(name, csvOf(scan, _data, cfg)))
     .then(() => say(`${name} im Benutzerordner abgelegt`))
     .catch((e) => fail("Export fehlgeschlagen: " + e));
 }
@@ -1315,6 +1556,27 @@ export const className = `
                  border-radius:6px; padding:2px 7px; font-size:9px; flex:none;
                  letter-spacing:0.06em; text-transform:uppercase; }
   .strip .stop:hover { background:rgba(255,255,255,0.12); color:var(--ink); }
+  .strip.topics { cursor:pointer; }
+  .strip.topics:hover { background:rgba(255,255,255,0.085); }
+  .strip .tp { display:flex; gap:6px; align-items:center; min-width:0;
+               overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .strip .tp em { font-style:normal; color:var(--ink-3); }
+
+  .help { margin-top:10px; background:rgba(255,255,255,0.045); border-radius:9px;
+          padding:9px 11px; font-size:10.5px; color:var(--ink-2); line-height:1.5; }
+  .help b { color:var(--ink); font-weight:600; }
+  .help u { display:block; text-decoration:none; }
+  .help k { display:inline-block; min-width:16px; text-align:center;
+            border:1px solid rgba(255,255,255,0.18); border-radius:4px;
+            padding:0 4px; margin-right:6px; font-size:9.5px; color:var(--ink); }
+
+  .setup { margin-top:10px; background:rgba(224,168,63,0.12); border-radius:9px;
+           padding:9px 11px; font-size:10.5px; color:var(--ink-2); line-height:1.45; }
+  .setup b { color:var(--morg); font-weight:700; display:block; margin-bottom:3px; }
+  .setup .btns { display:flex; gap:6px; margin-top:7px; }
+  .setup .btn { cursor:pointer; border:1px solid rgba(224,168,63,0.5); color:var(--morg);
+                border-radius:6px; padding:3px 9px; font-size:9.5px; font-weight:600; }
+  .setup .btn:hover { background:rgba(224,168,63,0.18); }
 
   .cd { display:flex; align-items:center; gap:8px; margin-top:9px;
         background:rgba(255,255,255,0.045); border-radius:9px; padding:7px 11px; }
@@ -1487,7 +1749,15 @@ export const className = `
   .ft .bk { cursor:pointer; border:1px solid rgba(255,255,255,0.14);
             border-radius:6px; padding:3px 8px; white-space:nowrap; }
   .ft .bk:hover { background:rgba(255,255,255,0.09); color:var(--ink); }
+  .ft .bk.undo { border-color:rgba(224,168,63,0.45); color:var(--morg); }
+  .ft .bk.undo:hover { background:rgba(224,168,63,0.16); color:var(--morg); }
   .ft .hint { min-width:0; }
+  .ft .hint.act { cursor:pointer; color:var(--morg); }
+  .ft .hint.act:hover { text-decoration:underline; }
+
+  .core .saved.all { color:var(--morg); background:rgba(224,168,63,0.16); }
+  .wk .wv .dlt { color:var(--lese); font-weight:700; }
+  .wk .wv .dlt.neg { color:var(--deep); }
 `;
 
 const WD = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
@@ -1503,6 +1773,10 @@ function view({ data, err, note, view: viewKey, mOff, warn }) {
   const todayKey = ymd(now);
   const marks = (data && data.f) || {};
   const notes = (data && data.n) || {};
+
+  const ui = (data && data.u) || {};
+  const compact = !!ui.compact;   // Woche und Monat eingeklappt
+  const helpOn = !!ui.help;
 
   const back = viewKey && viewKey !== todayKey ? viewKey : null;
   const shown = back ? fromYmd(back) : now;
@@ -1522,8 +1796,9 @@ function view({ data, err, note, view: viewKey, mOff, warn }) {
   const tLeft = timerLeft(timer, nowMs);
   const timerOn = !!(timer && tLeft !== null && tLeft > 0);
 
-  // Monat: 0 = laufender Monat, negativ = zurück
-  const off = Math.max(-24, Math.min(0, Number(mOff) || 0));
+  // Monat: 0 = laufender Monat, negativ = zurück. Im Kompaktmodus ist das
+  // Gitter unsichtbar — dann soll auch der CSV-Export wieder heute meinen.
+  const off = compact ? 0 : Math.max(-24, Math.min(0, Number(mOff) || 0));
   const mRef = new Date(now.getFullYear(), now.getMonth() + off, 1, 12);
   const scan = monthScan(data || {}, cfg, mRef.getFullYear(), mRef.getMonth(), now);
   const streak = coreStreak(data || {}, now, cfg);
@@ -1533,9 +1808,16 @@ function view({ data, err, note, view: viewKey, mOff, warn }) {
   const load = exam ? examLoad(now, exam, cfg, marks) : null;
   const stale = vacationsStale(now, cfg);
   const freeAhead = nextFreeDay(now, cfg, marks);
+  const prevWk = prevWeekStats(data || {}, cfg, now);
+  const wkDelta = week.doneMin - prevWk.doneMin;
+  const topics = ((data && data.w) || {})[week.week] || [];
+  const missed = shows(cfg, "remind") && !back
+    ? missedYesterday(data || {}, cfg, now) : null;
 
   const coreIds = coreIdsOf(plan, cfg);
   const kernOk = coreDone(plan, doneIds, cfg);
+  const dayDone = allDone(plan, doneIds);
+  const undoWhat = undoable(nowMs);
 
   // Vorschau auf morgen (nur in der Heute-Ansicht)
   const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 12);
@@ -1582,6 +1864,14 @@ function view({ data, err, note, view: viewKey, mOff, warn }) {
             >
               {markBadge}
             </em>
+            <em className={"badge flat" + (helpOn ? " on" : "")}
+                onClick={() => toggleUi("help")}
+                title="Kurzhilfe: was ist wo klickbar">?</em>
+            <em className={"badge flat" + (compact ? " on" : "")}
+                onClick={() => toggleUi("compact")}
+                title={compact ? "Woche und Monat wieder einblenden" : "Kompaktmodus: Woche und Monat ausblenden"}>
+              {compact ? "⌄ mehr" : "⌃ kompakt"}
+            </em>
           </div>
           <div className="dt">
             {String(shown.getDate()).padStart(2, "0")}.
@@ -1602,6 +1892,34 @@ function view({ data, err, note, view: viewKey, mOff, warn }) {
         </div>
       </div>
 
+      {/* ---------- Erststart ohne Konfiguration ---------- */}
+      {_noCfg ? (
+        <div className="setup">
+          <b>Noch keine eigene Konfiguration</b>
+          Das Widget läuft mit den eingebauten Vorgaben. Eigene Prüfungstermine,
+          Ferien und Tagespläne kommen nach <code>~/.lernplan-config.json</code> —
+          ein Update des Widgets überschreibt sie dann nicht.
+          <div className="btns">
+            <span className="btn" onClick={() => createConfig(cfg)}>Konfiguration anlegen</span>
+            <span className="btn" onClick={() => openPath("config")}>Datei öffnen</span>
+          </div>
+        </div>
+      ) : null}
+
+      {/* ---------- Kurzhilfe ---------- */}
+      {helpOn ? (
+        <div className="help">
+          <u><k>✓</k>Zeile anklicken hakt den Block ab — Fixtermine sind grau und nicht klickbar.</u>
+          <u><k>▶</k>Erscheint beim Überfahren einer Zeile: startet den Fokus-Timer über die Blockdauer.</u>
+          <u><k>Kern</k>„Kern ✓" hakt Morgenroutine, Anki und Lesen in einem Klick ab — das rettet den Tag.</u>
+          <u><k>frei</k>Schaltet weiter: frei → krank → normal. Solche Tage zählen nicht und brechen die Streak nicht.</u>
+          <u><k>▦</k>Tag im Monatsgitter anklicken öffnet ihn zum Nachtragen, ‹ › blättern durch die Monate.</u>
+          <u><k>📝</k>Notizzeile und Schwerpunkte öffnen ein Eingabefeld; die Notizen landen im CSV-Export.</u>
+          <u><k>⌃</k>Kompaktmodus blendet Woche und Monat aus. Alles bleibt gespeichert.</u>
+          <u>Klicken geht nur, solange der Übersicht-Interaktions-Shortcut gedrückt ist.</u>
+        </div>
+      ) : null}
+
       {/* ---------- Tagesnotiz ---------- */}
       {shows(cfg, "notes") ? (
         <div className="memo" onClick={() => editNote(key, plan.label || info.dk)}
@@ -1612,11 +1930,19 @@ function view({ data, err, note, view: viewKey, mOff, warn }) {
       ) : null}
 
       {/* ---------- Fokus-Timer bzw. jetzt / als Nächstes ---------- */}
-      {timerOn && !back ? (
+      {timerOn ? (
         <div className="strip focus">
-          <span className="lead">Fokus</span>
-          <span className="val">{timer.nm}</span>
+          <span className="lead">{timer.id === BREAK_ID ? "Pause" : "Fokus"}</span>
+          <span className="val">{shortName(timer.nm, 20)}</span>
           <span className="rest">{tLeft <= 1 ? "gleich fertig" : `noch ${tLeft} min`}</span>
+          {timer.id === BREAK_ID ? null : (
+            <span className="stop" onClick={() => startBreak(cfg)}
+                  title={`Fokus beenden und ${Number(cfg.breakMin) || 5} Minuten Pause starten`}>
+              Pause
+            </span>
+          )}
+          <span className="stop" onClick={() => extendFocus(cfg)}
+                title="Timer verlängern">+{Number(cfg.extendMin) || 10}′</span>
           <span className="stop" onClick={() => stopFocus()}>Stop</span>
         </div>
       ) : !back && shows(cfg, "now") && (tl.cur || tl.next) ? (
@@ -1659,6 +1985,21 @@ function view({ data, err, note, view: viewKey, mOff, warn }) {
         </div>
       ) : null}
 
+      {/* ---------- Schwerpunkte der Woche ---------- */}
+      {shows(cfg, "topics") ? (
+        <div className="strip topics" onClick={() => editTopics(week.week)}
+             title="Zwei Themen, an denen diese Woche wirklich etwas passieren soll — Sonntag in der Wochenplanung festlegen">
+          <span className="lead">Fokus&nbsp;der&nbsp;Woche</span>
+          <span className="tp">
+            {topics.length
+              ? topics.map((x, i) => (
+                  <span key={"tp" + i}>{i ? " · " : ""}{x}</span>
+                ))
+              : <em>zwei Schwerpunkte festlegen …</em>}
+          </span>
+        </div>
+      ) : null}
+
       {/* ---------- Minimal-Kern ---------- */}
       <div className="core">
         <b>Kern</b>
@@ -1670,7 +2011,9 @@ function view({ data, err, note, view: viewKey, mOff, warn }) {
             </span>
           );
         })}
-        {kernOk ? (
+        {dayDone ? (
+          <span className="saved all">Feierabend</span>
+        ) : kernOk ? (
           <span className="saved">Tag gerettet</span>
         ) : coreIds.length ? (
           <span className="go" onClick={() => completeCore(key, plan, cfg)}
@@ -1697,7 +2040,7 @@ function view({ data, err, note, view: viewKey, mOff, warn }) {
             <div
               key={b.id}
               className={cls}
-              onClick={b.track ? () => toggle(key, b.id) : undefined}
+              onClick={b.track ? () => toggle(key, b) : undefined}
               title={b.opt ? "Bonus — zählt nicht in die Quote" : undefined}
             >
               <div className="tm">{b.t}</div>
@@ -1730,7 +2073,7 @@ function view({ data, err, note, view: viewKey, mOff, warn }) {
       </div>
 
       {/* ---------- Zeitbudget des Tages ---------- */}
-      {shows(cfg, "budget") && budget.plan > 0 ? (
+      {shows(cfg, "budget") && budget.plan > 0 && !compact ? (
         <div className="budget">
           <span><b>{fmtMin(budget.done)}</b> von {fmtMin(budget.plan)}</span>
           <span className="tr">
@@ -1741,7 +2084,7 @@ function view({ data, err, note, view: viewKey, mOff, warn }) {
       ) : null}
 
       {/* ---------- Vorschau auf morgen ---------- */}
-      {back || !shows(cfg, "peek") ? null : (
+      {back || compact || !shows(cfg, "peek") ? null : (
         <div className="peek">
           <b>Morgen · {tInfo.plan.label || labelOf(cfg, tInfo.dk)}</b>
           {tInfo.label ? ` (${tInfo.label})` : ""}
@@ -1751,13 +2094,19 @@ function view({ data, err, note, view: viewKey, mOff, warn }) {
       )}
 
       {/* ---------- Woche ---------- */}
-      {shows(cfg, "week") ? (
+      {shows(cfg, "week") && !compact ? (
         <div className="wk">
           <div className="wh">
             <div className="wt">Diese Woche</div>
             <div className="wv">
               <b>{fmtMin(week.doneMin)}</b> von {fmtMin(week.planMin)} bisher
               {week.possN ? ` · ${week.hitN}/${week.possN}` : ""}
+              {Math.abs(wkDelta) >= 5 ? (
+                <span className={"dlt" + (wkDelta < 0 ? " neg" : "")}
+                      title="Gleicher Wochentag in der Vorwoche">
+                  {" · "}{wkDelta > 0 ? "+" : "−"}{fmtMin(Math.abs(wkDelta))}
+                </span>
+              ) : null}
             </div>
           </div>
           <div className="bars">
@@ -1788,7 +2137,7 @@ function view({ data, err, note, view: viewKey, mOff, warn }) {
       ) : null}
 
       {/* ---------- Monat ---------- */}
-      {shows(cfg, "month") ? (
+      {shows(cfg, "month") && !compact ? (
         <div className="mon">
           <div className="mh">
             <div className="mt">
@@ -1894,16 +2243,30 @@ function view({ data, err, note, view: viewKey, mOff, warn }) {
 
       {/* ---------- Fuß ---------- */}
       <div className="ft">
-        <span className="hint">
-          {btDue && bt
-            ? `Licht aus ${hhmm(bt.bed)} — morgen klingelt es ${hhmm(bt.wake)}`
-            : freeAhead
-              ? `Nächster freier Tag: ${freeAhead.date.getDate()}.${freeAhead.date.getMonth() + 1}. ${freeAhead.label} (in ${freeAhead.days} Tagen)`
-              : "Shortcut halten → Zeile hebt sich hervor = klickbereit"}
-        </span>
+        {missed ? (
+          <span className="hint act" onClick={() => setView(missed.key)}
+                title="Öffnet den Tag zum Nachtragen">
+            {missed.days === 1 ? "Gestern" : `Vor ${missed.days} Tagen`} nichts
+            eingetragen — klicken zum Nachtragen
+          </span>
+        ) : (
+          <span className="hint">
+            {btDue && bt
+              ? `Licht aus ${hhmm(bt.bed)} — morgen klingelt es ${hhmm(bt.wake)}`
+              : freeAhead
+                ? `Nächster freier Tag: ${freeAhead.date.getDate()}.${freeAhead.date.getMonth() + 1}. ${freeAhead.label} (in ${freeAhead.days} Tagen)`
+                : "Shortcut halten → Zeile hebt sich hervor = klickbereit"}
+          </span>
+        )}
         <span className="acts">
+          {undoWhat ? (
+            <span className="bk undo" onClick={() => undo()}
+                  title={`Zurücknehmen: ${undoWhat}`}>↩ Rückgängig</span>
+          ) : null}
+          <span className="bk" onClick={() => openPath("config")}
+                title="~/.lernplan-config.json im Texteditor öffnen">Konfig</span>
           <span className="bk" onClick={() => exportCsv(scan, cfg)}
-                title="Monat als CSV in den Benutzerordner">CSV</span>
+                title={`${MONTHS[mRef.getMonth()]} als CSV in den Benutzerordner`}>CSV</span>
           <span className="bk" onClick={() => backup()}
                 title="Kopie nach ~/.lernplan-backups">Sicherung</span>
         </span>

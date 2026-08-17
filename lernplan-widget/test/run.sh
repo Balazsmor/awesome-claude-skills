@@ -20,3 +20,4 @@ npx --yes esbuild@0.23.1 lernplan.jsx \
   --outfile=test/.bundle.mjs >/dev/null
 
 node test/lernplan.test.mjs
+node test/shell.test.mjs

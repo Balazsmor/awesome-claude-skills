@@ -1,6 +1,8 @@
 {
   "_hinweis": [
-    "Diese Datei nach ~/.lernplan-config.json kopieren und anpassen.",
+    "Diese Datei nach ~/.lernplan-config.json kopieren und anpassen —",
+    "oder im Widget beim ersten Start auf 'Konfiguration anlegen' klicken,",
+    "das schreibt eine kleinere Startfassung mit denselben Schlüsseln.",
     "Alles, was hier steht, gewinnt gegen die Defaults im Widget — ein Update",
     "des Widgets löscht deine Einstellungen also nicht. Was du NICHT brauchst,",
     "löschst du einfach raus; dann greift die Voreinstellung.",
@@ -26,7 +28,9 @@
     "month": true,
     "timer": true,
     "notes": true,
-    "bedtime": true
+    "bedtime": true,
+    "topics": true,
+    "remind": true
   },
 
   "core": ["morgen", "anki", "lesen"],
@@ -35,6 +39,8 @@
   "sleepHours": 7.5,
   "overdueAfterMin": 60,
   "autoBackup": true,
+  "breakMin": 5,
+  "extendMin": 10,
 
   "durations": {
     "morg": 30,
