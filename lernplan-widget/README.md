@@ -1,4 +1,4 @@
-# Lernplan-Widget v7 · Übersicht
+# Lernplan-Widget v7.1 · Übersicht
 
 Ein Schreibtisch-Widget für [Übersicht](https://tracesof.net/uebersicht/), das den
 Wochenplan einer dualen Ausbildung anzeigt, abhakbar macht und auswertet. Es kennt
@@ -164,7 +164,7 @@ steht deshalb weiterhin oben in den `DEFAULTS`.
 sh test/run.sh
 ```
 
-Drei Durchgänge, zusammen 322 Zusicherungen, alle brauchen nur Node und
+Vier Durchgänge, zusammen 386 Zusicherungen, alle brauchen nur Node und
 einmalig esbuild über `npx`:
 
 * **Rechenlogik** — Osterformel und Feiertage, Ferien- und Wochenendlogik,
@@ -177,8 +177,37 @@ einmalig esbuild über `npx`:
   Anführungszeichen, Zeilenumbrüchen und `$(…)` im Text.
 * **iOS** — baut `mobile/Lernplan.js` in einer nachgebauten Scriptable-Umgebung
   wirklich auf und liest den fertigen Widget-Baum aus, für alle vier Größen.
+* **Kontrast & Klickflächen** — rechnet jede Farbe des Stylesheets gegen den
+  ungünstigsten Untergrund und prüft die Mindestgröße der Bedienelemente. Die
+  Werte werden aus `lernplan.jsx` gelesen, nicht im Test gepflegt: wer eine
+  Farbe ändert, merkt es hier.
+
+## Lesbarkeit und Klickflächen
+
+Das Widget hält WCAG 2.2 AA, soweit es für eine Schreibtischfläche sinnvoll ist:
+
+* **Text 4,5:1, Bedienelemente 3:1.** Der Haken dabei: die Karte ist
+  halbtransparent, der wirkliche Untergrund ist also dein Hintergrundbild.
+  Gerechnet wird deshalb gegen den ungünstigsten Fall — ein weißes Bild — und
+  gegen die aufgehellten Flächen darüber. Die Kartendeckkraft liegt bei 0,93,
+  damit die Spanne überhaupt beherrschbar bleibt.
+* **Klickflächen mindestens 24 × 24 px.** Das ist nicht nur Norm: Man trifft
+  diese Ziele mit gedrücktem Interaktions-Shortcut, und 14 px hohe Chips waren
+  dafür zu klein.
+* **„Bewegung reduzieren"** aus den Systemeinstellungen schaltet die
+  Überblendungen ab.
+
+Was bewusst fehlt: ARIA-Rollen, Tastaturbedienung und Fokusringe. Ein
+Übersicht-Widget liegt in der Schreibtischebene, bekommt keinen Tastaturfokus
+und wird von Bildschirmlesern nicht erreicht — dort Rollen hineinzuschreiben,
+sähe nach Barrierefreiheit aus, ohne welche zu sein.
 
 ## Änderungen
+
+**v7.1 — Lesbarkeit.** Kontrast und Klickflächen nach WCAG 2.2 AA, siehe oben.
+Alle Textfarben, die die Grenze rissen, haben eigene Textvarianten bekommen
+(`--deep-tx`, `--frei-tx`, `--sick-tx`, `--done-tx`); als Rahmen bleibt die
+kräftige Farbe. Neuer Testdurchgang, der das nachrechnet.
 
 **v7 — Bedienung.** `?`-Kurzhilfe, Kompaktmodus, Rückgängig für den letzten
 Klick, Einrichtungshilfe beim ersten Start, Wochenschwerpunkte, Pause und
