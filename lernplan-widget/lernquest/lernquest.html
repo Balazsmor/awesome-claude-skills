@@ -1,0 +1,2338 @@
+<title>Lernquest Berichtsheft</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+
+<style id="app-style">
+/* ===========================================================================
+   Lernquest · Berichtsheft
+   Blaupause + Stempel. Dunkel ist die Grundfassung, hell die Umkehrung.
+   Farben stehen ausschliesslich in Tokens, damit beide Fassungen stimmen.
+   =========================================================================== */
+
+:root {
+  --bg:#0E1621; --panel:#16202D; --panel-2:#1D2937; --sunk:#101A25;
+  --ink:#E9EFF6; --ink-2:#A9BACD; --ink-3:#8195AB;
+  --rule:rgba(233,239,246,0.11); --rule-2:rgba(233,239,246,0.06);
+  --amber:#FFB03A; --amber-soft:rgba(255,176,58,0.15);
+  --mint:#45D6A8; --mint-soft:rgba(69,214,168,0.15);
+  --coral:#FF6F5E; --coral-soft:rgba(255,111,94,0.14);
+  --blue:#5AA9E6; --blue-soft:rgba(90,169,230,0.14);
+  --heat-0:rgba(233,239,246,0.05);
+  --heat-1:#1F3F5E; --heat-2:#2C5C86; --heat-3:#3B7CB0; --heat-4:#5AA9E6;
+  --shadow:0 18px 40px rgba(0,0,0,0.34);
+  --grid:rgba(90,169,230,0.055);
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --bg:#E4EAF1; --panel:#F5F8FB; --panel-2:#E8EEF5; --sunk:#DDE5EE;
+    --ink:#111C29; --ink-2:#3C4F65; --ink-3:#52657C;
+    --rule:rgba(17,28,41,0.14); --rule-2:rgba(17,28,41,0.07);
+    --amber:#8F5B00; --amber-soft:rgba(143,91,0,0.13);
+    --mint:#0E6B50; --mint-soft:rgba(14,107,80,0.13);
+    --coral:#B93325; --coral-soft:rgba(185,51,37,0.12);
+    --blue:#215F92; --blue-soft:rgba(33,95,146,0.12);
+    --heat-0:rgba(17,28,41,0.06);
+    --heat-1:#B9CFE2; --heat-2:#8DB4D2; --heat-3:#5B90BC; --heat-4:#2E6FA3;
+    --shadow:0 14px 32px rgba(20,40,60,0.13);
+    --grid:rgba(33,95,146,0.07);
+  }
+}
+:root[data-theme="light"] {
+  --bg:#E4EAF1; --panel:#F5F8FB; --panel-2:#E8EEF5; --sunk:#DDE5EE;
+  --ink:#111C29; --ink-2:#3C4F65; --ink-3:#52657C;
+  --rule:rgba(17,28,41,0.14); --rule-2:rgba(17,28,41,0.07);
+  --amber:#8F5B00; --amber-soft:rgba(143,91,0,0.13);
+  --mint:#0E6B50; --mint-soft:rgba(14,107,80,0.13);
+  --coral:#B93325; --coral-soft:rgba(185,51,37,0.12);
+  --blue:#215F92; --blue-soft:rgba(33,95,146,0.12);
+  --heat-0:rgba(17,28,41,0.06);
+  --heat-1:#B9CFE2; --heat-2:#8DB4D2; --heat-3:#5B90BC; --heat-4:#2E6FA3;
+  --shadow:0 14px 32px rgba(20,40,60,0.13);
+  --grid:rgba(33,95,146,0.07);
+}
+
+* { box-sizing:border-box; }
+body {
+  margin:0;
+  background:var(--bg);
+  background-image:linear-gradient(var(--grid) 1px, transparent 1px),
+                   linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size:28px 28px;
+  color:var(--ink);
+  font-family:"IBM Plex Sans", -apple-system, "Segoe UI", sans-serif;
+  font-size:15px; line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap { max-width:1080px; margin:0 auto; padding:28px 20px 72px; }
+
+h1,h2,h3 { font-family:"Chakra Petch","IBM Plex Sans",sans-serif; margin:0;
+           text-wrap:balance; letter-spacing:-0.01em; }
+.mono { font-family:"IBM Plex Mono",ui-monospace,monospace;
+        font-variant-numeric:tabular-nums; }
+.eyebrow { font-family:"IBM Plex Mono",monospace; font-size:10.5px;
+           letter-spacing:0.18em; text-transform:uppercase; color:var(--ink-3); }
+
+/* ---- Kopf ---------------------------------------------------------------- */
+.top { display:flex; align-items:flex-end; justify-content:space-between;
+       gap:16px; flex-wrap:wrap; margin-bottom:22px; }
+.top h1 { font-size:clamp(26px,4vw,38px); font-weight:700; line-height:1.05; }
+.top .sub { color:var(--ink-2); font-size:13.5px; margin-top:4px; }
+.tools { display:flex; gap:8px; align-items:center; }
+button { font:inherit; color:inherit; cursor:pointer; }
+.btn { background:var(--panel); border:1px solid var(--rule); border-radius:9px;
+       padding:0 13px; min-height:38px; display:inline-flex; align-items:center;
+       gap:7px; font-size:13px; transition:background 120ms ease, border-color 120ms ease; }
+.btn:hover { background:var(--panel-2); border-color:var(--ink-3); }
+.btn:focus-visible { outline:2px solid var(--amber); outline-offset:2px; }
+.btn.ghost { background:transparent; }
+.btn.prim { border-color:var(--amber); color:var(--amber); background:var(--amber-soft); }
+.btn.prim:hover { border-color:var(--amber); background:var(--amber-soft); filter:brightness(1.12); }
+.btn.back { border-color:var(--amber); color:var(--amber); }
+
+/* ---- Karten -------------------------------------------------------------- */
+.card { background:var(--panel); border:1px solid var(--rule); border-radius:14px;
+        box-shadow:var(--shadow); padding:20px 22px; }
+.stack { display:flex; flex-direction:column; gap:18px; }
+.card h2 { font-size:17px; font-weight:600; }
+.card-head { display:flex; align-items:baseline; justify-content:space-between;
+             gap:12px; flex-wrap:wrap; margin-bottom:14px; }
+
+/* ---- Instrumentenleiste -------------------------------------------------- */
+.gauges { display:grid; grid-template-columns:repeat(auto-fit,minmax(212px,1fr));
+          gap:1px; background:var(--rule-2); border:1px solid var(--rule);
+          border-radius:14px; overflow:hidden; box-shadow:var(--shadow); }
+.gauge { background:var(--panel); padding:16px 18px; min-height:104px;
+         display:flex; flex-direction:column; gap:7px; }
+.gauge .val { font-family:"Chakra Petch",sans-serif; font-size:30px; font-weight:700;
+              line-height:1; font-variant-numeric:tabular-nums; }
+.gauge .val small { font-size:14px; font-weight:600; color:var(--ink-3);
+                    margin-left:3px; }
+.gauge .cap { font-size:12px; color:var(--ink-2); }
+.gauge.amber .val { color:var(--amber); }
+.gauge.mint .val { color:var(--mint); }
+.gauge.coral .val { color:var(--coral); }
+
+.bar { height:7px; border-radius:4px; background:var(--sunk); overflow:hidden;
+       border:1px solid var(--rule-2); }
+.bar > i { display:block; height:100%; border-radius:4px; background:var(--amber);
+           transition:width 420ms cubic-bezier(.22,.9,.3,1); }
+.bar.mint > i { background:var(--mint); }
+.bar.coral > i { background:var(--coral); }
+.bar.blue > i { background:var(--blue); }
+
+/* ---- Tagesquests --------------------------------------------------------- */
+.chip { display:inline-flex; align-items:center; gap:6px; min-height:26px;
+        padding:0 10px; border-radius:999px; font-size:11.5px; font-weight:500;
+        border:1px solid var(--rule); color:var(--ink-2); background:var(--panel-2); }
+.chip.hot { color:var(--coral); border-color:var(--coral); background:var(--coral-soft); }
+.chip.rest { color:var(--blue); border-color:var(--blue); background:var(--blue-soft); }
+.chip.free { color:var(--amber); border-color:var(--amber); background:var(--amber-soft); }
+
+.focus { display:flex; gap:11px; align-items:baseline; flex-wrap:wrap;
+         margin:14px 0 2px; padding:10px 13px; border-radius:10px;
+         background:var(--blue-soft); border:1px solid var(--rule);
+         font-size:12.5px; color:var(--ink-2); line-height:1.45; }
+.focus .eyebrow { color:var(--blue); flex:none; }
+
+.quests { list-style:none; margin:0; padding:0;
+          display:flex; flex-direction:column; }
+.quest { display:flex; align-items:center; gap:13px; padding:11px 12px;
+         border-bottom:1px dashed var(--rule-2); position:relative; }
+.quest:last-child { border-bottom:0; }
+.quest.fix { opacity:0.58; }
+.quest .time { width:52px; flex:none; font-size:12.5px; color:var(--ink-2); }
+.quest .body { flex:1; min-width:0; }
+.quest .nm { display:block; font-weight:500; line-height:1.3; }
+.quest .sb { display:block; font-size:12px; color:var(--ink-3); margin-top:2px; }
+/* Die ausführliche Anleitung — verschwindet, sobald der Block abgestempelt ist. */
+.quest .dtl { display:block; font-size:12px; color:var(--ink-2); margin-top:5px;
+              line-height:1.45; max-width:62ch; padding-left:9px;
+              border-left:2px solid var(--rule); }
+.quest .xp { flex:none; font-size:12.5px; color:var(--ink-3); width:64px;
+             text-align:right; }
+.quest.done .nm { color:var(--ink-3); text-decoration:line-through;
+                  text-decoration-thickness:1px; }
+.quest.done .xp { color:var(--mint); }
+.quest.kern .nm::after { content:"KERN"; font-family:"IBM Plex Mono",monospace;
+  font-size:9px; letter-spacing:0.12em; color:var(--amber); border:1px solid var(--amber);
+  border-radius:4px; padding:1px 4px; margin-left:8px; vertical-align:2px; }
+
+/* Stempelfeld statt Häkchen — das Berichtsheft wird abgestempelt */
+.stampbox { flex:none; width:30px; height:30px; border-radius:7px;
+            border:1.5px solid var(--rule); background:var(--sunk);
+            display:grid; place-items:center; padding:0; transition:
+            background 140ms ease, border-color 140ms ease, transform 140ms ease; }
+.stampbox svg { width:16px; height:16px; opacity:0; transform:scale(.6);
+                transition:opacity 140ms ease, transform 180ms cubic-bezier(.2,1.4,.4,1); }
+.quest.done .stampbox { background:var(--mint-soft); border-color:var(--mint); }
+.quest.done .stampbox svg { opacity:1; transform:scale(1); }
+.stampbox:hover { border-color:var(--ink-3); }
+.stampbox:focus-visible { outline:2px solid var(--amber); outline-offset:2px; }
+.stampbox[disabled] { cursor:default; opacity:.4; }
+
+/* Der Stempel selbst */
+.stamp { display:inline-flex; align-items:center; justify-content:center;
+         font-family:"Chakra Petch",sans-serif; font-weight:700; font-size:13px;
+         letter-spacing:0.16em; text-transform:uppercase; padding:7px 14px;
+         border:2.5px solid currentColor; border-radius:6px; transform:rotate(-4deg);
+         opacity:.92; }
+.stamp.saved { color:var(--amber); box-shadow:inset 0 0 0 1px var(--amber-soft); }
+.stamp.done  { color:var(--mint); box-shadow:inset 0 0 0 1px var(--mint-soft); }
+.stamp.rest  { color:var(--blue); }
+
+.float { position:absolute; right:74px; top:8px; font-family:"IBM Plex Mono",monospace;
+         font-size:13px; font-weight:600; color:var(--mint); pointer-events:none;
+         animation:rise 900ms ease-out forwards; }
+@keyframes rise { from { opacity:0; transform:translateY(6px); }
+                  30% { opacity:1; } to { opacity:0; transform:translateY(-16px); } }
+
+/* ---- Woche --------------------------------------------------------------- */
+.week { display:grid; grid-template-columns:repeat(7,1fr); gap:8px; }
+.day { background:var(--panel-2); border:1px solid var(--rule-2); border-radius:10px;
+       padding:10px 6px; text-align:center; min-height:96px; display:flex;
+       flex-direction:column; align-items:center; justify-content:flex-start; gap:5px;
+       width:100%; font:inherit; color:inherit; cursor:pointer;
+       transition:border-color 120ms ease, background 120ms ease; }
+.day:hover:not([disabled]) { border-color:var(--ink-3); background:var(--panel); }
+.day:focus-visible { outline:2px solid var(--amber); outline-offset:2px; }
+.day[disabled] { cursor:default; opacity:.4; }
+/* Ausgewählt ist der betrachtete Tag, nicht zwingend heute. */
+.day.sel { border-color:var(--amber); background:var(--amber-soft); }
+.day.sel .dt { color:var(--amber); }
+.day .qt { font-size:11px; color:var(--ink-3); }
+.day .wd { font-family:"IBM Plex Mono",monospace; font-size:10.5px;
+           letter-spacing:0.1em; color:var(--ink-3); }
+.day .dt { font-family:"Chakra Petch",sans-serif; font-weight:600; font-size:15px; }
+.day.today { border-color:var(--amber); box-shadow:0 0 0 1px var(--amber-soft); }
+.day.off { opacity:.55; }
+.day .seal { width:26px; height:26px; border-radius:50%; border:2px solid var(--rule);
+             display:grid; place-items:center; margin-top:auto; }
+.day .seal.on { border-color:var(--mint); background:var(--mint-soft); }
+.day .seal.part { border-color:var(--blue); }
+.day .seal svg { width:13px; height:13px; }
+
+/* ---- Attribute ----------------------------------------------------------- */
+.attrs { display:grid; grid-template-columns:repeat(auto-fill,minmax(228px,1fr)); gap:13px; }
+.attr { background:var(--panel-2); border:1px solid var(--rule-2); border-radius:11px;
+        padding:13px 14px; display:flex; flex-direction:column; gap:8px; }
+.attr .ah { display:flex; align-items:center; gap:9px; }
+.attr .ic { width:28px; height:28px; flex:none; border-radius:8px; display:grid;
+            place-items:center; border:1px solid var(--rule); color:var(--blue); }
+.attr .an { font-family:"Chakra Petch",sans-serif; font-weight:600; font-size:15px; }
+.attr .alv { margin-left:auto; font-size:15px; font-weight:600; color:var(--amber);
+             min-width:24px; text-align:right; }
+.attr .ad { font-size:12px; color:var(--ink-3); line-height:1.4; }
+.attr .ax { font-size:11px; color:var(--ink-3); }
+.attr .ax.next { margin-top:-4px; color:var(--ink-2); }
+.attr .agn { font-size:11.5px; color:var(--mint); }
+.attr .agn.warn { color:var(--coral); }
+.atag { display:inline-block; margin-top:4px; font-size:9.5px; letter-spacing:0.13em;
+        text-transform:uppercase; color:var(--blue); border:1px solid var(--rule);
+        border-radius:4px; padding:1px 6px; }
+
+/* ---- Noten ----------------------------------------------------------------
+   Eingabe, Liste, Schnitt je Fach, Prognose. Alles in einer Karte, damit der
+   Blick vom Eintragen bis zur Konsequenz nicht springen muss.               */
+.gform { display:grid; gap:10px; margin-bottom:4px;
+         grid-template-columns:repeat(auto-fit,minmax(128px,1fr)); align-items:end; }
+.gf { display:flex; flex-direction:column; gap:5px; min-width:0; }
+.gf > span { font-family:"IBM Plex Mono",monospace; font-size:10.5px;
+             letter-spacing:0.11em; text-transform:uppercase; color:var(--ink-3); }
+.gf input, .gf select { font:inherit; font-size:13.5px; width:100%; min-height:38px;
+             background:var(--sunk); color:var(--ink); border:1px solid var(--rule);
+             border-radius:9px; padding:0 10px; }
+.gf input:focus-visible, .gf select:focus-visible { outline:2px solid var(--amber); outline-offset:1px; }
+.gf.f-fach { grid-column:span 2; }
+.gf.f-was { grid-column:span 2; }
+@media (min-width:900px) {
+  .gform { grid-template-columns:1.6fr 2.2fr .8fr .8fr 1.2fr 1.3fr auto; }
+  .gf.f-fach, .gf.f-was { grid-column:auto; }
+}
+.f-b { justify-self:stretch; justify-content:center; min-height:38px; }
+.gtip { margin:4px 0 0; line-height:1.45; }
+
+.glist { list-style:none; margin:16px 0 0; padding:0; border-top:1px solid var(--rule-2); }
+.gitem { display:flex; align-items:center; gap:13px; padding:9px 2px;
+         border-bottom:1px solid var(--rule-2); }
+.gitem .gn { flex:none; width:44px; height:34px; border-radius:8px; display:grid;
+             place-items:center; font-size:15px; font-weight:600;
+             border:1px solid var(--rule); color:var(--ink-2); }
+.gitem.good .gn { color:var(--mint); border-color:var(--mint); background:var(--mint-soft); }
+.gitem.bad .gn  { color:var(--coral); border-color:var(--coral); background:var(--coral-soft); }
+.gitem .gb { flex:1; min-width:0; display:flex; flex-direction:column; gap:1px; }
+.gitem .gw { font-weight:500; line-height:1.3; }
+.gitem .gm { font-size:11.5px; color:var(--ink-3); }
+.gdel { flex:none; width:32px; height:32px; border-radius:8px; background:transparent;
+        border:1px solid var(--rule); color:var(--ink-3); display:grid; place-items:center; }
+.gdel:hover { color:var(--coral); border-color:var(--coral); }
+.gdel:focus-visible { outline:2px solid var(--amber); outline-offset:2px; }
+
+.gavg { display:grid; grid-template-columns:repeat(auto-fit,minmax(122px,1fr));
+        gap:9px; margin-top:16px; }
+.ga { background:var(--panel-2); border:1px solid var(--rule-2); border-radius:10px;
+      padding:10px 12px; display:flex; flex-direction:column; gap:2px; }
+.ga .gan { font-size:12.5px; font-weight:500; }
+.ga .gav { font-family:"Chakra Petch",sans-serif; font-size:21px; font-weight:700;
+           color:var(--ink-2); line-height:1.15; }
+.ga.good .gav { color:var(--mint); }
+.ga.bad .gav { color:var(--coral); }
+.ga.empty .gav { color:var(--ink-3); }
+.ga .gac { font-size:10.5px; color:var(--ink-3); }
+
+.prog { margin-top:18px; padding-top:16px; border-top:1px solid var(--rule); }
+.proghead { display:flex; align-items:center; justify-content:space-between;
+            gap:12px; flex-wrap:wrap; margin-bottom:11px; }
+.gziel { display:inline-flex; align-items:center; gap:8px; font-size:12.5px;
+         color:var(--ink-2); }
+.gziel input { font:inherit; font-family:"IBM Plex Mono",monospace; width:72px;
+               min-height:34px; text-align:center; background:var(--sunk);
+               color:var(--ink); border:1px solid var(--rule); border-radius:8px; }
+.gziel input:focus-visible { outline:2px solid var(--amber); outline-offset:1px; }
+.pgrid { display:grid; grid-template-columns:repeat(auto-fit,minmax(148px,1fr)); gap:10px; }
+.pt { background:var(--panel-2); border:1px solid var(--rule-2); border-radius:11px;
+      padding:12px 14px; display:flex; flex-direction:column; gap:3px; }
+.pt .pv { font-family:"Chakra Petch",sans-serif; font-size:26px; font-weight:700;
+          line-height:1.1; color:var(--amber); }
+.pt.good .pv { color:var(--mint); }
+.pt.bad .pv { color:var(--coral); }
+.pt .pc { font-size:11.5px; color:var(--ink-3); line-height:1.35; }
+
+.pbl { list-style:none; margin:13px 0 0; padding:0; }
+.pb { display:flex; align-items:center; gap:12px; padding:8px 2px;
+      border-bottom:1px solid var(--rule-2); }
+.pb:last-child { border-bottom:0; }
+.pb .pbn { flex:1; min-width:0; font-size:13.5px; }
+.pb .pbn em { display:block; font-style:normal; font-size:11.5px; color:var(--ink-3); }
+.pb .pbp { flex:none; width:52px; text-align:right; font-size:12.5px; color:var(--ink-3); }
+.pb .pbv { flex:none; width:60px; text-align:right; font-size:14px; color:var(--ink-3); }
+.pb.have .pbv { color:var(--amber); font-weight:600; }
+.pnote { margin:13px 0 0; font-size:13.5px; color:var(--ink); line-height:1.5;
+         padding:11px 13px; border-radius:10px; background:var(--amber-soft);
+         border:1px solid var(--rule); }
+.note.tiny { margin-top:10px; font-size:11.5px; line-height:1.45; }
+
+/* ---- Stufenprüfung ------------------------------------------------------- */
+.attr.ready { border-color:var(--amber); background:var(--amber-soft); }
+.exbtn { font:inherit; cursor:pointer; display:flex; align-items:center; justify-content:center;
+         gap:7px; width:100%; min-height:34px; border-radius:8px; font-size:12.5px;
+         font-weight:600; color:var(--amber); background:transparent;
+         border:1px solid var(--amber); }
+.exbtn:hover { background:rgba(255,176,58,0.18); }
+.exbtn:focus-visible { outline:2px solid var(--amber); outline-offset:2px; }
+
+#examDlg { border:1px solid var(--rule); border-radius:16px; background:var(--panel);
+           color:var(--ink); padding:0; max-width:620px; width:calc(100% - 32px);
+           box-shadow:0 30px 70px rgba(0,0,0,0.45); position:relative; }
+#examDlg::backdrop { background:rgba(8,12,18,0.62); backdrop-filter:blur(2px); }
+#examBody { padding:24px 26px 22px; }
+.exx { position:absolute; top:10px; right:10px; width:32px; height:32px; border-radius:8px;
+       border:1px solid var(--rule); background:transparent; color:var(--ink-3);
+       font:inherit; font-size:13px; cursor:pointer; }
+.exx:hover { background:var(--panel-2); color:var(--ink); }
+.exhead { display:flex; align-items:baseline; justify-content:space-between; gap:12px;
+          padding-right:34px; margin-bottom:14px; }
+.expro { font-size:12px; color:var(--ink-3); }
+.exq { font-family:"Chakra Petch",sans-serif; font-size:19px; font-weight:600;
+       line-height:1.35; margin-bottom:16px; }
+.exopts { display:flex; flex-direction:column; gap:8px; }
+.exopt { font:inherit; text-align:left; cursor:pointer; padding:12px 14px; border-radius:10px;
+         border:1px solid var(--rule); background:var(--panel-2); color:var(--ink);
+         font-size:14.5px; line-height:1.4; }
+.exopt:hover:not([disabled]) { border-color:var(--ink-3); background:var(--sunk); }
+.exopt:focus-visible { outline:2px solid var(--amber); outline-offset:2px; }
+.exopt.right { border-color:var(--mint); background:var(--mint-soft); color:var(--ink); }
+.exopt.wrong { border-color:var(--deep); background:rgba(240,111,94,0.14); }
+.exopt.dim { opacity:.5; }
+.exnum { display:flex; gap:9px; align-items:center; flex-wrap:wrap; }
+.exnum input { font:inherit; font-family:"IBM Plex Mono",monospace; font-size:17px;
+               padding:10px 13px; border-radius:10px; border:1px solid var(--rule);
+               background:var(--sunk); color:var(--ink); width:170px; }
+.exnum .unit { color:var(--ink-3); font-size:14px; }
+.exwhy { margin-top:15px; padding:12px 14px; border-radius:10px; font-size:14px;
+         line-height:1.5; background:var(--panel-2); border-left:3px solid var(--ink-3); }
+.exwhy.ok { border-left-color:var(--mint); }
+.exwhy.no { border-left-color:var(--deep); }
+.exwhy b { color:var(--ink); }
+.exbtns { display:flex; gap:9px; margin-top:16px; }
+.exbtns .btn, .exres .btn, .exnum .btn { font:inherit; cursor:pointer; min-height:38px; padding:0 16px;
+       border-radius:9px; border:1px solid var(--amber); background:var(--amber);
+       color:#1a1408; font-weight:600; font-size:13.5px; display:inline-flex;
+       align-items:center; }
+.exbtns .btn.ghost, .exres .btn.ghost, .exnum .btn.ghost { background:transparent; color:var(--ink-2);
+       border-color:var(--rule); }
+.exnote { margin:16px 0 0; font-size:11.5px; color:var(--ink-3); line-height:1.45; }
+.exres { text-align:center; padding:8px 0 4px; }
+.exres .big { font-family:"Chakra Petch",sans-serif; font-size:44px; font-weight:700;
+              line-height:1; margin-bottom:8px; }
+.exres.ok .big { color:var(--mint); }
+.exres.no .big { color:var(--deep); }
+.exres h3 { font-size:19px; font-weight:600; margin-bottom:8px; }
+.exres p { font-size:14px; color:var(--ink-2); margin:0 auto; max-width:44ch; line-height:1.5; }
+.exres .exbtns { justify-content:center; }
+.mon .mt a, .card-head a { color:inherit; text-decoration:none; border-bottom:1px solid var(--rule); }
+.card-head a:hover { border-color:currentColor; }
+
+/* ---- Karriereplan -------------------------------------------------------- */
+.phases { list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:2px; }
+.phase { position:relative; padding:14px 0 16px 46px; border-bottom:1px solid var(--rule-2); }
+.phase:last-child { border-bottom:0; }
+.phase::before { content:""; position:absolute; left:15px; top:34px; bottom:0; width:1px;
+                 background:var(--rule); }
+.phase:last-child::before { display:none; }
+.ph-head { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.ph-no { position:absolute; left:0; top:12px; width:31px; height:31px; border-radius:50%;
+         border:1px solid var(--rule); display:grid; place-items:center; font-size:12px;
+         color:var(--ink-3); background:var(--panel); }
+.phase.open .ph-no { border-color:var(--amber); color:var(--amber); }
+.ph-nm { font-family:"Chakra Petch",sans-serif; font-weight:600; font-size:16px; }
+.phase:not(.open) .ph-nm { color:var(--ink-2); }
+.ph-tag { display:inline-flex; align-items:center; gap:5px; font-size:10px;
+          letter-spacing:0.12em; text-transform:uppercase; color:var(--ink-3);
+          border:1px solid var(--rule); border-radius:999px; padding:2px 9px; }
+.ph-tag.on { color:var(--amber); border-color:var(--amber); background:var(--amber-soft); }
+.ph-why { font-size:13px; color:var(--ink-2); margin-top:4px; }
+.ph-tasks { margin:9px 0 0; padding:0 0 0 17px; font-size:13.5px; color:var(--ink);
+            display:flex; flex-direction:column; gap:4px; }
+.ph-tasks li::marker { color:var(--amber); }
+.ph-need { margin-top:9px; display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+.ph-need .eyebrow { width:100%; }
+.req { font-size:12.5px; background:var(--sunk); border:1px solid var(--rule-2);
+       border-radius:8px; padding:5px 10px; }
+.req em { font-style:normal; color:var(--ink-3); font-size:11px; margin-left:5px; }
+
+/* ---- Abzeichen ----------------------------------------------------------- */
+.badges { display:grid; grid-template-columns:repeat(auto-fill,minmax(184px,1fr));
+          gap:12px; }
+.badge { background:var(--panel-2); border:1px solid var(--rule-2); border-radius:11px;
+         padding:13px 14px; display:flex; flex-direction:column; gap:8px; }
+.badge.got { border-color:var(--amber); background:var(--amber-soft); }
+.badge .bh { display:flex; align-items:center; gap:9px; }
+.badge .ic { width:30px; height:30px; flex:none; border-radius:8px; display:grid;
+             place-items:center; border:1px solid var(--rule); color:var(--ink-3); }
+.badge.got .ic { color:var(--amber); border-color:var(--amber); }
+.badge .bn { font-family:"Chakra Petch",sans-serif; font-weight:600; font-size:14px; }
+.badge .bd { font-size:12px; color:var(--ink-3); line-height:1.4; }
+.badge .bp { font-size:11px; color:var(--ink-3); }
+
+/* ---- Monat --------------------------------------------------------------- */
+.monthwrap { overflow-x:auto; }
+.monthrow { display:flex; gap:28px; align-items:flex-start; flex-wrap:wrap; }
+.mstats { display:grid; grid-template-columns:repeat(2,minmax(110px,150px)); gap:14px 24px;
+          margin:0; min-width:240px; align-content:start; }
+.mstats div { border-left:2px solid var(--rule); padding-left:11px; }
+.mstats dt { font-family:"IBM Plex Mono",monospace; font-size:10.5px; letter-spacing:0.14em;
+             text-transform:uppercase; color:var(--ink-3); }
+.mstats dd { margin:2px 0 0; font-family:"Chakra Petch",sans-serif; font-weight:600;
+             font-size:20px; }
+.month { display:grid; grid-template-columns:repeat(7,34px); gap:5px;
+         width:max-content; }
+.month .lbl { font-family:"IBM Plex Mono",monospace; font-size:10px; text-align:center;
+              color:var(--ink-3); }
+.cell { width:34px; height:34px; border-radius:6px; background:var(--heat-0);
+        display:grid; place-items:center; font-size:11px; color:var(--ink-3);
+        font-family:"IBM Plex Mono",monospace; }
+.cell.s1 { background:var(--heat-1); } .cell.s2 { background:var(--heat-2); }
+.cell.s3 { background:var(--heat-3); color:#0E1621; }
+.cell.s4 { background:var(--heat-4); color:#0E1621; }
+.cell.today { box-shadow:0 0 0 2px var(--amber); }
+.cell.skip { background:repeating-linear-gradient(45deg, transparent 0 4px,
+             var(--rule) 4px 5px); }
+.cell.blank { background:transparent; }
+.legend { display:flex; align-items:center; gap:6px; margin-top:12px;
+          font-size:11px; color:var(--ink-3); flex-wrap:wrap; }
+.legend i { width:12px; height:12px; border-radius:3px; display:inline-block; }
+.legend i.cell { width:12px; height:12px; }
+
+/* ---- Daten --------------------------------------------------------------- */
+textarea { width:100%; min-height:110px; background:var(--sunk); color:var(--ink);
+           border:1px solid var(--rule); border-radius:10px; padding:11px 12px;
+           font-family:"IBM Plex Mono",monospace; font-size:12px; resize:vertical; }
+textarea:focus-visible { outline:2px solid var(--amber); outline-offset:1px; }
+.row { display:flex; gap:9px; flex-wrap:wrap; align-items:center; }
+.note { font-size:12.5px; color:var(--ink-3); }
+.ok { color:var(--mint); } .bad { color:var(--coral); }
+
+footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
+         font-size:12px; color:var(--ink-3); display:flex; gap:12px;
+         justify-content:space-between; flex-wrap:wrap; }
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration:.001ms !important; transition-duration:.001ms !important; }
+}
+@media (max-width:640px) {
+  .week { grid-template-columns:repeat(4,1fr); }
+  .quest .xp { display:none; }
+  .wrap { padding:18px 14px 56px; }
+  .gform { grid-template-columns:1fr 1fr; }
+  .gf.f-fach, .gf.f-was, .f-b { grid-column:1 / -1; }
+  .quest .dtl { padding-left:0; border-left:0; }
+}
+</style>
+
+<div class="wrap" id="root">
+  <noscript><p>Diese Seite braucht JavaScript — sie rechnet Ferien, Feiertage und Punkte selbst aus.</p></noscript>
+</div>
+
+<dialog id="examDlg" aria-label="Stufenprüfung">
+  <div id="examBody"></div>
+  <button class="exx" data-act="examClose" type="button" aria-label="Prüfung schließen">✕</button>
+</dialog>
+
+<script type="application/json" id="state">{"v":4,"d":{},"f":{"2026-08-26":"frei","2026-08-27":"frei","2026-08-25":"frei"},"n":{},"w":{},"q":{},"updatedAt":1787827229986}</script>
+
+<script id="app">
+/* ===========================================================================
+   Lernquest · Berichtsheft
+   Dieselbe Rechnung wie das Mac-Widget: Baden-Württembergs Feiertage aus der
+   Osterformel, Schulferien aus der Liste, Ferienpläne statt Schulpläne.
+   Der Zustand hat dasselbe Format wie ~/.lernplan-widget.json, damit sich
+   beide Seiten gegenseitig einlesen können.
+   =========================================================================== */
+(function () {
+  "use strict";
+
+  var FONTS = "https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700" +
+              "&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap";
+  var LS_KEY = "lernquest.state.v4";
+
+  /* ---- Plan ------------------------------------------------------------- */
+  var PLAN = {
+    core: ["morgen", "anki", "lesen"],
+    weeklyGoalMin: 900,
+    durations: { morg: 30, anki: 15, deep: 60, wdh: 45, lese: 45, frei: 0, fix: 0 },
+    /*  Keine Verkürzung — so entschieden im Karriereplan. Der frühere Eintrag
+        "IHK Teil 1 (falls verkürzt), 01.10.2026" war damit hinfällig.        */
+    exams: [
+      { date: "2027-02-25", label: "IHK Teil 1" },
+      { date: "2028-04-25", label: "IHK Teil 2" }
+    ],
+    vacations: [
+      ["2025-07-31", "2025-09-13", "Sommerferien"],
+      ["2025-10-27", "2025-10-30", "Herbstferien"],
+      ["2025-12-22", "2026-01-05", "Weihnachtsferien"],
+      ["2026-03-30", "2026-04-11", "Osterferien"],
+      ["2026-05-26", "2026-06-05", "Pfingstferien"],
+      ["2026-07-30", "2026-09-12", "Sommerferien"],
+      ["2026-10-26", "2026-10-30", "Herbstferien"],
+      ["2026-12-23", "2027-01-09", "Weihnachtsferien"],
+      ["2027-03-30", "2027-04-03", "Osterferien"],
+      ["2027-05-18", "2027-05-29", "Pfingstferien"]
+    ],
+    /*  Bis zur Teil-1-Prüfung zielt jede Aufgabe auf deren Stoff. Der Hinweis
+        verschwindet von allein, sobald das Datum durch ist.                  */
+    focusBis: "2027-02-25",
+    focus: "Bis Teil 1 zählt: Buchführung nach HGB, Beschaffung, Lagerkennzahlen, " +
+           "Leistungserstellung. Noch keine KLR, keine Investitionsrechnung.",
+    days: {
+      mo: { label: "Montag", tag: "Schultag", hot: true, note: "Dein bester Lerntag · gehört Deutsch", blocks: [
+        { id: "morgen", t: "5:30", nm: "Morgenroutine", kind: "morg", track: true,
+          sub: "30′ · Wasser, 10′ Bewegung, Tagesziel aufschreiben",
+          det: "Ein Satz ins Heft: was heute Abend erledigt sein muss. Handy bleibt bis nach dem Frühstück aus." },
+        { id: "schule", t: "7:45", nm: "Schule", kind: "fix",
+          sub: "bis 14:45 · Mitschrift mit Rand für offene Fragen" },
+        { id: "anki", t: "15:20", nm: "Anki 15′ · Schulstoff", kind: "anki", track: true,
+          sub: "Fälliges leeren, dann 10 neue Karten aus dem Vormittag",
+          det: "Fachbegriff auf die Vorderseite, Definition auf die Rückseite. Eine Frage, eine Antwort — keine Listen, keine ganzen Absätze." },
+        { id: "deutsch", t: "16:00", nm: "Deutsch · Erörterung", kind: "deep", track: true,
+          sub: "Fokus 90′ · unter Zeit schreiben, danach Fehlerprotokoll",
+          det: "10′ Gliederung, 60′ schreiben ohne Nachschlagen, 20′ selbst korrigieren. Kommasetzung, Satzbau und Argumentkette getrennt zählen und in die Fehlerliste eintragen." },
+        { id: "lesen", t: "18:00", nm: "Lesen 45′", kind: "lese", track: true,
+          sub: "Sachbuch oder Wirtschaftsteil · danach 3 Sätze aus dem Kopf",
+          det: "Worum ging es, was war neu, wo hakt es. Das Aufschreiben ist die Wiederholung — ohne das bleibt vom Lesen wenig übrig." },
+        { id: "nachber", t: "19:30", nm: "Nachbereiten 30′", kind: "wdh", track: true, min: 30,
+          sub: "Mitschrift ordnen → 10 weitere Anki-Karten",
+          det: "Lücken schliessen, Fachbegriffe unterstreichen. Was du nicht in einem Satz erklären kannst, kommt auf die Fragenliste für die nächste Stunde." },
+        { id: "frei", t: "20:00", nm: "Frei", kind: "frei" }
+      ]},
+      di: { label: "Dienstag", tag: "Betrieb", note: "Abends nur leicht wiederholen", blocks: [
+        { id: "morgen", t: "5:30", nm: "Morgenroutine", kind: "morg", track: true, min: 20,
+          sub: "20′ Kurzversion · Wasser, anziehen, Tagesziel",
+          det: "Kurz halten. Das Tagesziel steht in einem Satz auf dem Zettel im Rucksack." },
+        { id: "betrieb", t: "7:00", nm: "Betrieb", kind: "fix",
+          sub: "bis 16:00 · eine Sache fürs Berichtsheft merken" },
+        { id: "anki", t: "17:00", nm: "Anki 15′ · WiSo + BWL", kind: "anki", track: true,
+          sub: "20 Karten WiSo und 10 BWL, in einem Durchgang",
+          det: "Beide Stapel zusammen abfragen, nicht nacheinander. Gemischt abgefragt bleibt mehr hängen als blockweise." },
+        { id: "wdh", t: "17:15", nm: "Wiederholen 45′ · WiSo/BWL", kind: "wdh", track: true,
+          sub: "10 gemischte Aufgaben · keine zwei aus demselben Thema",
+          det: "Je eine aus Beschaffung, Lagerkennzahlen, Kaufvertrag, Sozialversicherung, Mitbestimmung und Buchungssätzen. Erst rechnen, dann die Lösung ansehen — nie umgekehrt." },
+        { id: "lesen", t: "18:00", nm: "Lesen 45′", kind: "lese", track: true,
+          sub: "Sachbuch · danach 3 Sätze aus dem Kopf" },
+        { id: "frei", t: "ab 19", nm: "Frei", kind: "frei" }
+      ]},
+      mi: { label: "Mittwoch", tag: "Schule + Betrieb", note: "Zeiten an den Stundenplan anpassen", blocks: [
+        { id: "morgen", t: "5:30", nm: "Morgenroutine", kind: "morg", track: true, min: 20,
+          sub: "20′ Kurzversion · Wasser, anziehen, Tagesziel" },
+        { id: "schule", t: "7:45", nm: "Berufsschule", kind: "fix", sub: "bis ca. 11:10" },
+        { id: "betrieb", t: "11:45", nm: "Betrieb", kind: "fix", sub: "bis 16:00" },
+        { id: "anki", t: "17:00", nm: "Anki 15′ · Business English", kind: "anki", track: true,
+          sub: "25 Vokabeln · Handelskorrespondenz, Zahlen, Datumsformate",
+          det: "Vokabeln immer im Satz lernen, nie einzeln: to place an order, terms of payment, subject to change. Zahlen und Daten laut mitsprechen." },
+        { id: "englisch", t: "17:15", nm: "Englisch 45′", kind: "wdh", track: true,
+          sub: "15′ Vokabeln, 30′ eine Handelskorrespondenz schreiben",
+          det: "Jede Woche eine andere Sorte: Anfrage, Angebot, Bestellung, Mängelrüge, Mahnung. Danach mit einer Musterlösung vergleichen und die Wendungen auf Karten legen." },
+        { id: "lesen", t: "18:00", nm: "Lesen 45′", kind: "lese", track: true, sub: "Sachbuch oder Wirtschaftsteil · danach 3 Sätze aus dem Kopf" },
+        { id: "frei", t: "ab 19", nm: "Frei", kind: "frei" }
+      ]},
+      do: { label: "Donnerstag", tag: "Betrieb", rest: true, note: "Lern-Off-Tag · bewusst", blocks: [
+        { id: "morgen", t: "5:30", nm: "Morgenroutine", kind: "morg", track: true, min: 20,
+          sub: "20′ Kurzversion" },
+        { id: "betrieb", t: "7:00", nm: "Betrieb", kind: "fix", sub: "bis 16:00" },
+        { id: "anki", t: "16:40", nm: "Anki 10′ · nur Fälliges", kind: "anki", track: true,
+          sub: "Keine neuen Karten — nur die Kette halten",
+          det: "Wecker auf 10 Minuten. Was danach noch im Stapel liegt, bleibt liegen; morgen ist auch ein Tag." },
+        { id: "frei", t: "17:00", nm: "Freundin & Erholung", kind: "frei",
+          sub: "geschützt · kein Lernstoff, kein schlechtes Gewissen" },
+        { id: "lesen", t: "opt.", nm: "Lesen, wenn es reinpasst", kind: "lese", track: true, opt: true,
+          sub: "kein Muss · etwas Leichtes",
+          det: "Roman, Magazin, Podcast — heute nichts Fachliches. Der Kopf sortiert im Hintergrund weiter, das gehört zum Plan und ist keine Lücke." }
+      ]},
+      fr: { label: "Freitag", tag: "Betrieb", note: "Woche abschließen", blocks: [
+        { id: "morgen", t: "5:30", nm: "Morgenroutine", kind: "morg", track: true, min: 20,
+          sub: "20′ Kurzversion" },
+        { id: "betrieb", t: "7:00", nm: "Betrieb", kind: "fix", sub: "bis 16:00" },
+        { id: "anki", t: "17:00", nm: "Anki 15′ · Wochendurchlauf", kind: "anki", track: true,
+          sub: "Nur Fälliges — nichts Neues anlegen",
+          det: "Freitag ist Aufräumtag: Karten, die dreimal hintereinander falsch waren, werden umgeschrieben statt weiter durchgewinkt." },
+        { id: "review", t: "17:15", nm: "Wochen-Review 15′", kind: "wdh", track: true,
+          sub: "Was lief, was nicht · 2 Schwerpunkte fürs Wochenende",
+          det: "Material für Samstag und Sonntag rauslegen: Buch, Aufgabenblatt, Stift. Am Samstag wird nicht mehr gesucht." },
+        { id: "lesen", t: "18:00", nm: "Lesen 45′", kind: "lese", track: true, sub: "Sachbuch oder Wirtschaftsteil · danach 3 Sätze aus dem Kopf" },
+        { id: "frei", t: "ab 19", nm: "Frei · Woche geschafft", kind: "frei" }
+      ]},
+      sa: { label: "Samstag", tag: "Pizzeria ab 16:50", hot: true, note: "Deep-Work-Vormittag · Rechnen", blocks: [
+        { id: "morgen", t: "7:00", nm: "Morgenroutine", kind: "morg", track: true,
+          sub: "später · Schlaf schützen" },
+        { id: "anki", t: "8:45", nm: "Anki 15′ · Buchführung", kind: "anki", track: true,
+          sub: "20 Karten Buchungssätze und Kontenrahmen",
+          det: "Vorderseite der Geschäftsfall, Rückseite Soll an Haben mit den Kontennummern aus dem IKR. Beträge weglassen — geprüft wird das Konto, nicht das Rechnen." },
+        { id: "deepA", t: "9:00", nm: "Deutsch intensiv", kind: "deep", track: true,
+          sub: "Deep A 60′ · Fehlerprotokoll lesen, dann 1 Text",
+          det: "Erst die Fehlerliste der Woche durchgehen, dann einen Text schreiben, in dem genau diese Fehler nicht vorkommen dürfen." },
+        { id: "deepB", t: "10:15", nm: "Aufgaben-Mix · Teil 1", kind: "deep", track: true,
+          sub: "Deep B 60′ · Buchführung, Beschaffung, Lagerkennzahlen",
+          det: "Nach jeder Aufgabe das Thema wechseln: Buchungssatz, Angebotsvergleich, Meldebestand, Umschlagshäufigkeit. KLR und Investitionsrechnung erst nach Teil 1." },
+        { id: "lesen", t: "12:30", nm: "Lesen 45′", kind: "lese", track: true, sub: "Sachbuch oder Wirtschaftsteil · danach 3 Sätze aus dem Kopf" },
+        { id: "frei", t: "13:15", nm: "Frei", kind: "frei", sub: "bis zur Schicht" },
+        { id: "pizza", t: "16:50", nm: "Pizzeria", kind: "fix", sub: "bis 21:00" }
+      ]},
+      so: { label: "Sonntag", tag: "Pizzeria ab 16:50", hot: true, note: "Deep Work + Planung", blocks: [
+        { id: "morgen", t: "7:00", nm: "Morgenroutine", kind: "morg", track: true,
+          sub: "später · Schlaf schützen" },
+        { id: "anki", t: "8:45", nm: "Anki 15′ · Business English", kind: "anki", track: true,
+          sub: "20 Vokabelkarten · laut mitsprechen",
+          det: "Laut lesen zählt. Was du nicht aussprechen kannst, sagst du im Fachgespräch auch nicht." },
+        { id: "deepA", t: "9:00", nm: "Englisch intensiv", kind: "deep", track: true,
+          sub: "Deep A 60′ · 20′ lesen, 20′ hören, 20′ schreiben",
+          det: "Wirtschaftstext auf Englisch, dann ein Video ohne Untertitel, dann schriftlich zusammenfassen — in eigenen Worten, nicht abschreiben." },
+        { id: "deepB", t: "10:15", nm: "Feynman: laut erklären", kind: "deep", track: true,
+          sub: "Deep B 60′ · ein Thema frei erklären · trainiert das Fachgespräch",
+          det: "Ohne Unterlagen erklären und dabei aufnehmen. Wo du stockst, ist die Lücke: nachlesen und dasselbe Thema noch einmal erklären." },
+        { id: "wplan", t: "11:30", nm: "Wochenplanung 30′", kind: "wdh", track: true,
+          sub: "Klassenarbeiten eintragen · 2 Schwerpunkte festlegen",
+          det: "Termine und Abgaben in den Kalender, dann rückwärts planen. Zwei Schwerpunkte für die Woche, nicht fünf." },
+        { id: "lesen", t: "12:00", nm: "Lesen 45′", kind: "lese", track: true, sub: "Sachbuch oder Wirtschaftsteil · danach 3 Sätze aus dem Kopf" },
+        { id: "pizza", t: "16:50", nm: "Pizzeria", kind: "fix", sub: "bis 21:00" }
+      ]}
+    },
+    vacationDays: {
+      mo: { label: "Montag", tag: "Ferien · Betrieb", hot: true, note: "Keine Schule — Deutschblock am Abend", blocks: [
+        { id: "morgen", t: "5:30", nm: "Morgenroutine", kind: "morg", track: true, min: 20,
+          sub: "20′ Kurzversion · Tagesziel aufschreiben" },
+        { id: "betrieb", t: "7:00", nm: "Betrieb", kind: "fix", sub: "bis 16:00" },
+        { id: "anki", t: "17:00", nm: "Anki 15′ · Teil-1-Stoff", kind: "anki", track: true,
+          sub: "20 Karten aus dem letzten Schulblock",
+          det: "In den Ferien kommt kein neuer Stoff nach — die Karten kommen aus dem Heft der letzten Wochen." },
+        { id: "deutsch", t: "17:15", nm: "Deutsch · Erörterung", kind: "deep", track: true,
+          sub: "Fokus 60′ · Ferienversion, danach Fehlerprotokoll",
+          det: "Kürzer als montags, aber gleicher Ablauf: Gliederung, schreiben, selbst korrigieren." },
+        { id: "lesen", t: "18:30", nm: "Lesen 45′", kind: "lese", track: true, sub: "Sachbuch oder Wirtschaftsteil · danach 3 Sätze aus dem Kopf" },
+        { id: "frei", t: "ab 19:30", nm: "Frei", kind: "frei" }
+      ]},
+      mi: { label: "Mittwoch", tag: "Ferien · Betrieb", note: "Keine Berufsschule — Englisch am Abend", blocks: [
+        { id: "morgen", t: "5:30", nm: "Morgenroutine", kind: "morg", track: true, min: 20,
+          sub: "20′ Kurzversion" },
+        { id: "betrieb", t: "7:00", nm: "Betrieb", kind: "fix", sub: "bis 16:00" },
+        { id: "anki", t: "17:00", nm: "Anki 15′ · Business English", kind: "anki", track: true,
+          sub: "25 Vokabeln · Handelskorrespondenz" },
+        { id: "englisch", t: "17:15", nm: "Englisch 45′", kind: "wdh", track: true,
+          sub: "15′ Vokabeln, 30′ eine Handelskorrespondenz schreiben" },
+        { id: "lesen", t: "18:00", nm: "Lesen 45′", kind: "lese", track: true, sub: "Sachbuch oder Wirtschaftsteil · danach 3 Sätze aus dem Kopf" },
+        { id: "frei", t: "ab 19", nm: "Frei", kind: "frei" }
+      ]}
+    },
+    freeDay: { label: "", tag: "Frei", rest: true, note: "Zählt nicht — Erholung ist eingeplant", blocks: [
+      { id: "morgen", t: "8:00", nm: "Morgenroutine", sub: "in Ruhe · ohne Wecker", kind: "morg", track: true,
+        det: "Wasser, Bewegung, ein Satz zum Tag. Mehr braucht es heute nicht — die Gewohnheit hält auch im Leerlauf." },
+      { id: "anki", t: "10:00", nm: "Anki 15′ · nur Fälliges", sub: "hält die Kette am Laufen", kind: "anki", track: true,
+        det: "Keine neuen Karten anlegen. Fünfzehn Minuten, dann ist der Tag wieder frei." },
+      { id: "lesen", t: "opt.", nm: "Lesen 45′", kind: "lese", track: true,
+        sub: "wenn Lust da ist · nichts Fachliches nötig" },
+      { id: "frei", t: "—", nm: "Erholung", sub: "kein schlechtes Gewissen", kind: "frei" }
+    ]}
+  };
+
+  var RANKS = [
+    { xp: 0, name: "Neuling" }, { xp: 600, name: "Azubi" },
+    { xp: 1500, name: "Lernender" }, { xp: 3000, name: "Routinier" },
+    { xp: 5200, name: "Fortgeschritten" }, { xp: 8000, name: "Fachkraft" },
+    { xp: 11500, name: "Prüfungsnah" }, { xp: 16000, name: "Prüfungsreif" },
+    { xp: 21500, name: "Sicher im Stoff" }, { xp: 28000, name: "Kaufmann in spe" },
+    { xp: 36000, name: "Meisterklasse" }, { xp: 46000, name: "Vorbild" }
+  ];
+
+  /* ---- Attribute ---------------------------------------------------------
+     Fünf Prüfungsfächer und drei Grundwerte. Jeder Block zahlt auf ein oder
+     zwei davon ein; bei zweien wird geteilt.                                */
+  var ATTRS = [
+    { id: "bwl", nm: "BWL", de: "Betriebswirtschaft, Fachgespräch", icon: "chart" },
+    { id: "suk", nm: "SUK", de: "Steuerung und Kontrolle · ReWe, KLR", icon: "scale" },
+    { id: "wiso", nm: "WiSo", de: "Wirtschafts- und Sozialkunde", icon: "flag" },
+    { id: "deutsch", nm: "Deutsch", de: "Erörterung, Schreiben unter Zeit", icon: "pen" },
+    { id: "englisch", nm: "Englisch", de: "Business English, Vokabeln", icon: "globe" },
+    { id: "disziplin", nm: "Disziplin", de: "Morgenroutine, Planung, Review", icon: "sun" },
+    { id: "gedaechtnis", nm: "Gedächtnis", de: "Anki, Nachbereiten", icon: "cards" },
+    { id: "allgemein", nm: "Allgemeinbildung", de: "Lesen", icon: "book" }
+  ];
+  var ATTR_BY = {};
+  ATTRS.forEach(function (a) { ATTR_BY[a.id] = a; });
+
+  /*  Welcher Block zahlt auf welches Attribut ein. Zuerst wird "tag:id"
+      gesucht — derselbe Block heisst samstags Deutsch und sonntags Englisch —,
+      danach die reine Block-ID.                                             */
+  var ATTR_OF = {
+    "mo:deutsch": ["deutsch"], "mo:nachber": ["gedaechtnis"],
+    "di:wdh": ["wiso", "bwl"], "mi:englisch": ["englisch"],
+    "fr:review": ["disziplin"],
+    "sa:deepA": ["deutsch"], "sa:deepB": ["suk"],
+    "so:deepA": ["englisch"], "so:deepB": ["bwl"], "so:wplan": ["disziplin"],
+    "morgen": ["disziplin"], "anki": ["gedaechtnis"],
+    "lesen": ["allgemein", "deutsch"], "deutsch": ["deutsch"],
+    "englisch": ["englisch"], "wdh": ["wiso", "bwl"], "review": ["disziplin"]
+  };
+  function attrsOf(dk, b) { return ATTR_OF[dk + ":" + b.id] || ATTR_OF[b.id] || []; }
+
+  /*  Gewichtung: Punkte je Minute. Deep Work zählt am meisten, Lesen am
+      wenigsten — gleiche Zeit ist nicht gleich viel wert.                   */
+  var WEIGHT = { deep: 1.6, anki: 1.2, wdh: 1.0, morg: 0.8, lese: 0.7, frei: 0, fix: 0 };
+
+  var ATTR_LV = [0, 120, 320, 640, 1100, 1700, 2500, 3500, 4800, 6400, 8400];
+
+  /*  Welche Fächer eine Stufenprüfung verlangen. Disziplin, Gedächtnis und
+      Allgemeinbildung stehen bewusst nicht hier — Gewohnheiten prüft man nicht
+      mit Fragen, die steigen weiter allein durch Lernzeit.                   */
+  var GEPRUEFT = ["bwl", "suk", "wiso", "deutsch", "englisch"];
+  function needsExam(id) { return GEPRUEFT.indexOf(id) >= 0; }
+
+  /*  Lernzeit macht prüfungsberechtigt, die Prüfung vergibt die Stufe.
+      Ohne Prüfung bleibt ein Fach auf Stufe 1 stehen, auch mit 5.000 XP.     */
+  function standOf(id, xp) {
+    var byXp = attrLevel(xp);
+    if (!needsExam(id)) return { level: byXp.level, xpLevel: byXp.level, pct: byXp.pct,
+                                 to: byXp.to, from: byXp.from, open: false };
+    var passed = (state.q && state.q[id]) || 1;
+    return { level: Math.min(byXp.level, passed), xpLevel: byXp.level, pct: byXp.pct,
+             to: byXp.to, from: byXp.from,
+             open: byXp.level > passed, next: passed + 1 };
+  }
+  /*  Ab Stufe 4 zählt nur noch ein fehlerfreier Durchgang.                   */
+  function huerde(level) { return level >= 4 ? 5 : 4; }
+  function attrLevel(xp) {
+    var lv = 1, i;
+    for (i = 0; i < ATTR_LV.length; i++) if (xp >= ATTR_LV[i]) lv = i + 1;
+    var from = ATTR_LV[lv - 1], to = lv < ATTR_LV.length ? ATTR_LV[lv] : null;
+    return { level: lv, from: from, to: to,
+             pct: to ? Math.round(((xp - from) / (to - from)) * 100) : 100 };
+  }
+  /*  Punkte in ungefähre Lernzeit zurückrechnen — für die Frage
+      "wie viel fehlt mir noch?".                                            */
+  function hoursFor(xp) {
+    var min = Math.round(xp / 1.1);
+    if (min < 60) return Math.max(1, min) + " min";
+    return String(Math.round(min / 60)) + " h";
+  }
+  /* ---- Noten -------------------------------------------------------------
+     Eingetragen wird eine Note, eine Punktzahl oder beides; die fehlende Zahl
+     rechnet die Seite über den 100-Punkte-Schlüssel der IHK aus. Beide
+     Richtungen sind reine Funktionen — sie lassen sich einzeln nachrechnen.  */
+  var NOTEN_SCHLUESSEL = [
+    { ab: 92, note: 1, nm: "sehr gut" },
+    { ab: 81, note: 2, nm: "gut" },
+    { ab: 67, note: 3, nm: "befriedigend" },
+    { ab: 50, note: 4, nm: "ausreichend" },
+    { ab: 30, note: 5, nm: "mangelhaft" },
+    { ab: 0,  note: 6, nm: "ungenügend" }
+  ];
+  function punkteZuNote(p) {
+    var v = Number(p);
+    if (p === "" || p === null || !isFinite(v)) return null;
+    v = Math.max(0, Math.min(100, v));
+    for (var i = 0; i < NOTEN_SCHLUESSEL.length; i++) {
+      if (v >= NOTEN_SCHLUESSEL[i].ab) return NOTEN_SCHLUESSEL[i].note;
+    }
+    return 6;
+  }
+  function punkteAnker(note) {
+    for (var i = 0; i < NOTEN_SCHLUESSEL.length; i++) {
+      if (NOTEN_SCHLUESSEL[i].note === note) return NOTEN_SCHLUESSEL[i].ab;
+    }
+    return 0;
+  }
+  /*  Rückwärts wird die Note auf die Mindestpunktzahl ihrer Stufe abgebildet,
+      Zwischenwerte linear: 2,0 = 81, 2,5 = 74, 3,0 = 67. Die Umrechnung ist
+      damit monoton, und punkteZuNote(noteZuPunkte(n)) ergibt wieder n.
+      Rückwärts ist sie eine Schätzung — deshalb steht überall ein Zirka.     */
+  function noteZuPunkte(nt) {
+    var v = Number(nt);
+    if (nt === "" || nt === null || !isFinite(v)) return null;
+    if (v <= 1) return punkteAnker(1);
+    if (v >= 6) return 0;
+    var lo = Math.floor(v), t = v - lo;
+    var pLo = punkteAnker(lo), pHi = punkteAnker(lo + 1);
+    return Math.round(pLo + (pHi - pLo) * t);
+  }
+  function notenName(nt) {
+    var v = Math.round(Number(nt));
+    for (var i = 0; i < NOTEN_SCHLUESSEL.length; i++) {
+      if (NOTEN_SCHLUESSEL[i].note === v) return NOTEN_SCHLUESSEL[i].nm;
+    }
+    return "";
+  }
+  /*  Gewichteter Schnitt. Ohne gültige Note kommt null zurück, nicht 0 —
+      eine leere Liste hat keinen Schnitt, und 0 wäre eine Traumnote.        */
+  function schnitt(list) {
+    var summe = 0, gew = 0;
+    (list || []).forEach(function (e) {
+      var v = Number(e.n), g = Number(e.gew) || 1;
+      if (!isFinite(v) || v < 1 || v > 6) return;
+      summe += v * g; gew += g;
+    });
+    return gew ? summe / gew : null;
+  }
+
+  /*  Die vier Blöcke der Abschlussprüfung mit ihrem Anteil an der Endnote.
+      Teil 1 mit 25 % und die Fachaufgabe mit 30 % stehen in der Verordnung,
+      die Aufteilung der übrigen 45 % auf Geschäftsprozesse und Wirtschafts-
+      und Sozialkunde bei der eigenen IHK gegenprüfen und hier anpassen.      */
+  var IHK_BLOECKE = [
+    { id: "t1", nm: "Teil 1", de: "Februar 2027 · schriftlich", pct: 25 },
+    { id: "gp", nm: "Geschäftsprozesse", de: "Teil 2 · schriftlich", pct: 35 },
+    { id: "wi", nm: "Wirtschafts- und Sozialkunde", de: "Teil 2 · schriftlich", pct: 10 },
+    { id: "fa", nm: "Fachaufgabe im Einsatzgebiet", de: "Teil 2 · Report und Fachgespräch", pct: 30 }
+  ];
+  /*  Drei Zahlen statt einer: was jetzt schon feststeht, was im besten und im
+      schlechtesten Fall herauskommt — und die einzige Zahl, die etwas ändert:
+      welcher Schnitt in den offenen Blöcken für das Ziel nötig ist.          */
+  function prognose(list, ziel) {
+    var bekannt = [], offen = [], summe = 0, gewBekannt = 0;
+    IHK_BLOECKE.forEach(function (b) {
+      var nt = schnitt((list || []).filter(function (e) { return e.fach === "ihk:" + b.id; }));
+      if (nt === null) { offen.push(b); return; }
+      bekannt.push({ b: b, n: nt });
+      summe += nt * b.pct; gewBekannt += b.pct;
+    });
+    var gewOffen = 100 - gewBekannt;
+    return {
+      bekannt: bekannt, offen: offen, gewOffen: gewOffen, gewBekannt: gewBekannt,
+      aktuell: gewBekannt ? summe / gewBekannt : null,
+      best: (summe + gewOffen * 1) / 100,
+      schlecht: (summe + gewOffen * 6) / 100,
+      noetig: gewOffen ? (ziel * 100 - summe) / gewOffen : null,
+      ziel: ziel
+    };
+  }
+  function num(x, k) {
+    if (x === null || x === undefined || !isFinite(x)) return "—";
+    return Number(x).toFixed(k === undefined ? 1 : k).replace(".", ",");
+  }
+
+  var DAY_KEYS = ["so", "mo", "di", "mi", "do", "fr", "sa"];
+  var WD = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
+  var MONTHS = ["Januar","Februar","März","April","Mai","Juni","Juli","August",
+                "September","Oktober","November","Dezember"];
+
+  /* ---- Fragenkatalog ------------------------------------------------------
+     VORLÄUFIG: aufgebaut aus der offiziellen Prüfungsstruktur (IndKflAusbV
+     2024), nicht aus eigenen Klausuren. Zum Austauschen einfach die Listen
+     unten ersetzen — das Format:
+
+       { lv:[von,bis], t:"mc",  q:"Frage", a:["A","B","C"], k:1, why:"…" }
+       { lv:[von,bis], t:"num", q:"Frage", a:9070, tol:1, unit:"€", why:"…" }
+
+     lv  = für welche Zielstufen die Frage taugt (1–3 Grundlagen, 4–6 Aufbau)
+     k   = Index der richtigen Antwort
+     tol = erlaubte Abweichung bei Rechenaufgaben
+     why = die Erklärung, die nach dem Antworten erscheint
+     Fünf Fragen je Prüfung, gezogen aus dem passenden Band.                 */
+  var QUIZ_VORLAEUFIG = true;
+  var QUIZ = {
+    suk: [
+      { lv:[1,3], t:"mc", q:"Rohstoffe werden auf Ziel gekauft: 5.000 € netto, 19 % Umsatzsteuer. Wie lautet der Buchungssatz?",
+        a:["Rohstoffe 5.950 € an Verbindlichkeiten aLL 5.950 €",
+           "Rohstoffe 5.000 € und Vorsteuer 950 € an Verbindlichkeiten aLL 5.950 €",
+           "Verbindlichkeiten aLL 5.950 € an Rohstoffe 5.000 € und Vorsteuer 950 €",
+           "Rohstoffe 5.000 € und Umsatzsteuer 950 € an Verbindlichkeiten aLL 5.950 €"], k:1,
+        why:"Die Vorsteuer ist eine Forderung an das Finanzamt und wird im Soll gebucht. Umsatzsteuer entsteht nur beim Verkauf." },
+      { lv:[1,3], t:"mc", q:"Welches dieser Konten ist ein Bestandskonto?",
+        a:["Aufwendungen für Rohstoffe","Maschinen","Umsatzerlöse","Löhne und Gehälter"], k:1,
+        why:"Bestandskonten stehen in der Bilanz. Maschinen gehören zum Anlagevermögen; die drei anderen sind Erfolgskonten der GuV." },
+      { lv:[1,3], t:"num", q:"Eine Maschine kostet 60.000 €, Nutzungsdauer 8 Jahre, kein Restwert. Wie hoch ist die lineare Abschreibung pro Jahr in Euro?",
+        a:7500, tol:0, unit:"€",
+        why:"60.000 € ÷ 8 Jahre = 7.500 € jährlich, über die gesamte Nutzungsdauer gleich hoch." },
+      { lv:[1,3], t:"mc", q:"Ein gewährtes Skonto beim Wareneinkauf mindert …",
+        a:["den Umsatz","die Anschaffungskosten der Ware","die Verbindlichkeiten dauerhaft","den Gewinn"], k:1,
+        why:"Skonto ist eine nachträgliche Preisminderung und senkt nach § 255 HGB die Anschaffungskosten." },
+      { lv:[2,4], t:"mc", q:"Was verlangt das strenge Niederstwertprinzip im Umlaufvermögen?",
+        a:["Es darf abgewertet werden, muss aber nicht",
+           "Es muss auf den niedrigeren Wert am Abschlussstichtag abgewertet werden",
+           "Es ist immer der höhere von Anschaffungskosten und Marktpreis anzusetzen",
+           "Es gilt nur bei dauerhafter Wertminderung"], k:1,
+        why:"§ 253 Abs. 4 HGB: Im Umlaufvermögen ist zwingend auf den niedrigeren Börsen- oder Marktpreis abzuwerten — auch bei vorübergehender Wertminderung. Im Anlagevermögen gilt das gemilderte Prinzip." },
+      { lv:[2,4], t:"num", q:"Materialeinzelkosten 10.000 €, Materialgemeinkostenzuschlag 15 %. Wie hoch sind die Materialkosten in Euro?",
+        a:11500, tol:0, unit:"€",
+        why:"10.000 € + 15 % = 11.500 €. Die Zuschlagskalkulation rechnet die Gemeinkosten prozentual auf die Einzelkosten." },
+      { lv:[3,5], t:"num", q:"Verkaufspreis 80 €, variable Stückkosten 50 €, Fixkosten 60.000 €. Ab wie vielen Stück ist die Gewinnschwelle erreicht?",
+        a:2000, tol:0, unit:"Stück",
+        why:"Deckungsbeitrag je Stück = 80 − 50 = 30 €. 60.000 € ÷ 30 € = 2.000 Stück. Erst ab dem 2.001. Stück entsteht Gewinn." },
+      { lv:[3,5], t:"mc", q:"Wozu dient der Betriebsabrechnungsbogen?",
+        a:["Er verteilt Gemeinkosten auf Kostenstellen und liefert die Zuschlagssätze",
+           "Er ermittelt den Gewinn je Kostenträger",
+           "Er ersetzt die Gewinn- und Verlustrechnung",
+           "Er bewertet das Vorratsvermögen nach HGB"], k:0,
+        why:"Der BAB ist die Brücke von der Kostenarten- zur Kostenstellenrechnung — und liefert die Zuschlagssätze für die Kalkulation." },
+      { lv:[4,6], t:"num", q:"Anschaffungskosten 50.000 €, degressive Abschreibung 20 %. Wie hoch ist der Abschreibungsbetrag im zweiten Jahr in Euro?",
+        a:8000, tol:0, unit:"€",
+        why:"Jahr 1: 20 % von 50.000 = 10.000 €, Restbuchwert 40.000 €. Jahr 2: 20 % von 40.000 = 8.000 €. Degressiv wird immer vom Restbuchwert gerechnet." },
+      { lv:[4,6], t:"mc", q:"Wann wechselt man sinnvollerweise von der degressiven zur linearen Abschreibung?",
+        a:["Nie, der Wechsel ist unzulässig",
+           "Sobald der lineare Betrag aus Restbuchwert und Restnutzungsdauer höher ist",
+           "Immer nach genau der Hälfte der Nutzungsdauer",
+           "Sobald der Restbuchwert unter 1.000 € fällt"], k:1,
+        why:"Der Wechsel lohnt genau dann, wenn Restbuchwert ÷ Restnutzungsdauer den degressiven Betrag übersteigt — sonst bliebe am Ende ein zu hoher Restwert stehen." }
+    ],
+    bwl: [
+      { lv:[1,3], t:"num", q:"Listeneinkaufspreis 10.000 €, 10 % Rabatt, 2 % Skonto, Bezugskosten 250 €. Wie hoch ist der Bezugspreis in Euro?",
+        a:9070, tol:1, unit:"€",
+        why:"10.000 − 10 % = 9.000 (Zieleinkaufspreis). − 2 % Skonto = 8.820 (Bareinkaufspreis). + 250 Bezugskosten = 9.070 € Bezugspreis." },
+      { lv:[1,3], t:"mc", q:"Worauf kommt es beim quantitativen Angebotsvergleich an?",
+        a:["Auf den Listeneinkaufspreis","Auf den Bezugspreis","Auf die Lieferzeit","Auf den Rabattsatz"], k:1,
+        why:"Erst der Bezugspreis enthält Rabatt, Skonto und Bezugskosten — Listenpreise sind nicht vergleichbar." },
+      { lv:[1,3], t:"mc", q:"Welche Kosten sind für eine kurzfristige Make-or-Buy-Entscheidung entscheidungsrelevant?",
+        a:["Die Vollkosten","Nur die variablen Kosten","Nur die Fixkosten","Die Anschaffungskosten der Maschinen"], k:1,
+        why:"Fixkosten fallen kurzfristig ohnehin an und ändern sich durch die Entscheidung nicht. Verglichen wird der Einkaufspreis mit den variablen Kosten der Eigenfertigung." },
+      { lv:[2,4], t:"num", q:"Anfangsbestand 4.000 €, Endbestand 6.000 €. Wie hoch ist der durchschnittliche Lagerbestand in Euro?",
+        a:5000, tol:0, unit:"€",
+        why:"(4.000 + 6.000) ÷ 2 = 5.000 €. Mit Monatswerten wäre es (AB + 12 Monatsendbestände) ÷ 13." },
+      { lv:[2,4], t:"num", q:"Wareneinsatz 60.000 €, durchschnittlicher Lagerbestand 5.000 €. Wie hoch ist die Umschlagshäufigkeit?",
+        a:12, tol:0, unit:"mal",
+        why:"60.000 ÷ 5.000 = 12. Das Lager wird zwölfmal im Jahr komplett umgeschlagen." },
+      { lv:[2,4], t:"num", q:"Die Umschlagshäufigkeit beträgt 12. Wie hoch ist die durchschnittliche Lagerdauer in Tagen?",
+        a:30, tol:0, unit:"Tage",
+        why:"360 ÷ 12 = 30 Tage. Kürzere Lagerdauer heißt weniger Kapitalbindung." },
+      { lv:[3,5], t:"mc", q:"Was kennzeichnet A-Güter in der ABC-Analyse?",
+        a:["Geringe Menge, hoher Wertanteil","Hohe Menge, geringer Wertanteil",
+           "Hohe Menge, hoher Wertanteil","Geringe Menge, geringer Wertanteil"], k:0,
+        why:"A-Güter sind mengenmäßig wenige Positionen mit dem größten Wertanteil — hier lohnt sorgfältige Disposition am meisten." },
+      { lv:[3,5], t:"mc", q:"Welcher Zielkonflikt steckt hinter der optimalen Bestellmenge?",
+        a:["Lieferzeit gegen Qualität",
+           "Bestellkosten sinken mit der Menge, Lagerkosten steigen",
+           "Rabatt gegen Skonto",
+           "Eigenfertigung gegen Fremdbezug"], k:1,
+        why:"Je größer die Bestellung, desto seltener bestellt man (weniger Bestellkosten), aber desto mehr liegt im Lager (mehr Lagerkosten). Das Optimum liegt im Minimum der Summe." },
+      { lv:[4,6], t:"num", q:"Tagesverbrauch 50 Stück, Lieferzeit 6 Tage, Mindestbestand 200 Stück. Wie hoch ist der Meldebestand?",
+        a:500, tol:0, unit:"Stück",
+        why:"50 × 6 = 300 Stück Verbrauch während der Lieferzeit, plus 200 Stück Sicherheit = 500 Stück. Bei diesem Bestand muss bestellt werden." },
+      { lv:[4,6], t:"mc", q:"Was ist die wesentliche Kehrseite der Just-in-time-Beschaffung?",
+        a:["Höhere Lagerkosten","Höhere Kapitalbindung",
+           "Große Abhängigkeit von Liefertreue und Lieferant","Längere Durchlaufzeiten"], k:2,
+        why:"JIT senkt Lagerbestand und Kapitalbindung, macht die Produktion aber unmittelbar von der Liefertreue abhängig — ein Ausfall stoppt die Fertigung." }
+    ],
+    wiso: [
+      { lv:[1,3], t:"mc", q:"Bei welcher Rechtsform haften alle Gesellschafter unbeschränkt mit ihrem Privatvermögen?",
+        a:["GmbH","OHG","AG","KG"], k:1,
+        why:"In der OHG haften alle Gesellschafter unbeschränkt und gesamtschuldnerisch. Bei der KG gilt das nur für den Komplementär." },
+      { lv:[1,3], t:"num", q:"Wie hoch ist das Mindeststammkapital einer GmbH in Euro?",
+        a:25000, tol:0, unit:"€",
+        why:"25.000 € nach § 5 GmbHG, davon müssen bei der Anmeldung mindestens 12.500 € eingezahlt sein." },
+      { lv:[1,3], t:"num", q:"Aus wie vielen Zweigen besteht die gesetzliche Sozialversicherung?",
+        a:5, tol:0, unit:"Zweige",
+        why:"Kranken-, Pflege-, Renten-, Arbeitslosen- und Unfallversicherung." },
+      { lv:[1,3], t:"mc", q:"Wer trägt die Beiträge zur gesetzlichen Unfallversicherung?",
+        a:["Arbeitnehmer allein","Arbeitgeber allein","Beide je zur Hälfte","Der Staat"], k:1,
+        why:"Die Unfallversicherung ist der einzige Zweig, den der Arbeitgeber allein trägt — sie ersetzt seine Haftung für Arbeitsunfälle." },
+      { lv:[2,4], t:"mc", q:"Der Lieferant liefert mangelhafte Ware. Welches Recht steht dem Käufer zuerst zu?",
+        a:["Sofortiger Rücktritt","Nacherfüllung — Nachbesserung oder Ersatzlieferung",
+           "Schadensersatz statt der Leistung","Minderung des Kaufpreises"], k:1,
+        why:"Der Vorrang der Nacherfüllung (§ 439 BGB) gibt dem Verkäufer zuerst die Gelegenheit zur zweiten Andienung. Erst wenn sie scheitert, kommen Rücktritt oder Minderung." },
+      { lv:[2,4], t:"num", q:"Wie viele Jahre beträgt die regelmäßige Verjährungsfrist für Mängelansprüche beim Kauf beweglicher Sachen?",
+        a:2, tol:0, unit:"Jahre",
+        why:"Zwei Jahre ab Ablieferung nach § 438 Abs. 1 Nr. 3 BGB." },
+      { lv:[3,5], t:"mc", q:"Ab welcher Betriebsgröße kann ein Betriebsrat gewählt werden?",
+        a:["Ab 3 wahlberechtigten Arbeitnehmern","Ab 5 ständigen wahlberechtigten, davon 3 wählbar",
+           "Ab 10 Arbeitnehmern","Ab 20 Arbeitnehmern"], k:1,
+        why:"§ 1 BetrVG: mindestens fünf ständige wahlberechtigte Arbeitnehmer, von denen drei wählbar sind." },
+      { lv:[3,5], t:"mc", q:"Welches Recht hat der Betriebsrat bei einer geplanten Einstellung?",
+        a:["Kein Mitwirkungsrecht","Ein Anhörungsrecht",
+           "Ein Zustimmungsverweigerungsrecht nach § 99 BetrVG","Ein Vetorecht ohne Begründung"], k:2,
+        why:"Bei personellen Einzelmaßnahmen im Betrieb mit mehr als 20 Arbeitnehmern kann der Betriebsrat die Zustimmung aus den in § 99 BetrVG genannten Gründen verweigern." },
+      { lv:[4,6], t:"mc", q:"Wie heißt die Marktform mit vielen Anbietern und vielen Nachfragern?",
+        a:["Polypol","Oligopol","Monopol","Bilaterales Monopol"], k:0,
+        why:"Polypol — der Einzelne hat keinen Einfluss auf den Preis. Wenige Anbieter wären ein Oligopol, ein einziger ein Monopol." },
+      { lv:[4,6], t:"mc", q:"Was kommt im erweiterten Wirtschaftskreislauf gegenüber dem einfachen hinzu?",
+        a:["Nur der Staat","Staat, Kapitalsammelstellen und Ausland",
+           "Nur die privaten Haushalte","Nur die Unternehmen"], k:1,
+        why:"Der einfache Kreislauf kennt nur Haushalte und Unternehmen. Erweitert kommen Staat, Banken als Kapitalsammelstellen und das Ausland dazu." }
+    ],
+    deutsch: [
+      { lv:[1,3], t:"mc", q:"Wie ist eine lineare Erörterung aufgebaut?",
+        a:["Pro, Contra, Synthese","Argumente einer Richtung, vom schwächsten zum stärksten",
+           "Behauptung, Gegenbehauptung, Beispiel","Einleitung, Nacherzählung, Schluss"], k:1,
+        why:"Die lineare (steigernde) Erörterung verfolgt eine Richtung und steigert sich zum stärksten Argument. Pro und Contra gehören zur dialektischen Form." },
+      { lv:[1,3], t:"mc", q:"Woraus besteht ein vollständiges Argument?",
+        a:["Behauptung und Meinung","Behauptung, Begründung, Beispiel",
+           "These und Gegenthese","Einleitung und Schluss"], k:1,
+        why:"Ohne Begründung ist es eine Behauptung, ohne Beispiel bleibt es abstrakt. Erst alle drei Teile machen ein tragfähiges Argument." },
+      { lv:[1,3], t:"mc", q:"Wann schreibt man „dass“ mit Doppel-s?",
+        a:["Wenn es sich auf ein Nomen bezieht","Wenn es einen Nebensatz einleitet",
+           "Immer am Satzanfang","Wenn man es durch „welches“ ersetzen kann"], k:1,
+        why:"„dass“ ist die Konjunktion und leitet einen Nebensatz ein. Lässt sich das Wort durch „dieses“, „jenes“ oder „welches“ ersetzen, ist es das Artikel- oder Relativpronomen „das“." },
+      { lv:[2,4], t:"mc", q:"Wie ist die dialektische Erörterung aufgebaut?",
+        a:["These, Antithese, Synthese","Nur Pro-Argumente","Nur Contra-Argumente",
+           "Chronologisch nach Wichtigkeit"], k:0,
+        why:"Erst die eine Seite, dann die Gegenseite, dann die begründete eigene Position. Das stärkste Argument der bevorzugten Seite steht zuletzt." },
+      { lv:[2,4], t:"mc", q:"Bei welchem erweiterten Infinitiv mit „zu“ ist das Komma Pflicht?",
+        a:["Bei jedem erweiterten Infinitiv","Wenn er mit um, ohne, statt, anstatt oder außer eingeleitet wird",
+           "Nur am Satzanfang","Nie"], k:1,
+        why:"Diese Einleitewörter erzwingen das Komma. Sonst darf es zur besseren Lesbarkeit gesetzt werden, muss aber nicht." },
+      { lv:[2,4], t:"mc", q:"Zwei vollständige Hauptsätze werden mit „und“ verbunden. Was gilt für das Komma?",
+        a:["Es ist verboten","Es darf gesetzt werden, muss aber nicht",
+           "Es ist immer Pflicht","Nur bei mehr als zehn Wörtern"], k:1,
+        why:"Seit der Reform ist das Komma vor „und“ zwischen Hauptsätzen freigestellt — sinnvoll, wenn es die Gliederung deutlicher macht." },
+      { lv:[3,5], t:"mc", q:"Was ist ein Scheinargument?",
+        a:["Ein Argument der Gegenseite","Eine Behauptung ohne tragfähige Begründung",
+           "Ein Argument mit Beispiel","Das stärkste Argument im Schluss"], k:1,
+        why:"Typische Formen sind der Verweis auf eine Autorität, auf die Mehrheit oder auf Tradition — sie belegen die Behauptung nicht, sie umgehen den Beleg." },
+      { lv:[3,5], t:"mc", q:"Was gehört nicht in eine sachliche Erörterung?",
+        a:["Belegte Zahlen","Gegenargumente","Pauschale Übertreibungen und Ich-Meinungen ohne Begründung",
+           "Eine begründete eigene Position im Schluss"], k:2,
+        why:"Die eigene Position gehört in den Schluss — aber begründet. „Ich finde das einfach falsch“ ist kein Argument." },
+      { lv:[4,6], t:"mc", q:"Welche Verbform steht in der indirekten Rede?",
+        a:["Konjunktiv I","Konjunktiv II","Indikativ","Imperativ"], k:0,
+        why:"Konjunktiv I markiert die Wiedergabe fremder Rede: „Er sagte, er komme später.“ Konjunktiv II tritt nur ein, wenn Konjunktiv I mit dem Indikativ zusammenfällt." },
+      { lv:[4,6], t:"mc", q:"Welcher Satz ist im Nominalstil geschrieben?",
+        a:["Wir prüfen den Antrag.","Die Prüfung des Antrags erfolgt durch uns.",
+           "Der Antrag wird geprüft.","Prüfe den Antrag!"], k:1,
+        why:"Nominalstil türmt Substantivierungen auf und wirkt schwerfällig. Verben machen Sätze kürzer und klarer — im Fachgespräch entscheidend." }
+    ],
+    englisch: [
+      { lv:[1,3], t:"mc", q:"What is an enquiry in business correspondence?",
+        a:["A request for information, prices or an offer","A confirmation of an order",
+           "A reminder to pay an invoice","A complaint about damaged goods"], k:0,
+        why:"Die Anfrage eröffnet den Schriftwechsel. Darauf folgt das Angebot (offer/quotation), dann die Bestellung (order)." },
+      { lv:[1,3], t:"mc", q:"What does invoice mean?",
+        a:["Lieferschein","Rechnung","Auftragsbestätigung","Mahnung"], k:1,
+        why:"invoice = Rechnung. Lieferschein ist delivery note, Auftragsbestätigung order confirmation, Mahnung reminder." },
+      { lv:[1,3], t:"mc", q:"Which sentence belongs in an offer?",
+        a:["We regret to inform you that the goods are damaged.",
+           "We are pleased to offer you the following terms.",
+           "Please send us your latest catalogue.",
+           "Your payment is now four weeks overdue."], k:1,
+        why:"Das Angebot nennt Ware, Preis, Liefer- und Zahlungsbedingungen sowie die Bindungsfrist." },
+      { lv:[2,4], t:"mc", q:"Under EXW (Ex Works), who bears most of the cost and risk?",
+        a:["The seller","The buyer","Both equally","The carrier"], k:1,
+        why:"Bei Ex Works stellt der Verkäufer die Ware nur bereit. Transport, Versicherung, Verzollung und Risiko liegen fast vollständig beim Käufer." },
+      { lv:[2,4], t:"mc", q:"Under FOB, when does the risk pass to the buyer?",
+        a:["When the goods leave the seller's warehouse",
+           "When the goods are on board the vessel",
+           "When the goods arrive at the destination port",
+           "When the invoice is paid"], k:1,
+        why:"Free on Board: Der Gefahrübergang findet an Bord des Schiffes im Verschiffungshafen statt." },
+      { lv:[2,4], t:"mc", q:"Which letter would start: We regret to inform you that the goods arrived damaged?",
+        a:["An enquiry","A complaint","An offer","An order confirmation"], k:1,
+        why:"Die Reklamation nennt Sendung und Mangel, belegt ihn und fordert eine konkrete Abhilfe — replacement, credit note oder discount." },
+      { lv:[3,5], t:"mc", q:"Payment terms say net 30. What does that mean?",
+        a:["30 % discount","Payment due within 30 days",
+           "30 days after delivery there is a penalty","Payment in 30 instalments"], k:1,
+        why:"Der Rechnungsbetrag ist ohne Abzug binnen 30 Tagen fällig. „2/10 net 30“ hieße zusätzlich 2 % Skonto bei Zahlung innerhalb von zehn Tagen." },
+      { lv:[3,5], t:"mc", q:"In an e-mail, which word is correct for a file you send along?",
+        a:["enclosed","attached","included","added"], k:1,
+        why:"Please find attached gilt für E-Mails, enclosed für Briefe mit Anlage." },
+      { lv:[4,6], t:"mc", q:"What does CIF stand for?",
+        a:["Cost, Insurance and Freight","Carriage in Full","Customs Included Free",
+           "Cost In Factory"], k:0,
+        why:"Der Verkäufer zahlt Fracht und Versicherung bis zum Bestimmungshafen — der Gefahrübergang findet aber bereits bei der Verladung statt." },
+      { lv:[4,6], t:"mc", q:"A supplier writes: The item is currently out of stock, but we can deliver by 15 May. What is this?",
+        a:["A counter-offer within the order process","A complaint","An enquiry","A final reminder"], k:0,
+        why:"Weicht die Antwort vom Bestellinhalt ab, ist es rechtlich ein neues Angebot — der Besteller muss zustimmen." }
+    ]
+  };
+
+  /* ---- Kalender --------------------------------------------------------- */
+  function pad(n) { return String(n).padStart(2, "0"); }
+  function ymd(d) { return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()); }
+  function fromYmd(s) { var p = String(s).split("-").map(Number); return new Date(p[0], p[1] - 1, p[2], 12); }
+  function addDays(d, n) { return new Date(d.getFullYear(), d.getMonth(), d.getDate() + n, 12); }
+  function dayKey(d) { return DAY_KEYS[d.getDay()]; }
+
+  function easter(y) {
+    var a = y % 19, b = Math.floor(y / 100), c = y % 100, d = Math.floor(b / 4), e = b % 4;
+    var f = Math.floor((b + 8) / 25), g = Math.floor((b - f + 1) / 3);
+    var h = (19 * a + b - d - g + 15) % 30, i = Math.floor(c / 4), k = c % 4;
+    var l = (32 + 2 * e + 2 * i - h - k) % 7, m = Math.floor((a + 11 * h + 22 * l) / 451);
+    var mo = Math.floor((h + l - 7 * m + 114) / 31), da = ((h + l - 7 * m + 114) % 31) + 1;
+    return new Date(y, mo - 1, da, 12);
+  }
+  var HOL = {};
+  function holidays(y) {
+    if (HOL[y]) return HOL[y];
+    var e = easter(y), o = {};
+    o[y + "-01-01"] = "Neujahr"; o[y + "-01-06"] = "Heilige Drei Könige";
+    o[y + "-05-01"] = "Tag der Arbeit"; o[y + "-10-03"] = "Tag der Deutschen Einheit";
+    o[y + "-11-01"] = "Allerheiligen"; o[y + "-12-25"] = "1. Weihnachtstag";
+    o[y + "-12-26"] = "2. Weihnachtstag";
+    o[ymd(addDays(e, -2))] = "Karfreitag"; o[ymd(addDays(e, 1))] = "Ostermontag";
+    o[ymd(addDays(e, 39))] = "Christi Himmelfahrt"; o[ymd(addDays(e, 50))] = "Pfingstmontag";
+    o[ymd(addDays(e, 60))] = "Fronleichnam";
+    HOL[y] = o; return o;
+  }
+  function vacationName(key) {
+    for (var i = 0; i < PLAN.vacations.length; i++) {
+      var v = PLAN.vacations[i];
+      if (key >= v[0] && key <= v[1]) return v[2];
+    }
+    return null;
+  }
+  function planFor(dk, which) {
+    var src = PLAN[which || "days"], p = src && src[dk];
+    if (p && p.blocks && p.blocks.length) return p;
+    return which && which !== "days" ? null : PLAN.days[dk];
+  }
+  function dayInfo(date, marks) {
+    var key = ymd(date), dk = dayKey(date);
+    var weekend = dk === "sa" || dk === "so";
+    var hol = holidays(date.getFullYear())[key] || null;
+    var vac = vacationName(key), mark = marks && marks[key];
+    if (mark) {
+      var sick = mark === "krank";
+      return { key: key, dk: dk, kind: sick ? "sick" : "off", counts: false,
+               label: sick ? "Krank gemeldet" : "Frei markiert",
+               plan: Object.assign({}, PLAN.freeDay, { label: PLAN.days[dk].label }) };
+    }
+    if (hol && !weekend) {
+      return { key: key, dk: dk, kind: "holiday", counts: false, label: hol,
+               plan: Object.assign({}, PLAN.freeDay, { label: PLAN.days[dk].label }) };
+    }
+    if (weekend) return { key: key, dk: dk, kind: "weekend", counts: true, label: vac, plan: planFor(dk) };
+    if (vac) return { key: key, dk: dk, kind: "vacation", counts: true, label: vac,
+                      plan: planFor(dk, "vacationDays") || planFor(dk) };
+    return { key: key, dk: dk, kind: "school", counts: true, label: null, plan: planFor(dk) };
+  }
+
+  /* ---- Punkte ----------------------------------------------------------- */
+  function scored(plan) {
+    return (plan.blocks || []).filter(function (b) { return b.track && !b.opt; });
+  }
+  function minutes(b) {
+    if (typeof b.min === "number") return b.min;
+    var m = /(\d{1,3})\s*(?:′|'|min)/.exec((b.nm || "") + " " + (b.sub || ""));
+    if (m) return Number(m[1]);
+    var v = PLAN.durations[b.kind];
+    return typeof v === "number" ? v : 0;
+  }
+  function blockXp(b) {
+    var w = typeof b.xpFactor === "number" ? b.xpFactor : (WEIGHT[b.kind] || 1);
+    return Math.round(minutes(b) * w);
+  }
+  function coreIds(plan) {
+    return (plan.blocks || []).filter(function (b) {
+      return b.track && !b.opt && PLAN.core.indexOf(b.id) >= 0;
+    }).map(function (b) { return b.id; });
+  }
+  function coreDone(plan, ids) {
+    var need = coreIds(plan);
+    if (!need.length) return false;
+    return need.every(function (id) { return ids.indexOf(id) >= 0; });
+  }
+  function allDone(plan, ids) {
+    var bl = scored(plan);
+    return bl.length > 0 && bl.every(function (b) { return ids.indexOf(b.id) >= 0; });
+  }
+  function multiplier(streak) {
+    if (streak >= 30) return 2; if (streak >= 14) return 1.75;
+    if (streak >= 7) return 1.5; if (streak >= 3) return 1.2; return 1;
+  }
+  function rankOf(xp) {
+    var i = 0;
+    for (var k = 0; k < RANKS.length; k++) if (xp >= RANKS[k].xp) i = k;
+    var next = RANKS[i + 1] || null;
+    return { level: i + 1, name: RANKS[i].name, from: RANKS[i].xp,
+             to: next ? next.xp : null, next: next ? next.name : null };
+  }
+
+  /* ---- Gesamtauswertung -------------------------------------------------
+     Ein Durchgang vom ersten Eintrag bis heute: Punkte mit tagesgenauem
+     Multiplikator, Streak, Zähler für die Abzeichen.                        */
+  function evaluate(state, today) {
+    var d = state.d || {}, marks = state.f || {};
+    var keys = Object.keys(d).concat(Object.keys(marks)).sort();
+    var start = keys.length ? fromYmd(keys[0]) : new Date(today.getTime());
+    var maxBack = addDays(today, -400);
+    if (start < maxBack) start = maxBack;
+
+    var xp = 0, streak = 0, best = 0, counted = 0, coreDays = 0, fullDays = 0;
+    var restDays = 0, minutesDone = 0, ankiRun = 0, ankiBest = 0;
+    var tally = { morgen: 0, deep: 0, deutsch: 0, englisch: 0, anki: 0, feynman: 0 };
+    var attrXp = {}, attrMin = {};
+    ATTRS.forEach(function (x) { attrXp[x.id] = 0; attrMin[x.id] = 0; });
+    var perDay = {};
+    var cur = new Date(start.getTime());
+
+    while (cur <= today) {
+      var info = dayInfo(cur, marks);
+      var ids = d[info.key] || [];
+      if (!info.counts) {
+        if (ids.length || marks[info.key]) restDays++;
+        perDay[info.key] = { ratio: null, counts: false, kind: info.kind };
+        cur = addDays(cur, 1);
+        continue;
+      }
+      counted++;
+      var bl = scored(info.plan), hit = 0, dayXp = 0, mins = 0;
+      for (var i = 0; i < bl.length; i++) {
+        if (ids.indexOf(bl[i].id) >= 0) {
+          hit++; dayXp += blockXp(bl[i]); mins += minutes(bl[i]);
+          var av = attrsOf(info.dk, bl[i]);
+          if (av.length) {
+            // Attributpunkte bleiben roh — sie messen echte Facharbeit,
+            // nicht die Belohnung fürs Durchhalten.
+            var shareXp = blockXp(bl[i]) / av.length, shareMin = minutes(bl[i]) / av.length;
+            av.forEach(function (id) {
+              if (attrXp[id] === undefined) return;
+              attrXp[id] += shareXp; attrMin[id] += shareMin;
+            });
+          }
+          if (bl[i].kind === "deep") tally.deep++;
+          if (bl[i].id === "morgen") tally.morgen++;
+          if (bl[i].id === "deutsch" || bl[i].id === "deepA") tally.deutsch++;
+          if (bl[i].id === "englisch") tally.englisch++;
+          if (bl[i].id === "anki") tally.anki++;
+          // Der Feynman-Block am Sonntag trainiert genau das Fachgespräch
+          if (info.dk === "so" && bl[i].id === "deepB") tally.feynman++;
+        }
+      }
+      var kern = coreDone(info.plan, ids), voll = allDone(info.plan, ids);
+      if (kern) dayXp += 50;
+      if (voll) dayXp += 100;
+      xp += Math.round(dayXp * multiplier(streak));
+      minutesDone += mins;
+      if (kern) { coreDays++; streak++; if (streak > best) best = streak; }
+      else if (bl.length) { streak = 0; }
+      if (voll) fullDays++;
+      if (ids.indexOf("anki") >= 0) { ankiRun++; if (ankiRun > ankiBest) ankiBest = ankiRun; }
+      else ankiRun = 0;
+      perDay[info.key] = { ratio: bl.length ? hit / bl.length : null, counts: true,
+                           kind: info.kind, hit: hit, total: bl.length,
+                           core: kern, all: voll, mins: mins };
+      cur = addDays(cur, 1);
+    }
+    Object.keys(attrXp).forEach(function (k) { attrXp[k] = Math.round(attrXp[k]); });
+    return { xp: xp, streak: streak, best: best, counted: counted, coreDays: coreDays,
+             fullDays: fullDays, restDays: restDays, minutes: minutesDone,
+             tally: tally, ankiBest: ankiBest, perDay: perDay,
+             attrXp: attrXp, attrMin: attrMin };
+  }
+
+  function weekStats(state, today) {
+    var marks = state.f || {}, d = state.d || {};
+    var mon = addDays(today, -(((today.getDay() + 6) % 7)));
+    var days = [], done = 0, planned = 0;
+    for (var i = 0; i < 7; i++) {
+      var dt = addDays(mon, i);
+      var info = dayInfo(dt, marks), ids = d[info.key] || [];
+      var bl = scored(info.plan), hit = 0, m = 0, pm = 0;
+      for (var k = 0; k < bl.length; k++) {
+        pm += minutes(bl[k]);
+        if (ids.indexOf(bl[k].id) >= 0) { hit++; m += minutes(bl[k]); }
+      }
+      if (info.counts) { done += m; planned += pm; }
+      days.push({ date: dt, info: info, hit: hit, total: bl.length, mins: m,
+                  core: coreDone(info.plan, ids), all: allDone(info.plan, ids),
+                  future: dt > today, today: ymd(dt) === ymd(today) });
+    }
+    return { days: days, done: done, planned: planned, goal: PLAN.weeklyGoalMin };
+  }
+
+  function nextExam(today) {
+    var key = ymd(today);
+    var list = PLAN.exams.filter(function (e) { return e.date >= key; })
+                         .sort(function (a, b) { return a.date < b.date ? -1 : 1; });
+    if (!list.length) return null;
+    var e = list[0];
+    return { date: e.date, label: e.label,
+             days: Math.round((fromYmd(e.date) - fromYmd(key)) / 86400000) };
+  }
+
+  /* ---- Karriereplan ------------------------------------------------------
+     Jede Stufe verlangt eine Gesamtstufe und Fachstufen. Beides ist nichts
+     anderes als investierte Lernzeit — die Seite rechnet sie unten in Stunden
+     zurück, damit die Anforderung greifbar bleibt.
+     Wer den Plan ändern will, ändert diese Liste.                           */
+  var PLAN_URL = "https://claude.ai/code/artifact/d4c4641a-8ecd-4516-b432-fb90462f73c8";
+
+  /*  Die sechs Phasen des CFO-Karriereplans 2026–2050. `von`/`bis` sperren die
+      Phasen, die schlicht noch nicht dran sind; `need` nennt die Fachstufen, die
+      bis dahin stehen sollen — gemessen an der GEPRÜFTEN Stufe, nicht an der
+      Lernzeit. Details stehen im Plandokument, verlinkt oben im Abschnitt.     */
+  var PHASES = [
+    { id: "p0", nm: "Die Ausbildung zu Ende bringen", von: "2026-01-01", bis: "2028-06-30",
+      why: "Teil 1 zählt 25 % der Endnote, das Fachgespräch 21 %. Hier wird die Note gemacht, die alles Weitere finanziert.",
+      need: {},
+      tasks: ["Einsatzgebiet „Kaufmännische Steuerung und Kontrolle“ schriftlich sichern",
+              "Bis Februar 2027 nur Teil-1-Stoff: HGB-Buchführung, Beschaffung, Lagerkennzahlen",
+              "Altklausuren stabil über 90 %",
+              "Fachgespräch üben, nicht am Dokument feilen",
+              "Keine Verkürzung — die Note ist mehr wert als fünf Monate"] },
+    { id: "p1", nm: "Konzerneintritt und Fachwirt", von: "2028-03-01", bis: "2030-03-31",
+      why: "Der Arbeitgeberwechsel ist der größte Hebel des ganzen Plans: rund 2.750 € Rendite pro investierter Stunde.",
+      need: { suk: 4, wiso: 3, englisch: 3 },
+      tasks: ["Drei Anträge in der Abschlusswoche: Stipendium, Fachhochschulreife, Bewerbungen",
+              "Nur tarifgebunden, ≥ 50 Vollzeitbeschäftigte, unbefristet",
+              "Zielrolle: Controlling mit Abschlussberührung",
+              "Englisch C1 zuerst, danach PL-300",
+              "Wirtschaftsfachwirt — er ist der Hochschulzugang"] },
+    { id: "p2", nm: "Der Bachelor", von: "2030-04-01", bis: "2035-07-31",
+      why: "FernUni Hagen, B.Sc. — Universitätsabschluss für 2.520 €, der netto sogar Geld einbringt.",
+      need: { level: 6 },
+      tasks: ["Aufstiegsstipendium: Bewerbung Herbst 2029, 24 Monate Berufserfahrung nach der Ausbildung",
+              "Keine Anrechnung annehmen — sie verbaut den Master",
+              "Ab 2033 Bildungsteilzeit, wenn nach drei Jahren unter 90 ECTS"] },
+    { id: "p3", nm: "Master und erste Führung", von: "2035-08-01", bis: "2040-12-31",
+      why: "92 % der neu berufenen CFOs haben Master, Diplom oder MBA. Das ist die härteste Filterschwelle des Plans.",
+      need: { level: 8 },
+      tasks: ["Pausenjahr 2035/36 — zwölf Monate ohne Weiterbildung, nicht optional",
+              "M.Sc. Rechnungslegung, Steuern und Wirtschaftsprüfung",
+              "Erste fachliche Führung, dann Teamleitung Controlling"] },
+    { id: "p4", nm: "Führung, Ausland, Executive MBA", von: "2041-01-01", bis: "2046-12-31",
+      why: "Hier scheitert der Plan am ehesten — nicht am Wissen, sondern an der Bereitschaft, eine unbequeme Station anzunehmen.",
+      need: { level: 10 },
+      tasks: ["Abteilungsleitung mit Personalverantwortung",
+              "Station mit echter Abschlussverantwortung — sonst bleibst du Head of Controlling",
+              "Treasury mit Bankenkontakt",
+              "Auslandsstation",
+              "EMBA nur bei Führungsrolle und Arbeitgeberfinanzierung"] },
+    { id: "p5", nm: "CFO", von: "2047-01-01", bis: "2060-12-31",
+      why: "Die Position wird vergeben, nicht geplant. Planbar ist nur die Qualifikation, die einen wählbar macht.",
+      need: {},
+      tasks: ["Head of Controlling oder Leiter Finanzen",
+              "Kaufmännische Leitung oder CFO einer Konzerntochter",
+              "Mit 42 Leiter Finanzen im DAX-Konzern wäre dieser Plan erfolgreich"] }
+  ];
+
+  function phaseState(ph, ev, rank) {
+    var miss = [];
+    // Was Jahre entfernt liegt, wird nicht über Fachstufen gesperrt, sondern
+    // schlicht über das Datum.
+    var wait = ph.von && ymd(today()) < ph.von ? fromYmd(ph.von) : null;
+    if (ph.need.level && rank.level < ph.need.level) {
+      miss.push({ nm: "Stufe " + ph.need.level, have: rank.level, need: ph.need.level,
+                  xp: Math.max(0, RANKS[ph.need.level - 1].xp - ev.xp) });
+    }
+    ATTRS.forEach(function (at) {
+      var req = ph.need[at.id];
+      if (!req) return;
+      var lv = attrLevel(ev.attrXp[at.id] || 0);
+      if (lv.level < req) {
+        miss.push({ nm: at.nm + " " + req, have: lv.level, need: req,
+                    xp: Math.max(0, ATTR_LV[req - 1] - (ev.attrXp[at.id] || 0)) });
+      }
+    });
+    return { open: !wait && miss.length === 0, missing: miss, wait: wait,
+             past: ph.bis && ymd(today()) > ph.bis };
+  }
+
+  /* ---- Abzeichen -------------------------------------------------------- */
+  function badges(ev, wk) {
+    var goalHit = wk.goal > 0 && wk.done >= wk.goal;
+    return [
+      { id: "frueh", nm: "Frühaufsteher", de: "Zehnmal die Morgenroutine gestempelt",
+        have: ev.tally.morgen, need: 10, icon: "sun" },
+      { id: "karten", nm: "Kartenleger", de: "Sieben Tage Anki am Stück",
+        have: ev.ankiBest, need: 7, icon: "cards" },
+      { id: "tief", nm: "Tiefarbeiter", de: "Zehn Deep-Work-Blöcke geschafft",
+        have: ev.tally.deep, need: 10, icon: "anchor" },
+      { id: "wort", nm: "Wortschmied", de: "Fünf Deutschblöcke abgeschlossen",
+        have: ev.tally.deutsch, need: 5, icon: "pen" },
+      { id: "sprach", nm: "Sprachreise", de: "Fünf Englischblöcke abgeschlossen",
+        have: ev.tally.englisch, need: 5, icon: "globe" },
+      { id: "kette", nm: "Unzerbrechlich", de: "Vierzehn Tage Kern am Stück",
+        have: ev.best, need: 14, icon: "chain" },
+      { id: "voll", nm: "Reinen Tisch", de: "Fünf komplett abgehakte Tage",
+        have: ev.fullDays, need: 5, icon: "check" },
+      { id: "ruhe", nm: "Klug erholt", de: "Drei bewusst freie Tage markiert",
+        have: ev.restDays, need: 3, icon: "moon" },
+      { id: "redner", nm: "Redner", de: "Fünf Feynman-Blöcke — 21 % der Endnote hängen am Fachgespräch",
+        have: ev.tally.feynman, need: 5, icon: "globe" },
+      { id: "woche", nm: "Wochenmeister", de: "Wochenziel von 15 Stunden erreicht",
+        have: goalHit ? 1 : 0, need: 1, icon: "flag" }
+    ];
+  }
+
+  var ICONS = {
+    sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/>',
+    cards: '<rect x="3" y="6" width="12" height="14" rx="2"/><path d="M8 3h11a2 2 0 0 1 2 2v11"/>',
+    anchor: '<circle cx="12" cy="5" r="2.5"/><path d="M12 8v13M5 13a7 7 0 0 0 14 0M4 13h3M17 13h3"/>',
+    pen: '<path d="M4 20l4-1 10-10a2.5 2.5 0 0 0-3.5-3.5L4.5 15.5 4 20z"/>',
+    globe: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.5 3 14 0 18-3-4-3-14.5 0-18z"/>',
+    chain: '<path d="M9 15l6-6M8 12l-2 2a3.5 3.5 0 0 0 5 5l2-2M16 12l2-2a3.5 3.5 0 0 0-5-5l-2 2"/>',
+    check: '<path d="M4 12l5 5L20 6"/>',
+    moon: '<path d="M20 14a8.5 8.5 0 1 1-10-11 7 7 0 0 0 10 11z"/>',
+    flag: '<path d="M5 21V4M5 5h12l-2.5 4L17 13H5"/>',
+    chart: '<path d="M4 20V11M10 20V4M16 20v-6M21 20H3"/>',
+    scale: '<path d="M12 4v16M8 20h8M6 7h12M6 7l-3 7h6zM18 7l-3 7h6z"/>',
+    book: '<path d="M5 4a2 2 0 0 1 2-2h12v18H7a2 2 0 0 0-2 2z"/><path d="M9 6h6"/>',
+    lock: '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
+    trash: '<path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13M10 11v5M14 11v5"/>',
+    plus: '<path d="M12 5v14M5 12h14"/>',
+    star: '<path d="M12 3l2.7 5.9 6.3.7-4.7 4.3 1.3 6.4L12 17l-5.6 3.3 1.3-6.4L3 9.6l6.3-.7z"/>'
+  };
+  function icon(name, size) {
+    return '<svg viewBox="0 0 24 24" width="' + (size || 16) + '" height="' + (size || 16) +
+      '" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" ' +
+      'stroke-linejoin="round" aria-hidden="true">' + (ICONS[name] || "") + "</svg>";
+  }
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+  function fmtMin(m) {
+    m = Math.max(0, Math.round(m || 0));
+    if (m < 60) return m + " min";
+    var h = Math.floor(m / 60), r = m % 60;
+    return r ? h + " h " + pad(r) : h + " h";
+  }
+
+  /* ---- Zustand ---------------------------------------------------------- */
+  var state = { v: 4, d: {}, f: {}, n: {}, w: {}, q: {}, g: [], zn: 1.9, updatedAt: 0 };
+  var saveMode = "lokal";  // "lokal" | "geteilt"
+  var statusTxt = "nur auf diesem Gerät";
+  var saveTimer = null, artifactApi = null, lastFloat = null, nachholen = false;
+
+  /*  Der betrachtete Tag überlebt das Neuladen.
+      Grund: jede Veröffentlichung lädt alle offenen Ansichten neu. Vorher
+      sprang die Ansicht deshalb mitten im Nachtragen zurück auf heute.
+      sessionStorage statt localStorage — der Blick zurück gilt für diesen Tab
+      und diese Sitzung, nicht für das nächste Öffnen. Gespeichert wird das
+      Datum, nicht der Abstand: über Nacht bleibt so derselbe Tag stehen.     */
+  var VIEW_KEY = "lernquest.view";
+  var VIEW_TTL = 6 * 3600 * 1000;
+  function readView() {
+    try {
+      var raw = JSON.parse(sessionStorage.getItem(VIEW_KEY) || "null");
+      if (!raw || !raw.k || Date.now() - (Number(raw.t) || 0) > VIEW_TTL) return 0;
+      var off = Math.round((fromYmd(raw.k) - today()) / 86400000);
+      return off < 0 && off > -400 ? off : 0;
+    } catch (e) { return 0; }
+  }
+  function setView(nOff) {
+    view = nOff > 0 ? 0 : nOff < -400 ? -400 : nOff;
+    try {
+      sessionStorage.setItem(VIEW_KEY,
+        JSON.stringify({ k: ymd(addDays(today(), view)), t: Date.now() }));
+    } catch (e) { /* privater Modus — dann eben ohne */ }
+  }
+  var view = readView();   // 0 = heute, negativ = zurückgeblättert
+
+  function readEmbedded() {
+    var el = document.getElementById("state");
+    if (!el) return null;
+    try { return JSON.parse(el.textContent || "{}"); } catch (e) { return null; }
+  }
+  function readLocal() {
+    try { return JSON.parse(localStorage.getItem(LS_KEY) || "null"); } catch (e) { return null; }
+  }
+  var gid = 0;
+  function normalize(o) {
+    var s = { v: 4, d: {}, f: {}, n: {}, w: {}, q: {}, g: [], zn: 1.9, updatedAt: 0 };
+    if (!o || typeof o !== "object") return s;
+    if (o.d && typeof o.d === "object") {
+      Object.keys(o.d).forEach(function (k) {
+        if (Array.isArray(o.d[k])) s.d[k] = o.d[k].filter(function (x) { return typeof x === "string"; });
+      });
+    }
+    if (o.f && typeof o.f === "object") {
+      Object.keys(o.f).forEach(function (k) {
+        s.f[k] = typeof o.f[k] === "string" && o.f[k] ? o.f[k] : "frei";
+      });
+    }
+    if (o.n && typeof o.n === "object") s.n = o.n;
+    if (o.w && typeof o.w === "object") s.w = o.w;
+    // q: höchste bestandene Stufe je Fach. Das Mac-Widget ignoriert den
+    // Schlüssel, das Format bleibt also kompatibel.
+    if (o.q && typeof o.q === "object") {
+      Object.keys(o.q).forEach(function (k) {
+        var v = Math.round(Number(o.q[k]));
+        if (v >= 1 && v <= 20) s.q[k] = v;
+      });
+    }
+    // g: Noten als Liste, damit die Reihenfolge der Einträge erhalten bleibt.
+    // Das Mac-Widget kennt den Schlüssel nicht und lässt ihn beim Einlesen fallen.
+    if (Array.isArray(o.g)) {
+      s.g = o.g.filter(function (e) { return e && typeof e === "object"; })
+        .map(function (e) {
+          var nt = Number(e.n);
+          // Number(null) ist 0 — ohne diese Abfrage bekäme jede Note ohne
+          // Punktzahl kommentarlos 0 Punkte angehängt.
+          var pk = (e.p === null || e.p === undefined || e.p === "") ? NaN : Number(e.p);
+          return {
+            id: String(e.id || ("g" + (++gid) + "-" + Math.random().toString(36).slice(2, 7))),
+            fach: String(e.fach || ""),
+            was: String(e.was || "").slice(0, 80),
+            n: isFinite(nt) && nt >= 1 && nt <= 6 ? Math.round(nt * 10) / 10 : null,
+            p: isFinite(pk) && pk >= 0 && pk <= 100 ? Math.round(pk) : null,
+            dat: /^\d{4}-\d{2}-\d{2}$/.test(e.dat) ? e.dat : "",
+            gew: isFinite(Number(e.gew)) && Number(e.gew) > 0 ? Math.min(5, Number(e.gew)) : 1
+          };
+        })
+        .filter(function (e) { return e.fach && e.n !== null; });
+    }
+    var z = Number(o.zn);
+    s.zn = isFinite(z) && z >= 1 && z <= 6 ? Math.round(z * 10) / 10 : 1.9;
+    s.updatedAt = Number(o.updatedAt) || 0;
+    return s;
+  }
+  function load() {
+    var emb = normalize(readEmbedded()), loc = normalize(readLocal());
+    // Der neuere Stand gewinnt — so überlebt ein Klick, dessen Veröffentlichung
+    // nicht durchkam, und ein fremdes Gerät bringt seinen Stand mit.
+    state = loc.updatedAt > emb.updatedAt ? loc : emb;
+  }
+  function writeLocal() {
+    try { localStorage.setItem(LS_KEY, JSON.stringify(state)); } catch (e) { /* privater Modus */ }
+  }
+
+  function buildDoc() {
+    var css = document.getElementById("app-style").textContent;
+    var app = document.getElementById("app").textContent;
+    var json = JSON.stringify(state).replace(/</g, "\\u003c");
+    return '<!doctype html>\n<html lang="de">\n<head>\n<meta charset="utf-8">\n' +
+      '<meta name="viewport" content="width=device-width, initial-scale=1">\n' +
+      "<title>Lernquest Berichtsheft</title>\n" +
+      '<link rel="preconnect" href="https://fonts.googleapis.com">\n' +
+      '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n' +
+      '<link rel="stylesheet" href="' + FONTS + '">\n' +
+      '<style id="app-style">' + css + "<\/style>\n</head>\n<body>\n" +
+      '<div class="wrap" id="root"></div>\n' +
+      '<dialog id="examDlg" aria-label="Stufenprüfung"><div id="examBody"></div>' +
+      '<button class="exx" data-act="examClose" type="button" aria-label="Prüfung schließen">✕</button></dialog>\n' +
+      '<script type="application/json" id="state">' + json + "<\/script>\n" +
+      '<script id="app">' + app + "<\/script>\n</body>\n</html>";
+  }
+
+  function save() {
+    state.updatedAt = Date.now();
+    writeLocal();
+    if (!artifactApi) return;
+    /*  Während einer Stufenprüfung wird nicht veröffentlicht: das Veröffentlichen
+        lädt alle offenen Ansichten neu und risse den Durchgang mittendrin ab.
+        Der Stand liegt bereits lokal — nachgeholt wird beim Schliessen.      */
+    if (exam) { nachholen = true; setStatus("wird nach der Prüfung gesichert"); return; }
+    if (saveTimer) clearTimeout(saveTimer);
+    // Klicks bündeln: eine Veröffentlichung je Handgriff, nicht je Häkchen.
+    saveTimer = setTimeout(function () {
+      saveTimer = null;
+      setStatus("sichere …");
+      artifactApi.publish(buildDoc()).then(function () {
+        setStatus("gesichert");
+      })["catch"](function (err) {
+        // "conflict" heisst: jemand war schneller, die Ansicht lädt ohnehin neu.
+        setStatus(err && err.code === "conflict" ? "neu geladen" : "nur auf diesem Gerät");
+      });
+    }, 1600);
+  }
+  /*  Der Text überlebt das nächste render() — sonst stünde nach jedem Neubau
+      wieder "gesichert" da, auch wenn gerade etwas aussteht.                 */
+  function setStatus(txt) {
+    statusTxt = txt;
+    var el = document.getElementById("savestate");
+    if (el) el.textContent = txt;
+  }
+
+  /* ---- Stufenprüfung ------------------------------------------------------
+     Lernzeit macht prüfungsberechtigt, hier wird die Stufe vergeben.
+     Fünf Fragen, ab Stufe 4 muss jede sitzen. Durchgefallen heisst: sofort
+     noch einmal, mit frisch gezogenen Fragen.                               */
+  var exam = null;   // { attr, ziel, fragen, i, richtig, beantwortet }
+
+  function zieheFragen(attrId, ziel) {
+    var pool = (QUIZ[attrId] || []).filter(function (f) {
+      return ziel >= f.lv[0] && ziel <= f.lv[1];
+    });
+    // Reicht das Band nicht, mit dem restlichen Fach auffüllen statt abzubrechen
+    if (pool.length < 5) {
+      (QUIZ[attrId] || []).forEach(function (f) {
+        if (pool.indexOf(f) < 0) pool.push(f);
+      });
+    }
+    var rest = pool.slice(), out = [];
+    while (rest.length && out.length < 5) {
+      out.push(rest.splice(Math.floor(Math.random() * rest.length), 1)[0]);
+    }
+    return out;
+  }
+
+  function startExam(attrId) {
+    var at = ATTR_BY[attrId];
+    var st = standOf(attrId, (lastEv && lastEv.attrXp[attrId]) || 0);
+    if (!at || !st.open) return;
+    exam = { attr: attrId, ziel: st.next, fragen: zieheFragen(attrId, st.next),
+             i: 0, richtig: 0, beantwortet: false, gewaehlt: null };
+    zeigeExam();
+    var dlg = document.getElementById("examDlg");
+    if (dlg && !dlg.open) { try { dlg.showModal(); } catch (e) { dlg.setAttribute("open", ""); } }
+  }
+
+  function zeigeExam() {
+    var box = document.getElementById("examBody");
+    if (!box || !exam) return;
+    var at = ATTR_BY[exam.attr], n = exam.fragen.length, noetig = huerde(exam.ziel);
+
+    if (exam.i >= n) {
+      var ok = exam.richtig >= noetig;
+      if (ok) {
+        var q = {}; Object.keys(state.q || {}).forEach(function (k) { q[k] = state.q[k]; });
+        q[exam.attr] = exam.ziel;
+        state.q = q; save();
+      }
+      box.innerHTML =
+        '<div class="exres ' + (ok ? "ok" : "no") + '">' +
+        '<div class="big">' + exam.richtig + " von " + n + "</div>" +
+        "<h3>" + (ok ? "Bestanden — " + esc(at.nm) + " Stufe " + exam.ziel
+                     : "Nicht bestanden") + "</h3>" +
+        "<p>" + (ok
+          ? "Die Stufe ist freigeschaltet. Die nächste verlangt wieder Lernzeit — und wieder eine Prüfung."
+          : "Nötig waren " + noetig + " von " + n + ". Die Erklärungen stehen oben — noch einmal versuchen, die Fragen werden neu gezogen.") +
+        "</p><div class=\"exbtns\">" +
+        (ok ? '<button class="btn" data-act="examClose" type="button">Weiter</button>'
+            : '<button class="btn" data-act="examRetry" type="button">Neuer Versuch</button>' +
+              '<button class="btn ghost" data-act="examClose" type="button">Später</button>') +
+        "</div></div>";
+      render();
+      return;
+    }
+
+    var f = exam.fragen[exam.i];
+    var html = '<div class="exhead"><span class="eyebrow">' + esc(at.nm) +
+      " · Stufe " + exam.ziel + " · " + noetig + " von " + n + " nötig</span>" +
+      '<span class="expro mono">' + (exam.i + 1) + "/" + n + "</span></div>" +
+      '<div class="exq">' + esc(f.q) + "</div>";
+
+    if (f.t === "num") {
+      html += '<div class="exnum"><input type="number" id="exNum" step="any" ' +
+        'inputmode="decimal" aria-label="Antwort"' +
+        (exam.beantwortet ? " disabled" : "") + '>' +
+        (f.unit ? '<span class="unit">' + esc(f.unit) + "</span>" : "") +
+        (exam.beantwortet ? "" : '<button class="btn" data-act="examNum" type="button">Prüfen</button>') +
+        "</div>";
+    } else {
+      html += '<div class="exopts">' + f.a.map(function (opt, i) {
+        var cls = "exopt";
+        if (exam.beantwortet) {
+          if (i === f.k) cls += " right";
+          else if (i === exam.gewaehlt) cls += " wrong";
+          else cls += " dim";
+        }
+        return '<button class="' + cls + '" data-act="examPick" data-i="' + i + '" type="button"' +
+          (exam.beantwortet ? " disabled" : "") + ">" + esc(opt) + "</button>";
+      }).join("") + "</div>";
+    }
+
+    if (exam.beantwortet) {
+      var richtig = exam.zuletztRichtig;
+      html += '<div class="exwhy ' + (richtig ? "ok" : "no") + '">' +
+        "<b>" + (richtig ? "Richtig" : "Falsch") + "</b> " + esc(f.why) +
+        (f.t === "num" && !richtig ? " <b>Lösung: " + f.a + (f.unit ? " " + esc(f.unit) : "") + "</b>" : "") +
+        "</div>" +
+        '<div class="exbtns"><button class="btn" data-act="examNext" type="button">' +
+        (exam.i + 1 >= n ? "Ergebnis" : "Weiter") + "</button></div>";
+    }
+    if (QUIZ_VORLAEUFIG) {
+      html += '<p class="exnote">Vorläufiger Fragenkatalog aus der offiziellen ' +
+        "Prüfungsstruktur — wird gegen deine eigenen Schulaufgaben getauscht.</p>";
+    }
+    box.innerHTML = html;
+    var inp = document.getElementById("exNum");
+    if (inp && !exam.beantwortet) inp.focus();
+  }
+
+  function antwort(richtig, gewaehlt) {
+    exam.beantwortet = true;
+    exam.zuletztRichtig = richtig;
+    exam.gewaehlt = gewaehlt;
+    if (richtig) exam.richtig++;
+    zeigeExam();
+  }
+
+  /* ---- Ansicht ---------------------------------------------------------- */
+  function today() { var n = new Date(); return new Date(n.getFullYear(), n.getMonth(), n.getDate(), 12); }
+  function shownDate() { return addDays(today(), view); }
+
+  /* ---- Notenkarte -------------------------------------------------------
+     Eintragen, Schnitt sehen — und die einzige Zahl, die etwas ändert: welcher
+     Schnitt in den offenen Prüfungsblöcken für das Ziel noch nötig ist.      */
+  var gForm = { fach: "", was: "", n: "", p: "", dat: "", gew: "1" };
+  var gMsg = null;
+
+  function fachName(id) {
+    if (String(id).indexOf("ihk:") === 0) {
+      var b = IHK_BLOECKE.filter(function (x) { return "ihk:" + x.id === id; })[0];
+      return b ? b.nm : id;
+    }
+    return ATTR_BY[id] ? ATTR_BY[id].nm : id;
+  }
+
+  /*  Der Hinweis unter dem Formular zeigt die jeweils andere Zahl, bevor
+      eingetragen wird — so sieht man den Schlüssel, statt ihm zu vertrauen.  */
+  function gHinweis() {
+    if (gMsg) return gMsg;
+    var nt = gForm.n === "" ? null : Number(gForm.n);
+    var pk = gForm.p === "" ? null : Number(gForm.p);
+    if (nt !== null && isFinite(nt) && (pk === null || !isFinite(pk))) {
+      return "Note " + num(nt) + " entspricht ungefähr " + noteZuPunkte(nt) + " Punkten.";
+    }
+    if (pk !== null && isFinite(pk) && (nt === null || !isFinite(nt))) {
+      var abg = punkteZuNote(pk);
+      return pk + " Punkte sind nach dem IHK-Schlüssel Note " + abg + " (" + notenName(abg) + ").";
+    }
+    return "Note oder Punkte reichen — die andere Zahl rechnet die Seite aus. " +
+           "Schlüssel: ab 92 Punkte Note 1, ab 81 Note 2, ab 67 Note 3, ab 50 Note 4, ab 30 Note 5.";
+  }
+
+  function ptile(titel, wert, unten, cls) {
+    return '<div class="pt ' + cls + '"><span class="eyebrow">' + esc(titel) + "</span>" +
+      '<span class="pv mono">' + esc(wert) + '</span><span class="pc">' + esc(unten) + "</span></div>";
+  }
+
+  function notenKarte(now) {
+    var gl = state.g || [];
+    var ziel = state.zn || 1.9;
+    var schule = gl.filter(function (e) { return String(e.fach).indexOf("ihk:") !== 0; });
+    var ges = schnitt(schule);
+
+    var h = '<section class="card"><div class="card-head"><h2>Noten</h2>' +
+      '<span class="note mono">' +
+      (ges === null ? "noch nichts eingetragen"
+        : "Schnitt Schule " + num(ges, 2) + " · " + schule.length +
+          (schule.length === 1 ? " Note" : " Noten")) + "</span></div>";
+
+    /* Eingabe */
+    h += '<div class="gform">' +
+      '<label class="gf f-fach"><span>Fach</span><select id="gFach">' +
+      '<option value="">bitte wählen</option><optgroup label="Schule">' +
+      GEPRUEFT.map(function (id) {
+        return '<option value="' + id + '"' + (gForm.fach === id ? " selected" : "") +
+          ">" + esc(ATTR_BY[id].nm) + "</option>";
+      }).join("") + '</optgroup><optgroup label="IHK-Prüfung">' +
+      IHK_BLOECKE.map(function (b) {
+        var v = "ihk:" + b.id;
+        return '<option value="' + v + '"' + (gForm.fach === v ? " selected" : "") +
+          ">" + esc(b.nm) + "</option>";
+      }).join("") + "</optgroup></select></label>" +
+      '<label class="gf f-was"><span>Was</span><input id="gWas" type="text" maxlength="80" ' +
+      'placeholder="Klassenarbeit Buchführung" value="' + esc(gForm.was) + '"></label>' +
+      '<label class="gf f-n"><span>Note</span><input id="gNote" type="number" step="0.1" ' +
+      'min="1" max="6" inputmode="decimal" placeholder="2,0" value="' + esc(gForm.n) + '"></label>' +
+      '<label class="gf f-p"><span>Punkte</span><input id="gPkt" type="number" step="1" ' +
+      'min="0" max="100" inputmode="numeric" placeholder="83" value="' + esc(gForm.p) + '"></label>' +
+      '<label class="gf f-d"><span>Datum</span><input id="gDat" type="date" value="' +
+      esc(gForm.dat || ymd(now)) + '"></label>' +
+      '<label class="gf f-g"><span>Gewicht</span><select id="gGew">' +
+      [["0.5", "×0,5 klein"], ["1", "×1 normal"], ["2", "×2 Klassenarbeit"], ["3", "×3 Abschluss"]]
+        .map(function (o) {
+          return '<option value="' + o[0] + '"' + (gForm.gew === o[0] ? " selected" : "") +
+            ">" + o[1] + "</option>";
+        }).join("") + "</select></label>" +
+      '<button class="btn prim f-b" data-act="gadd" type="button">' + icon("plus", 15) +
+      "Eintragen</button></div>" +
+      '<p class="gtip note' + (gMsg ? " bad" : "") + '" id="gtip">' + esc(gHinweis()) + "</p>";
+
+    /* Eingetragene Noten, neueste zuerst */
+    if (gl.length) {
+      var sorted = gl.slice().sort(function (a, b) {
+        var x = a.dat || "", y = b.dat || "";
+        return x < y ? 1 : x > y ? -1 : 0;
+      });
+      h += '<ul class="glist">' + sorted.map(function (e) {
+        var nt = Number(e.n);
+        var fn = fachName(e.fach);
+        var titel = e.was || fn;
+        // Nebenzeile aus Teilen bauen: das Fach nur, wenn es nicht schon oben steht.
+        var teile = [];
+        if (fn !== titel) teile.push(esc(fn));
+        teile.push(e.p !== null && e.p !== undefined
+          ? e.p + " Punkte" : "≈ " + noteZuPunkte(e.n) + " Punkte");
+        if (Number(e.gew) !== 1) teile.push("×" + String(e.gew).replace(".", ","));
+        if (e.dat) teile.push(e.dat.split("-").reverse().join("."));
+        return '<li class="gitem' + (nt >= 4.5 ? " bad" : nt <= 2 ? " good" : "") + '">' +
+          '<span class="gn mono">' + num(nt) + "</span>" +
+          '<span class="gb"><span class="gw">' + esc(titel) + "</span>" +
+          '<span class="gm mono">' + teile.join(" · ") + "</span></span>" +
+          '<button class="gdel" data-act="gdel" data-id="' + esc(e.id) + '" type="button" ' +
+          'aria-label="' + esc(titel) + ' löschen">' + icon("trash", 15) +
+          "</button></li>";
+      }).join("") + "</ul>";
+    }
+
+    /* Schnitt je Fach */
+    h += '<div class="gavg">' + GEPRUEFT.map(function (id) {
+      var list = gl.filter(function (e) { return e.fach === id; });
+      var sc = schnitt(list);
+      return '<div class="ga' + (sc === null ? " empty" : sc > 3.4 ? " bad" : sc <= 2 ? " good" : "") + '">' +
+        '<span class="gan">' + esc(ATTR_BY[id].nm) + "</span>" +
+        '<span class="gav mono">' + (sc === null ? "—" : num(sc, 2)) + "</span>" +
+        '<span class="gac mono">' + (list.length
+          ? list.length + (list.length === 1 ? " Note" : " Noten") : "offen") +
+        "</span></div>";
+    }).join("") + "</div>";
+
+    /* Prognose */
+    var pr = prognose(gl, ziel);
+    h += '<div class="prog"><div class="proghead">' +
+      '<span class="eyebrow">Prognose Abschlussnote</span>' +
+      '<label class="gziel">Ziel <input id="gZiel" type="number" step="0.1" min="1" max="4" ' +
+      'value="' + String(ziel) + '"></label></div>';
+    h += '<div class="pgrid">' +
+      ptile("aktuell", pr.aktuell === null ? "—" : num(pr.aktuell, 2),
+            pr.gewBekannt ? pr.gewBekannt + " % der Note stehen" : "noch kein Block eingetragen", "") +
+      ptile("bestenfalls", num(pr.best, 2), "offene Blöcke mit 1,0", "good") +
+      ptile("schlechtestenfalls", num(pr.schlecht, 2), "offene Blöcke mit 6,0", "bad") +
+      "</div>";
+    h += '<ul class="pbl">' + IHK_BLOECKE.map(function (b) {
+      var hit = pr.bekannt.filter(function (x) { return x.b.id === b.id; })[0];
+      return '<li class="pb' + (hit ? " have" : "") + '">' +
+        '<span class="pbn">' + esc(b.nm) + "<em>" + esc(b.de) + "</em></span>" +
+        '<span class="pbp mono">' + b.pct + " %</span>" +
+        '<span class="pbv mono">' + (hit ? num(hit.n, 2) : "offen") + "</span></li>";
+    }).join("") + "</ul>";
+
+    var satz;
+    if (!pr.gewOffen) {
+      satz = "Alle vier Blöcke sind eingetragen — die Note steht bei " + num(pr.best, 2) + ".";
+    } else if (pr.noetig === null) {
+      satz = "";
+    } else if (pr.noetig < 1) {
+      satz = "Ziel " + num(ziel) + " ist rechnerisch nicht mehr zu schaffen: selbst mit 1,0 in " +
+             "allen offenen Blöcken kommst du auf " + num(pr.best, 2) + ".";
+    } else if (pr.noetig >= 6) {
+      satz = "Ziel " + num(ziel) + " steht bereits fest — auch im schlechtesten Fall (" +
+             num(pr.schlecht, 2) + ") bleibst du darunter.";
+    } else {
+      satz = "Für " + num(ziel) + " brauchst du in den offenen Blöcken (" + pr.gewOffen +
+             " % der Note) im Schnitt " + num(pr.noetig, 2) + ".";
+    }
+    if (satz) h += '<p class="pnote">' + esc(satz) + "</p>";
+    h += '<p class="note tiny">1,9 ist die Schwelle fürs Weiterbildungsstipendium. ' +
+      "Gewichte: Teil 1 25 %, Geschäftsprozesse 35 %, Wirtschafts- und Sozialkunde 10 %, " +
+      "Fachaufgabe 30 % — die Aufteilung der schriftlichen Bereiche bei deiner IHK gegenprüfen " +
+      "und im Quelltext anpassen.</p></div></section>";
+    return h;
+  }
+
+  /*  Eintragen. Fehlt eine der beiden Zahlen, wird sie aus der anderen
+      gerechnet; fehlen beide, passiert nichts ausser einem Hinweis.          */
+  function noteEintragen() {
+    var fach = gForm.fach;
+    if (!fach) { gMsg = "Erst ein Fach wählen."; render(); return; }
+    var nt = gForm.n === "" ? null : Number(gForm.n);
+    var pk = gForm.p === "" ? null : Number(gForm.p);
+    if ((nt === null || !isFinite(nt)) && (pk === null || !isFinite(pk))) {
+      gMsg = "Eine Note oder eine Punktzahl eintragen."; render(); return;
+    }
+    if (nt !== null && isFinite(nt) && (nt < 1 || nt > 6)) {
+      gMsg = "Noten gehen von 1,0 bis 6,0."; render(); return;
+    }
+    if (pk !== null && isFinite(pk) && (pk < 0 || pk > 100)) {
+      gMsg = "Punkte gehen von 0 bis 100."; render(); return;
+    }
+    // Gespeichert wird nur, was wirklich eingetragen wurde. Die andere Zahl
+    // rechnet die Anzeige aus und schreibt ein Zirka davor — sonst sähe eine
+    // geschätzte Punktzahl später aus wie eine gemessene.
+    var hatNote = nt !== null && isFinite(nt);
+    var eintrag = {
+      id: "g" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+      fach: fach, was: gForm.was.trim(),
+      n: hatNote ? Math.round(Number(nt) * 10) / 10 : punkteZuNote(pk),
+      p: pk !== null && isFinite(pk) ? Math.round(Number(pk)) : null,
+      dat: gForm.dat || ymd(today()), gew: Number(gForm.gew) || 1
+    };
+    state.g = (state.g || []).concat([eintrag]);
+    // Fach und Gewicht bleiben stehen — meist kommen mehrere Noten am Stück.
+    gForm.was = ""; gForm.n = ""; gForm.p = "";
+    gMsg = null;
+    save(); render();
+    var el = document.getElementById("gWas");
+    if (el) el.focus();
+  }
+
+  var lastEv = null;
+  function render() {
+    var now = today(), shown = shownDate();
+    var info = dayInfo(shown, state.f);
+    var ids = state.d[info.key] || [];
+    var ev = evaluate(state, now); lastEv = ev;
+    var wk = weekStats(state, now);
+    var rank = rankOf(ev.xp);
+    var exam = nextExam(now);
+    var bl = scored(info.plan);
+    var hit = bl.filter(function (b) { return ids.indexOf(b.id) >= 0; }).length;
+    var kern = coreDone(info.plan, ids), voll = allDone(info.plan, ids);
+
+    var levelPct = rank.to ? Math.round(((ev.xp - rank.from) / (rank.to - rank.from)) * 100) : 100;
+    var goalPct = wk.goal ? Math.min(100, Math.round((wk.done / wk.goal) * 100)) : 0;
+    var quote = ev.counted ? Math.round((ev.coreDays / ev.counted) * 100) : 0;
+
+    var html = "";
+
+    /* Kopf */
+    html += '<div class="top"><div>' +
+      "<h1>Lernquest</h1>" +
+      '<div class="sub">Dein Berichtsheft bis zur IHK-Prüfung — abstempeln, was steht.</div>' +
+      "</div><div class=\"tools\">" +
+      '<button class="btn ghost" data-act="theme" type="button" aria-label="Zwischen hell und dunkel wechseln">' +
+      icon("moon") + "Ansicht</button></div></div>";
+
+    /* Instrumente */
+    html += '<div class="gauges">';
+    html += '<div class="gauge amber"><div class="eyebrow">Stufe ' + rank.level + "</div>" +
+      '<div class="val mono">' + ev.xp.toLocaleString("de-DE") + '<small>XP</small></div>' +
+      '<div class="bar"><i style="width:' + levelPct + '%"></i></div>' +
+      '<div class="cap">' + esc(rank.name) +
+      (rank.to ? " · noch " + (rank.to - ev.xp).toLocaleString("de-DE") + " bis " + esc(rank.next) : " · Endstufe") +
+      "</div></div>";
+    html += '<div class="gauge mint"><div class="eyebrow">Kern-Serie</div>' +
+      '<div class="val mono">' + ev.streak + '<small>' + (ev.streak === 1 ? "Tag" : "Tage") + "</small></div>" +
+      '<div class="cap">Multiplikator ×' + String(multiplier(ev.streak)).replace(".", ",") +
+      " · Bestwert " + ev.best + "</div></div>";
+    html += '<div class="gauge"><div class="eyebrow">Diese Woche</div>' +
+      '<div class="val mono">' + fmtMin(wk.done) + "</div>" +
+      '<div class="bar blue"><i style="width:' + goalPct + '%"></i></div>' +
+      '<div class="cap">Ziel ' + fmtMin(wk.goal) + " · " + goalPct + " %</div></div>";
+    if (exam) {
+      html += '<div class="gauge coral"><div class="eyebrow">' + esc(exam.label) + "</div>" +
+        '<div class="val mono">' + exam.days + '<small>Tage</small></div>' +
+        '<div class="cap">Kern an ' + quote + " % deiner Lerntage</div></div>";
+    }
+    html += "</div>";
+
+    html += '<div class="stack" style="margin-top:18px">';
+
+    /* Heute */
+    var chips = '<span class="chip">' + esc(info.plan.tag) + "</span>";
+    if (info.label) chips += '<span class="chip free">' + esc(info.label) + "</span>";
+    if (info.plan.hot) chips += '<span class="chip hot">Schwerer Tag</span>';
+    if (info.plan.rest) chips += '<span class="chip rest">Erholung eingeplant</span>';
+
+    html += '<section class="card"><div class="card-head"><div>' +
+      '<div class="eyebrow">' + (view === 0 ? "Heute" : view === -1 ? "Gestern"
+        : "Nachtrag · " + Math.abs(view) + " Tage zurück") + "</div>" +
+      "<h2>" + esc(info.plan.label) + ", " + pad(shown.getDate()) + "." + pad(shown.getMonth() + 1) + ".</h2>" +
+      '<div class="row" style="margin-top:7px">' + chips + "</div>" +
+      '<div class="note" style="margin-top:6px">' + esc(info.plan.note || "") + "</div>" +
+      '</div><div class="tools">' +
+      // Steht man nicht auf heute, ist der Rückweg ein Klick — nicht sieben.
+      (view !== 0
+        ? '<button class="btn back" data-act="today" type="button">' + icon("sun", 14) + "heute</button>"
+        : "") +
+      '<button class="btn" data-act="prev" type="button" aria-label="Tag zurück">‹</button>' +
+      '<button class="btn" data-act="next" type="button" aria-label="Tag vor"' +
+      (view >= 0 ? " disabled" : "") + ">›</button>" +
+      '<button class="btn" data-act="mark" type="button">' +
+      (info.kind === "sick" ? "krank" : info.kind === "off" ? "frei" : "frei setzen") +
+      "</button></div></div>";
+
+    // Solange Teil 1 aussteht, gilt für jede Aufgabe derselbe Stoffzuschnitt.
+    if (PLAN.focus && ymd(now) < PLAN.focusBis) {
+      html += '<div class="focus"><span class="eyebrow">Bis Teil 1</span><span>' +
+        esc(PLAN.focus) + "</span></div>";
+    }
+
+    html += '<ul class="quests">';
+    (info.plan.blocks || []).forEach(function (b) {
+      var on = ids.indexOf(b.id) >= 0;
+      var track = !!b.track;
+      var isCore = PLAN.core.indexOf(b.id) >= 0 && track && !b.opt;
+      html += '<li class="quest' + (on ? " done" : "") + (track ? "" : " fix") +
+        (isCore ? " kern" : "") + '" data-id="' + esc(b.id) + '">' +
+        '<span class="time mono">' + esc(b.t) + "</span>" +
+        '<span class="body"><span class="nm">' + esc(b.nm) + "</span>" +
+        (b.sub ? '<span class="sb">' + esc(b.sub) + "</span>" : "") +
+        // Die ausführliche Anleitung steht nur an, solange der Block offen ist.
+        (b.det && !on ? '<span class="dtl">' + esc(b.det) + "</span>" : "") +
+        (track && attrsOf(info.dk, b).length
+          ? '<span class="atag mono">' + attrsOf(info.dk, b).map(function (id) {
+              return esc(ATTR_BY[id].nm);
+            }).join(" + ") + "</span>"
+          : "") + "</span>" +
+        '<span class="xp mono">' + (track ? (on ? "+" : "") + blockXp(b) + " XP" : "") + "</span>" +
+        (track
+          ? '<button class="stampbox" data-act="toggle" data-id="' + esc(b.id) + '" type="button" ' +
+            'aria-pressed="' + (on ? "true" : "false") + '" aria-label="' + esc(b.nm) + ' abstempeln">' +
+            icon("check", 16) + "</button>"
+          : '<span class="stampbox" aria-hidden="true"></span>') +
+        "</li>";
+    });
+    html += "</ul>";
+
+    html += '<div class="row" style="margin-top:14px; justify-content:space-between">' +
+      '<span class="note mono">' + hit + " von " + bl.length + " · " +
+      (info.counts ? "zählt" : "zählt nicht") + "</span>";
+    if (!info.counts) html += '<span class="stamp rest">Ruhetag</span>';
+    else if (voll) html += '<span class="stamp done">Reinen Tisch</span>';
+    else if (kern) html += '<span class="stamp saved">Tag gerettet</span>';
+    else html += '<span class="note">Kern offen: ' +
+      coreIds(info.plan).filter(function (id) { return ids.indexOf(id) < 0; }).join(" · ") + "</span>";
+    html += "</div></section>";
+
+    /* Woche */
+    html += '<section class="card"><div class="card-head"><h2>Die Woche</h2>' +
+      '<span class="note mono">' + fmtMin(wk.done) + " von " + fmtMin(wk.planned) + " geplant</span></div>" +
+      '<div class="week">';
+    wk.days.forEach(function (dd, i) {
+      var seal = dd.all ? "on" : dd.core ? "part" : "";
+      // Der Abstand zu heute ist zugleich der Wert von view — ein Klick genügt.
+      var off = Math.round((dd.date - now) / 86400000);
+      var sel = off === view;
+      html += '<button type="button" class="day' + (dd.today ? " today" : "") +
+        (sel ? " sel" : "") + (dd.info.counts ? "" : " off") + '"' +
+        ' data-act="day" data-off="' + off + '"' + (dd.future ? " disabled" : "") +
+        (sel ? ' aria-current="date"' : "") +
+        ' aria-label="' + esc(dd.info.plan.label) + ", " + pad(dd.date.getDate()) + "." +
+        pad(dd.date.getMonth() + 1) + ". · " + dd.hit + " von " + dd.total + ' erledigt">' +
+        '<span class="wd">' + WD[i] + "</span>" +
+        '<span class="dt mono">' + pad(dd.date.getDate()) + "</span>" +
+        '<span class="qt mono">' + (dd.future ? "·" : dd.hit + "/" + dd.total) + "</span>" +
+        '<span class="seal ' + seal + '">' + (seal ? icon("check", 13) : "") + "</span></button>";
+    });
+    html += "</div></section>";
+
+    /* Attribute */
+    html += '<section class="card"><div class="card-head"><h2>Attribute</h2>' +
+      '<span class="note mono">Fachpunkte ohne Serien-Bonus</span></div><div class="attrs">';
+    ATTRS.forEach(function (at) {
+      var ax = ev.attrXp[at.id] || 0, st = standOf(at.id, ax);
+      html += '<div class="attr' + (st.open ? " ready" : "") + '">' +
+        '<div class="ah"><span class="ic">' + icon(at.icon, 16) + "</span>" +
+        '<span class="an">' + esc(at.nm) + "</span>" +
+        '<span class="alv mono">' + st.level + "</span></div>";
+      if (st.open) {
+        // Lernzeit reicht — jetzt entscheidet die Prüfung, nicht die Uhr.
+        html += '<button class="exbtn" data-act="exam" data-attr="' + at.id + '" type="button">' +
+          icon("check", 14) + "Stufenprüfung " + st.next + "</button>";
+      } else {
+        html += '<div class="bar blue"><i style="width:' + st.pct + '%"></i></div>';
+      }
+      var fachNoten = (state.g || []).filter(function (e) { return e.fach === at.id; });
+      var fachSchnitt = schnitt(fachNoten);
+      var letzte = fachNoten.slice().sort(function (a, b) {
+        return (a.dat || "") < (b.dat || "") ? 1 : -1;
+      })[0];
+      html += '<div class="ad">' + esc(at.de) + "</div>" +
+        (fachSchnitt !== null
+          ? '<div class="agn mono' + (fachSchnitt > 3 ? " warn" : "") + '">Schnitt ' +
+            num(fachSchnitt) + " · zuletzt " + num(letzte.n) +
+            (letzte.was ? " (" + esc(letzte.was) + ")" : "") + "</div>"
+          : "") +
+        '<div class="ax mono">' + Math.round(ax) + " XP · " + fmtMin(ev.attrMin[at.id] || 0) + "</div>" +
+        '<div class="ax next">' + (st.open
+          ? "Lernzeit reicht für Stufe " + st.next + " — " + huerde(st.next) + " von 5 Fragen richtig"
+          : st.to
+            ? "noch " + (st.to - Math.round(ax)) + " XP bis Stufe " + (st.xpLevel + 1) +
+              " · ≈ " + hoursFor(st.to - Math.round(ax))
+            : "höchste Stufe erreicht") + "</div></div>";
+    });
+    html += "</div></section>";
+
+    /* Noten */
+    html += notenKarte(now);
+
+    /* Karriereplan */
+    var states = PHASES.map(function (ph) { return phaseState(ph, ev, rank); });
+    var openN = states.filter(function (x) { return x.open; }).length;
+    html += '<section class="card"><div class="card-head"><h2>Karriereplan</h2>' +
+      '<a class="note mono" href="' + PLAN_URL + '" target="_blank" rel="noopener">' +
+      openN + " von " + PHASES.length + " freigeschaltet · Plan öffnen</a></div>" +
+      '<ol class="phases">';
+    PHASES.forEach(function (ph, i) {
+      var st = states[i];
+      html += '<li class="phase' + (st.open ? " open" : "") + '">' +
+        '<div class="ph-head"><span class="ph-no mono">' + pad(i + 1) + "</span>" +
+        '<span class="ph-nm">' + esc(ph.nm) + "</span>" +
+        (st.open ? '<span class="ph-tag on">' + (st.past ? "abgeschlossen" : "läuft") + "</span>"
+                 : st.wait
+                   ? '<span class="ph-tag">' + icon("lock", 12) + "ab " + st.wait.getFullYear() + "</span>"
+                   : '<span class="ph-tag">' + icon("lock", 12) + "gesperrt</span>") +
+        "</div>" +
+        '<div class="ph-why">' + esc(ph.why) + "</div>";
+      if (st.open) {
+        html += '<ul class="ph-tasks">' + ph.tasks.map(function (t) {
+          return "<li>" + esc(t) + "</li>";
+        }).join("") + "</ul>";
+      } else if (st.wait) {
+        html += '<div class="ph-need"><span class="eyebrow">Öffnet ' +
+          st.wait.getFullYear() + '</span>' +
+          (st.missing.length
+            ? st.missing.map(function (m) {
+                return '<span class="req">bis dahin ' + esc(m.nm) + "</span>";
+              }).join("")
+            : '<span class="req">Kommt von allein — bis dahin zählt die Phase davor</span>') +
+          "</div>";
+      } else {
+        html += '<div class="ph-need"><span class="eyebrow">Dafür fehlt</span>' +
+          st.missing.map(function (m) {
+            return '<span class="req">' + esc(m.nm) +
+              ' <em class="mono">du hast ' + m.have + " · noch ≈ " + hoursFor(m.xp) + "</em></span>";
+          }).join("") + "</div>";
+      }
+      html += "</li>";
+    });
+    html += "</ol></section>";
+
+    /* Abzeichen */
+    var bs = badges(ev, wk), got = bs.filter(function (b) { return b.have >= b.need; }).length;
+    html += '<section class="card"><div class="card-head"><h2>Abzeichen</h2>' +
+      '<span class="note mono">' + got + " von " + bs.length + "</span></div>" +
+      '<div class="badges">';
+    bs.forEach(function (b) {
+      var done = b.have >= b.need;
+      html += '<div class="badge' + (done ? " got" : "") + '">' +
+        '<div class="bh"><span class="ic">' + icon(b.icon, 17) + "</span>" +
+        '<span class="bn">' + esc(b.nm) + "</span></div>" +
+        '<div class="bd">' + esc(b.de) + "</div>" +
+        '<div class="bar' + (done ? "" : " blue") + '"><i style="width:' +
+        Math.min(100, Math.round((b.have / b.need) * 100)) + '%"></i></div>' +
+        '<div class="bp mono">' + Math.min(b.have, b.need) + " / " + b.need + "</div></div>";
+    });
+    html += "</div></section>";
+
+    /* Monat */
+    var y = now.getFullYear(), mo = now.getMonth();
+    var lead = (new Date(y, mo, 1).getDay() + 6) % 7, len = new Date(y, mo + 1, 0).getDate();
+    // Zahlen nur für diesen Monat, nicht für den ganzen Verlauf
+    var mStat = { counted: 0, core: 0, all: 0, mins: 0, off: 0 };
+    for (var q = 1; q <= len; q++) {
+      var r = ev.perDay[ymd(new Date(y, mo, q, 12))];
+      if (!r) continue;
+      if (!r.counts) { mStat.off++; continue; }
+      mStat.counted++; mStat.mins += r.mins || 0;
+      if (r.core) mStat.core++;
+      if (r.all) mStat.all++;
+    }
+    html += '<section class="card"><div class="card-head"><h2>' + MONTHS[mo] + " " + y + "</h2>" +
+      '<span class="note mono">' + mStat.core + " von " + mStat.counted + " Tagen mit Kern</span></div>" +
+      '<div class="monthrow"><div class="monthwrap"><div class="month">';
+    WD.forEach(function (w) { html += '<span class="lbl">' + w + "</span>"; });
+    for (var i = 0; i < lead; i++) html += '<span class="cell blank"></span>';
+    for (var dnum = 1; dnum <= len; dnum++) {
+      var dt = new Date(y, mo, dnum, 12), k = ymd(dt), rec = ev.perDay[k];
+      var cls = "cell";
+      if (dt > now) cls += "";
+      else if (!rec) cls += "";
+      else if (!rec.counts) cls += " skip";
+      else if (rec.ratio >= 1) cls += " s4";
+      else if (rec.ratio >= 0.7) cls += " s3";
+      else if (rec.ratio >= 0.4) cls += " s2";
+      else if (rec.ratio > 0) cls += " s1";
+      if (k === ymd(now)) cls += " today";
+      html += '<span class="' + cls + '" title="' + k + '">' + dnum + "</span>";
+    }
+    html += "</div></div>";
+    html += '<dl class="mstats">' +
+      '<div><dt>Lernzeit</dt><dd class="mono">' + fmtMin(mStat.mins) + "</dd></div>" +
+      '<div><dt>Volle Tage</dt><dd class="mono">' + mStat.all + "</dd></div>" +
+      '<div><dt>Ohne Wertung</dt><dd class="mono">' + mStat.off + "</dd></div>" +
+      '<div><dt>Bester Lauf</dt><dd class="mono">' + ev.best + " Tage</dd></div>" +
+      "</dl></div>";
+    html += '<div class="legend"><span>wenig</span>' +
+      '<i style="background:var(--heat-0)"></i><i style="background:var(--heat-1)"></i>' +
+      '<i style="background:var(--heat-2)"></i><i style="background:var(--heat-3)"></i>' +
+      '<i style="background:var(--heat-4)"></i><span>alles</span>' +
+      '<i class="cell skip" style="margin-left:10px"></i><span>Feiertag, frei oder krank — zählt nicht</span>' +
+      "</div></section>";
+
+    /* Daten */
+    html += '<section class="card"><div class="card-head"><h2>Austausch mit dem Widget</h2>' +
+      '<span class="note mono" id="savestate">' + esc(statusTxt) + "</span></div>" +
+      '<p class="note">Dasselbe Format wie <code class="mono">~/.lernplan-widget.json</code>. ' +
+      "Von dort einfügen und einlesen, oder hier kopieren und dort ablegen.</p>" +
+      '<textarea id="io" spellcheck="false" aria-label="Zustand als JSON">' +
+      esc(JSON.stringify({ v: 4, d: state.d, f: state.f, n: state.n, w: state.w,
+                           q: state.q, g: state.g, zn: state.zn })) + "</textarea>" +
+      '<div class="row" style="margin-top:10px">' +
+      '<button class="btn" data-act="copy" type="button">' + icon("cards") + "Kopieren</button>" +
+      '<button class="btn" data-act="import" type="button">' + icon("check") + "Einlesen</button>" +
+      '<span class="note" id="iomsg"></span></div></section>';
+
+    html += "</div>";
+
+    html += '<footer><span>Feiertage Baden-Württemberg aus der Osterformel · ' +
+      "Ferien bis " + PLAN.vacations[PLAN.vacations.length - 1][1].split("-").reverse().join(".") + "</span>" +
+      "<span>Punkte je Minute: Deep Work ×1,6 · Anki ×1,2 · Wiederholen ×1,0 · Routine ×0,8 · Lesen ×0,7 — Kern +50, voller Tag +100</span></footer>";
+
+    document.getElementById("root").innerHTML = html;
+  }
+
+  /* ---- Bedienung -------------------------------------------------------- */
+  function toggleBlock(id) {
+    var info = dayInfo(shownDate(), state.f);
+    var list = (state.d[info.key] || []).slice();
+    var i = list.indexOf(id);
+    var b = (info.plan.blocks || []).filter(function (x) { return x.id === id; })[0];
+    if (i >= 0) list.splice(i, 1); else list.push(id);
+    if (list.length) state.d[info.key] = list; else delete state.d[info.key];
+    if (i < 0 && b) lastFloat = { id: id, xp: blockXp(b) };
+    save(); render(); showFloat();
+  }
+  function showFloat() {
+    if (!lastFloat) return;
+    var row = document.querySelector('.quest[data-id="' + lastFloat.id + '"]');
+    if (row) {
+      var s = document.createElement("span");
+      s.className = "float mono";
+      s.textContent = "+" + lastFloat.xp + " XP";
+      row.appendChild(s);
+      setTimeout(function () { if (s.parentNode) s.parentNode.removeChild(s); }, 950);
+    }
+    lastFloat = null;
+  }
+  function cycleMark() {
+    var key = dayInfo(shownDate(), state.f).key;
+    var cur = state.f[key];
+    if (!cur) state.f[key] = "frei";
+    else if (cur === "frei") state.f[key] = "krank";
+    else delete state.f[key];
+    save(); render();
+  }
+
+  document.addEventListener("click", function (e) {
+    var el = e.target.closest ? e.target.closest("[data-act]") : null;
+    if (!el) return;
+    var act = el.getAttribute("data-act");
+    if (act === "exam") { startExam(el.getAttribute("data-attr")); return; }
+    if (act === "examPick") {
+      var f = exam.fragen[exam.i], i = Number(el.getAttribute("data-i"));
+      antwort(i === f.k, i); return;
+    }
+    if (act === "examNum") {
+      var fn = exam.fragen[exam.i];
+      var v = Number(document.getElementById("exNum").value);
+      antwort(isFinite(v) && Math.abs(v - fn.a) <= (fn.tol || 0), null); return;
+    }
+    if (act === "examNext") { exam.i++; exam.beantwortet = false; exam.gewaehlt = null; zeigeExam(); return; }
+    if (act === "examRetry") {
+      exam = { attr: exam.attr, ziel: exam.ziel, fragen: zieheFragen(exam.attr, exam.ziel),
+               i: 0, richtig: 0, beantwortet: false, gewaehlt: null };
+      zeigeExam(); return;
+    }
+    if (act === "examClose") {
+      var dlg = document.getElementById("examDlg");
+      if (dlg) { try { dlg.close(); } catch (e) { dlg.removeAttribute("open"); } }
+      exam = null; render();
+      // Was während der Prüfung liegen blieb, geht jetzt raus.
+      if (nachholen) { nachholen = false; save(); }
+      return;
+    }
+    if (act === "toggle") toggleBlock(el.getAttribute("data-id"));
+    else if (act === "prev") { setView(view - 1); render(); }
+    else if (act === "next") { if (view < 0) { setView(view + 1); render(); } }
+    else if (act === "today") { setView(0); render(); }
+    else if (act === "day") { setView(Number(el.getAttribute("data-off")) || 0); render(); }
+    else if (act === "gadd") noteEintragen();
+    else if (act === "gdel") {
+      var gi = el.getAttribute("data-id");
+      state.g = (state.g || []).filter(function (x) { return x.id !== gi; });
+      save(); render();
+    }
+    else if (act === "mark") cycleMark();
+    else if (act === "theme") {
+      var root = document.documentElement;
+      var isDark = root.getAttribute("data-theme") === "dark" ||
+        (!root.getAttribute("data-theme") &&
+         window.matchMedia("(prefers-color-scheme: dark)").matches);
+      root.setAttribute("data-theme", isDark ? "light" : "dark");
+    } else if (act === "copy") {
+      var ta = document.getElementById("io");
+      ta.select();
+      try { document.execCommand("copy"); msg("kopiert", true); }
+      catch (err) { msg("Kopieren ging nicht — von Hand markieren", false); }
+    } else if (act === "import") {
+      try {
+        var roh = JSON.parse(document.getElementById("io").value);
+        var incoming = normalize(roh);
+        state.d = incoming.d; state.f = incoming.f; state.n = incoming.n;
+        state.w = incoming.w; state.q = incoming.q;
+        // Das Mac-Widget kennt weder Noten noch Zielnote. Käme sein JSON hier
+        // an, würden beide sonst kommentarlos verschwinden.
+        if (Object.prototype.hasOwnProperty.call(roh, "g")) state.g = incoming.g;
+        if (Object.prototype.hasOwnProperty.call(roh, "zn")) state.zn = incoming.zn;
+        save(); render(); msg("eingelesen", true);
+      } catch (err) { msg("Das ist kein gültiges JSON", false); }
+    }
+  });
+  /*  Das Formular wird bei jedem render() neu gebaut. Damit Getipptes einen
+      Klick auf ein Häkchen überlebt, liegen die Werte in gForm und werden von
+      dort wieder eingesetzt.                                                 */
+  document.addEventListener("input", function (e) {
+    var t = e.target;
+    if (!t || !t.id) return;
+    if (t.id === "gNote") { gForm.n = t.value; gMsg = null; gTipp(); }
+    else if (t.id === "gPkt") { gForm.p = t.value; gMsg = null; gTipp(); }
+    else if (t.id === "gWas") gForm.was = t.value;
+    else if (t.id === "gDat") gForm.dat = t.value;
+  });
+  document.addEventListener("change", function (e) {
+    var t = e.target;
+    if (!t || !t.id) return;
+    if (t.id === "gFach") { gForm.fach = t.value; gMsg = null; gTipp(); }
+    else if (t.id === "gGew") gForm.gew = t.value;
+    else if (t.id === "gZiel") {
+      var z = Number(t.value);
+      state.zn = isFinite(z) && z >= 1 && z <= 6 ? Math.round(z * 10) / 10 : 1.9;
+      save(); render();
+    }
+  });
+  document.addEventListener("keydown", function (e) {
+    if (e.key !== "Enter") return;
+    var t = e.target;
+    if (!t || !t.id) return;
+    if (["gWas", "gNote", "gPkt", "gDat"].indexOf(t.id) >= 0) { e.preventDefault(); noteEintragen(); }
+  });
+  /*  Nur die eine Zeile neu schreiben — ein render() würde den Fokus aus dem
+      Feld reissen, in dem gerade getippt wird.                               */
+  function gTipp() {
+    var el = document.getElementById("gtip");
+    if (!el) return;
+    el.textContent = gHinweis();
+    el.className = "gtip note";
+  }
+
+  function msg(txt, good) {
+    var el = document.getElementById("iomsg");
+    if (!el) return;
+    el.textContent = txt;
+    el.className = "note " + (good ? "ok" : "bad");
+  }
+
+  /* ---- Start ------------------------------------------------------------ */
+  load();
+  render();
+
+  if (window.claude && typeof window.claude.use === "function") {
+    window.claude.use("artifact").then(function (api) {
+      if (!api) return;
+      artifactApi = api; saveMode = "geteilt";
+      setStatus("gesichert");
+    })["catch"](function () { /* bleibt lokal */ });
+  }
+})();
+</script>
