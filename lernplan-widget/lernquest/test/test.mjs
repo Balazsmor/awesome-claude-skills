@@ -11,7 +11,9 @@ const HOOK = `  try { window.__T = { punkteZuNote:punkteZuNote, noteZuPunkte:not
     ZEUGNIS:ZEUGNIS, schuljahr:schuljahr, kennung:kennung, hhmm:hhmm,
     bettzeit:bettzeit, evaluate:evaluate, dayInfo:dayInfo, addDays:addDays,
     ymd:ymd, planMischen:planMischen, planDelta:planDelta, planPruefen:planPruefen,
-    PLAN_BASIS:PLAN_BASIS, plan:function(){return PLAN;} }; } catch (e) {}\n})();\n</script>`;
+    PLAN_BASIS:PLAN_BASIS, plan:function(){return PLAN;},
+    schwaechstesFach:schwaechstesFach, frageBauen:frageBauen,
+    frage:function(){return frage;}, FRAGEARTEN:FRAGEARTEN }; } catch (e) {}\n})();\n</script>`;
 
 const kaputt = process.argv.includes("--ohne-fix");
 const ohneXp = process.argv.includes("--ohne-xp-fix");
@@ -799,7 +801,112 @@ await p.click('[data-act="mark"]'); await p.waitForTimeout(150);
 eq("und die Markierung ist wieder weg",
    await p.evaluate(() => Object.keys(window.__T.state().f).length), 0);
 
-/* ---- 32. Kein Skriptfehler ---------------------------------------------- */
+/* ---- 32. Die Frage-Werkstatt ------------------------------------------- */
+/*  Die Seite kann Claude nicht selbst fragen — sie baut die Frage. Geprüft
+    wird, dass wirklich der eigene Zusammenhang darin landet.                 */
+await p.evaluate(() => {
+  const st = window.__T.state();
+  st.q = { bwl: 3, suk: 2, wiso: 3, deutsch: 4, englisch: 3 };
+  st.g = [
+    { id:"s1", fach:"suk", was:"Klassenarbeit Buchführung", n:3.4, p:null, dat:"2026-08-01", gew:2 },
+    { id:"s2", fach:"suk", was:"Test KLR",                  n:2.8, p:null, dat:"2026-08-20", gew:1 },
+    { id:"b1", fach:"bwl", was:"Beschaffung",               n:2.0, p:83,   dat:"2026-08-10", gew:1 }
+  ];
+  st.w[window.__T.isoWeek(new Date())] = ["Deckungsbeitragsrechnung", "Kaufvertragsstörungen"];
+  window.__T.render();
+});
+await p.waitForTimeout(200);
+wahr("Die Karte ist da", await p.locator("#ftext").count() === 1);
+eq("Vorgeschlagen wird das schwächste Fach",
+   await p.evaluate(() => document.getElementById("fFach").value), "suk");
+await p.fill("#fThema", "Deckungsbeitrag je Stück");
+await p.waitForTimeout(200);
+const fText = await p.inputValue("#ftext");
+wahr("Die Frage nennt den Beruf", /Industriekaufmann/.test(fText));
+wahr("und die nächste Prüfung mit Abstand", /IHK Teil 1 am 25\.02\.2027 — noch \d+ Tage/.test(fText));
+wahr("und das Fach mit Beschreibung", /Fach: SUK \(Steuerung und Kontrolle/.test(fText));
+/*  Die Stufe ist nicht einfach die bestandene: standOf() deckelt sie an der
+    Lernzeit. Geprüft wird deshalb gegen das, was die Attributkarte anzeigt —
+    die Frage darf nichts anderes behaupten als die Seite.                    */
+const stufeAusKarte = (nm) => p.evaluate((n) => {
+  const el = Array.from(document.querySelectorAll(".attr"))
+    .filter(a => a.querySelector(".an").textContent === n)[0];
+  return el ? el.querySelector(".alv").textContent.trim() : null;
+}, nm);
+const suklv = await stufeAusKarte("SUK");
+wahr("und die Stufe, die auch auf der Attributkarte steht",
+     new RegExp("Mein Stand in diesem Fach: Stufe " + suklv + " von 11\\.").test(fText));
+// (3,4 × 2 + 2,8) ÷ 3 = 3,20
+wahr("und den Notenschnitt mit der letzten Arbeit",
+     /Schnitt meiner Klassenarbeiten: 3,20 · zuletzt 2,8 in „Test KLR“/.test(fText));
+wahr("und die Schwerpunkte der Woche",
+     /Schwerpunkte dieser Woche: Deckungsbeitragsrechnung, Kaufvertragsstörungen/.test(fText));
+wahr("und den Stoffzuschnitt bis Teil 1", /Stoffzuschnitt bis dahin: Bis Teil 1 zählt/.test(fText));
+wahr("und die eigentliche Bitte", /Erklär mir: Deckungsbeitrag je Stück/.test(fText));
+wahr("und wie die Antwort aussehen soll", /Rechenwege Schritt für Schritt/.test(fText));
+
+/*  Die fünf Arten müssen sich wirklich unterscheiden — sonst ist die Auswahl
+    Zierde.                                                                   */
+const arten = await p.evaluate(() => window.__T.FRAGEARTEN.map(a => a.id));
+eq("Fünf Arten stehen zur Wahl", arten.length, 5);
+await p.selectOption("#fArt", "abfragen");
+await p.waitForTimeout(200);
+const fAb = await p.inputValue("#ftext");
+wahr("Abfragen bittet um eine Frage nach der anderen",
+     /wie im Fachgespräch: Deckungsbeitrag je Stück/.test(fAb) &&
+     /Eine Frage nach der anderen/.test(fAb));
+wahr("und nicht mehr um eine Erklärung", !/Erklär mir:/.test(fAb));
+await p.selectOption("#fArt", "pruefen");
+await p.waitForTimeout(200);
+wahr("Prüfen lässt Platz zum Einfügen",
+     /\[hier einfügen\]/.test(await p.inputValue("#ftext")));
+await p.selectOption("#fArt", "erklaer");
+await p.waitForTimeout(200);
+
+// Ein anderes Fach zieht seinen eigenen Stand nach.
+await p.selectOption("#fFach", "bwl");
+await p.waitForTimeout(200);
+const fBwl = await p.inputValue("#ftext");
+const bwllv = await stufeAusKarte("BWL");
+wahr("Ein anderes Fach bringt seine eigene Stufe mit",
+     /Fach: BWL/.test(fBwl) &&
+     new RegExp("Stufe " + bwllv + " von 11\\.").test(fBwl));
+wahr("und seinen eigenen Schnitt", /Schnitt meiner Klassenarbeiten: 2,00/.test(fBwl));
+
+/*  Von Hand geändert bleibt geändert — bis „Neu bauen“.                      */
+await p.fill("#ftext", "Ganz eigene Frage.");
+await p.evaluate(() => window.__T.render());
+await p.waitForTimeout(200);
+eq("Eine eigene Fassung übersteht das Neuzeichnen",
+   await p.inputValue("#ftext"), "Ganz eigene Frage.");
+await p.click('[data-act="ffrisch"]');
+await p.waitForTimeout(200);
+wahr("Neu bauen stellt den Vorschlag wieder her",
+     /Industriekaufmann/.test(await p.inputValue("#ftext")));
+
+/*  Jede Veröffentlichung lädt alle Ansichten neu — der Entwurf muss das
+    überstehen, sonst ist Getipptes beim nächsten Häkchen weg.                */
+eq("Der Entwurf liegt in sessionStorage",
+   await p.evaluate(() => JSON.parse(sessionStorage.getItem("lernquest.frage")).thema),
+   "Deckungsbeitrag je Stück");
+await p.reload();
+await p.waitForSelector("#ftext");
+await p.waitForTimeout(200);
+eq("und übersteht das Neuladen", await p.inputValue("#fThema"), "Deckungsbeitrag je Stück");
+eq("samt gewähltem Fach", await p.evaluate(() => document.getElementById("fFach").value), "bwl");
+
+/*  Der Knopf, der Claude öffnet: ein echter Verweis, damit der Rahmen ihn
+    weiterreicht — und er kopiert im selben Griff.                            */
+const ziel = await p.evaluate(() => {
+  const a = document.querySelector('a[data-act="fcopy"]');
+  return a ? { href: a.getAttribute("href"), ziel: a.getAttribute("target"),
+               rel: a.getAttribute("rel") } : null;
+});
+eq("Der Verweis zeigt auf einen neuen Claude-Chat", ziel && ziel.href, "https://claude.ai/new");
+eq("und öffnet ihn in einem neuen Reiter", ziel && ziel.ziel, "_blank");
+eq("mit noopener", ziel && ziel.rel, "noopener");
+
+/* ---- 33. Kein Skriptfehler ---------------------------------------------- */
 eq("Seitenfehler", errs, []);
 
 await ctx.close(); await b.close();

@@ -38,6 +38,7 @@ Was sie zusätzlich kann:
 | **Monat** | Blätterbar und klickbar; ein Tag mit Notiz bekommt eine Ecke |
 | **Schlafenszeit** | Ab 19:00 steht unter dem Tagesplan, wann Schluss sein müsste — rückwärts vom nächsten Weckruf, `sleepHours` aus dem Plan |
 | **Eigener Stundenplan** | Zeiten, Blöcke, Ferien und Prüfungstermine lassen sich in der Seite selbst ändern — dieselben Schlüssel wie `lernplan-config.json` |
+| **Frage-Werkstatt** | Baut aus dem eigenen Stand eine fertige Frage an Claude — Fach, Stufe, Schnitt, Wochen-Schwerpunkt, Prüfungsabstand — in fünf Sorten, kopierbar |
 
 ## Datei
 
@@ -85,6 +86,19 @@ und die XP mitten in der Ausbildung gesunken, die Gesamtstufe mit ihr und der
 Karriereplan hinterher. Die verbliebene Schranke von fünf Jahren fängt nur Unsinn
 aus einem eingelesenen Fremdstand ab.
 
+**Die Frage-Werkstatt schickt nichts weg.** Ein Artefakt kann Claude nicht
+selbst fragen: die Laufzeit-Fähigkeiten, die eine veröffentlichte Seite
+bekommen kann, sind `artifact`, `downloads`, `mcp` und `self` — eine
+Modell-Anfrage ist nicht darunter. Ein Chat-Fenster, das nichts antwortet, wäre
+schlimmer als keins. Stattdessen nimmt die Karte das Mühsame ab: den
+Zusammenhang. Fach, geprüfte Stufe, Notenschnitt samt letzter Arbeit,
+Wochen-Schwerpunkte, Stoffzuschnitt und Prüfungsabstand stehen ohnehin in der
+Seite und gehen als Text in die Frage; fünf Sorten (erklären, Aufgaben, prüfen,
+Denkfehler, abfragen) geben die Bitte und die Erwartung an die Antwort vor. Der
+Text ist änderbar, *Neu bauen* stellt den Vorschlag wieder her. Der Entwurf
+liegt in `sessionStorage`, nicht im Zustand — er ist ein Schmierzettel, und
+jede Veröffentlichung lädt die Ansicht neu.
+
 **Die Schriften halten die Anzeige nicht auf.** Der Verweis im Kopf steht als
 `media="print"`; erst wenn die Seite steht, schaltet das Skript ihn auf `all`.
 Ein Stylesheet im Kopf blockiert sonst das Zeichnen: hängt der Schriften-Dienst,
@@ -121,10 +135,11 @@ Ziellinie, kein Hebel.
 ```sh
 cd lernplan-widget/lernquest/test
 npm i playwright-core
-node test.mjs        # 170 Prüfungen: Notenrechnung, Zeugnis je Schuljahr, XP-Konto,
+node test.mjs        # 195 Prüfungen: Notenrechnung, Zeugnis je Schuljahr, XP-Konto,
                      # Kalenderwoche, Blockzeiten, Fragenkatalog, Rückgängig, Fokus,
                      # Zusammenführen, Schlafenszeit, eigener Stundenplan,
-                     # abgelaufener Timer, Schriftladen, Scroll-Anker
+                     # abgelaufener Timer, Schriftladen, Scroll-Anker,
+                     # Frage-Werkstatt
 node savetest.mjs    # 28: Wecker wird beim Start vorgelegt, nichts wird
                      # während Prüfung, Timer oder Wecker veröffentlicht
 

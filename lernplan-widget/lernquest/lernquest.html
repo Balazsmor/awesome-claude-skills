@@ -562,6 +562,20 @@ textarea { width:100%; min-height:110px; background:var(--sunk); color:var(--ink
 textarea:focus-visible { outline:2px solid var(--amber); outline-offset:1px; }
 /*  Der Stundenplan ist lang — das Feld darf mehr Platz nehmen als der Zustand. */
 textarea.hoch { min-height:260px; font-size:11.5px; line-height:1.5; }
+/*  Die fertige Frage: lang genug, um sie ganz zu überblicken, und in der
+    Fliesstextschrift — man soll sie lesen, nicht als Code ansehen. */
+textarea.mittel { min-height:264px; font-family:inherit; font-size:13px; line-height:1.55; }
+/*  Ein Verweis, der wie ein Knopf aussieht, braucht die Strichlosigkeit dazu. */
+a.btn { text-decoration:none; color:inherit; }
+/*  Fach, Art und Thema nebeneinander; auf schmalen Geräten das Thema über die
+    ganze Breite, weil dort der Text hineingeht. */
+.fform { display:grid; gap:10px; margin:14px 0 12px; align-items:end;
+         grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); }
+.fform .gf.f-thema { grid-column:1 / -1; }
+@media (min-width:760px) {
+  .fform { grid-template-columns:1fr 1fr 2fr; }
+  .fform .gf.f-thema { grid-column:auto; }
+}
 /*  Was an einem eingefügten Plan klemmt, steht darunter. Der alte Plan bleibt
     dabei stehen, deshalb ist das ein Hinweis und kein Alarm. */
 .planfehler { list-style:none; margin:11px 0 0; padding:11px 13px; border-radius:10px;
@@ -613,7 +627,7 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
 </dialog>
 
 <script type="application/json" id="state">
-{"v":4,"d":{},"f":{"2026-08-28":"frei"},"n":{},"w":{},"q":{},"g":[{"id":"zg26bfk","fach":"zg:bfk","was":"Jahreszeugnis 2026","n":1.9,"p":null,"dat":"2026-07-29","gew":1},{"id":"zg26de","fach":"zg:deutsch","was":"Jahreszeugnis 2026","n":2.4,"p":null,"dat":"2026-07-29","gew":1},{"id":"zg26en","fach":"zg:englisch","was":"Jahreszeugnis 2026","n":2.8,"p":null,"dat":"2026-07-29","gew":1},{"id":"zg26gk","fach":"zg:gk","was":"Jahreszeugnis 2026","n":2.2,"p":null,"dat":"2026-07-29","gew":1}],"t":{"key":"2026-08-28","id":"anki","nm":"Anki 15′ · nur Fälliges","mins":15,"start":1787911045676},"zn":1.9,"zw":900,"updatedAt":1787911045677}
+{"v":4,"d":{},"f":{"2026-08-28":"frei"},"n":{},"w":{},"q":{},"g":[{"id":"zg26bfk","fach":"zg:bfk","was":"Jahreszeugnis 2026","n":1.9,"p":null,"dat":"2026-07-29","gew":1},{"id":"zg26de","fach":"zg:deutsch","was":"Jahreszeugnis 2026","n":2.4,"p":null,"dat":"2026-07-29","gew":1},{"id":"zg26en","fach":"zg:englisch","was":"Jahreszeugnis 2026","n":2.8,"p":null,"dat":"2026-07-29","gew":1},{"id":"zg26gk","fach":"zg:gk","was":"Jahreszeugnis 2026","n":2.2,"p":null,"dat":"2026-07-29","gew":1}],"t":null,"p":null,"zn":1.9,"zw":990,"updatedAt":1787933705023}
 </script>
 
 <script id="app">
@@ -2675,6 +2689,140 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
   var planEntwurf = null;     // dasselbe für den Stundenplan
   var planFehler = [];        // was beim letzten Übernehmen im Weg stand
   var monatOffset = 0;        // 0 = aktueller Monat, negativ = zurückgeblättert
+  var frageEntwurf = null;    // von Hand geänderter Fragetext, sonst null
+
+  /* ---- Frage-Werkstatt ---------------------------------------------------
+     Die Seite kann Claude nicht selbst fragen — diese Fähigkeit gibt es für
+     ein veröffentlichtes Artefakt nicht. Was sie kann, ist das Mühsame am
+     Fragen abnehmen: den Zusammenhang. Fach, geprüfte Stufe, Notenschnitt,
+     Wochen-Schwerpunkt, Stoffzuschnitt und Prüfungsabstand stehen hier ohnehin
+     schon — daraus baut sie eine Frage, die man nur noch einfügen muss.
+
+     Der Entwurf liegt in sessionStorage, nicht im Zustand: er ist ein
+     Schmierzettel, kein Eintrag. Und jede Veröffentlichung lädt alle offenen
+     Ansichten neu — ohne den Zwischenspeicher wäre Getipptes dann weg.        */
+  var FRAGE_KEY = "lernquest.frage";
+  var FRAGEARTEN = [
+    { id: "erklaer", nm: "Erklär mir das",
+      platz: "die Deckungsbeitragsrechnung",
+      frage: "Erklär mir: {thema}",
+      wunsch: ["In einfachen Sätzen, mit einem Beispiel aus einem Industriebetrieb.",
+               "Rechenwege Schritt für Schritt — keine Zeile überspringen.",
+               "Am Ende drei Sätze, die ich mir merken soll."] },
+    { id: "aufgaben", nm: "Gib mir Aufgaben",
+      platz: "Lagerkennzahlen",
+      frage: "Gib mir fünf Übungsaufgaben zu: {thema}",
+      wunsch: ["Prüfungsnah, so wie sie in der IHK-Prüfung vorkommen könnten.",
+               "Erst alle fünf Aufgaben, die Lösungen erst danach — ich will selbst rechnen.",
+               "Zu jeder Lösung den Rechenweg, nicht nur das Ergebnis."] },
+    { id: "pruefen", nm: "Prüf, was ich habe",
+      platz: "meine Erörterung — ich füge sie unten ein",
+      frage: "Prüf bitte, was ich geschrieben oder gerechnet habe: {thema}\n\n[hier einfügen]",
+      wunsch: ["Sag mir, was falsch ist und warum — nicht nur, dass es falsch ist.",
+               "Was richtig ist, sag auch; ich will wissen, was ich behalten kann.",
+               "Sortier die Fehler nach Art, damit ich weiß, woran ich üben muss."] },
+    { id: "warum", nm: "Warum war das falsch?",
+      platz: "die Aufgabe und meine Lösung — ich füge beides unten ein",
+      frage: "Ich habe das hier falsch gemacht und verstehe nicht, warum: {thema}\n\n[hier einfügen]",
+      wunsch: ["Zeig mir den Denkfehler, nicht nur die richtige Lösung.",
+               "Danach eine ähnliche Aufgabe, an der ich prüfen kann, ob ich es jetzt kann."] },
+    { id: "abfragen", nm: "Frag mich ab",
+      platz: "Beschaffung und Angebotsvergleich",
+      frage: "Frag mich zu diesem Thema ab, wie im Fachgespräch: {thema}",
+      wunsch: ["Eine Frage nach der anderen, und warte jeweils auf meine Antwort.",
+               "Hak nach, wenn ich ausweiche oder nur mit Schlagworten antworte.",
+               "Am Ende sag mir, wo ich unsicher war."] }
+  ];
+  function frageLesen() {
+    try {
+      var r = JSON.parse(sessionStorage.getItem(FRAGE_KEY) || "null");
+      if (r && typeof r === "object") {
+        return { fach: String(r.fach || ""), art: String(r.art || "erklaer"),
+                 thema: String(r.thema || "").slice(0, 600) };
+      }
+    } catch (e) { /* privater Modus — dann eben ohne */ }
+    return { fach: "", art: "erklaer", thema: "" };
+  }
+  function frageMerken() {
+    try { sessionStorage.setItem(FRAGE_KEY, JSON.stringify(frage)); } catch (e) {}
+  }
+  var frage = frageLesen();
+
+  /*  Vorgeschlagen wird das Fach, das am weitesten zurückliegt: zuerst die
+      niedrigste geprüfte Stufe, bei Gleichstand die schlechtere Note.         */
+  function schwaechstesFach(ev) {
+    var best = null;
+    GEPRUEFT.forEach(function (id) {
+      var st = standOf(id, (ev && ev.attrXp[id]) || 0);
+      var sc = schnitt((state.g || []).filter(function (e) { return e.fach === id; }));
+      var wert = st.level * 10 - (sc === null ? 0 : sc);
+      if (!best || wert < best.wert) best = { id: id, wert: wert };
+    });
+    return best ? best.id : GEPRUEFT[0];
+  }
+  function frageArt() {
+    return FRAGEARTEN.filter(function (a) { return a.id === frage.art; })[0] || FRAGEARTEN[0];
+  }
+  function frageBauen(ev, now) {
+    var fid = frage.fach || schwaechstesFach(ev);
+    var at = ATTR_BY[fid] || ATTR_BY[GEPRUEFT[0]];
+    var art = frageArt(), thema = frage.thema.trim();
+    var st = standOf(fid, (ev && ev.attrXp[fid]) || 0);
+    var noten = (state.g || []).filter(function (e) { return e.fach === fid; });
+    var sc = schnitt(noten);
+    var letzte = noten.slice().sort(function (a, b) {
+      return (a.dat || "") < (b.dat || "") ? 1 : -1;
+    })[0];
+    var pr = nextExam(now), themen = (state.w && state.w[isoWeek(now)]) || [];
+
+    var z = [];
+    z.push("Ich mache eine Ausbildung zum Industriekaufmann (IHK, Baden-Württemberg)" +
+      (pr ? " und lerne auf " + pr.label + " am " +
+            pr.date.split("-").reverse().join(".") + " — noch " + pr.days + " Tage." : "."));
+
+    var stand = ["Fach: " + at.nm + " (" + at.de + ")",
+                 "Mein Stand in diesem Fach: Stufe " + st.level + " von 11."];
+    if (sc !== null) {
+      stand.push("Schnitt meiner Klassenarbeiten: " + num(sc, 2) +
+        (letzte ? " · zuletzt " + num(letzte.n) +
+                  (letzte.was ? " in „" + letzte.was + "“" : "") : ""));
+    }
+    if (themen.length) stand.push("Schwerpunkte dieser Woche: " + themen.join(", "));
+    z.push(stand.join("\n"));
+
+    if (PLAN.focus && ymd(now) < PLAN.focusBis) z.push("Stoffzuschnitt bis dahin: " + PLAN.focus);
+
+    z.push(art.frage.replace("{thema}", thema || "…"));
+    z.push("So möchte ich die Antwort:\n" +
+           art.wunsch.map(function (w) { return "- " + w; }).join("\n"));
+    return z.join("\n\n");
+  }
+  /*  Nur das Textfeld neu beschriften — ein render() risse den Fokus aus dem
+      Feld, in das gerade getippt wird.                                        */
+  function frageFeldFrisch() {
+    var ta = document.getElementById("ftext");
+    if (ta && frageEntwurf === null) ta.value = frageBauen(lastEv, today());
+  }
+  /*  Zuerst der alte Weg über die Auswahl — der läuft auch dort, wo die
+      Zwischenablage-Schnittstelle im Rahmen gesperrt ist.                     */
+  function kopiere(id, gut) {
+    var ta = document.getElementById(id);
+    if (!ta) return;
+    var melde = function (ok) {
+      var el = document.getElementById("fmsg");
+      var txt = ok ? gut : "Kopieren ging nicht — Feld markieren und selbst kopieren";
+      if (el) { el.textContent = txt; el.className = "note " + (ok ? "ok" : "bad"); }
+      sag(txt);
+    };
+    try {
+      ta.focus(); ta.select();
+      if (document.execCommand("copy")) { melde(true); return; }
+    } catch (e) { /* dann der neue Weg */ }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(ta.value).then(function () { melde(true); },
+                                                   function () { melde(false); });
+    } else melde(false);
+  }
 
   function fachName(id) {
     var f = String(id);
@@ -2709,6 +2857,47 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
   function ptile(titel, wert, unten, cls) {
     return '<div class="pt ' + cls + '"><span class="eyebrow">' + esc(titel) + "</span>" +
       '<span class="pv mono">' + esc(wert) + '</span><span class="pc">' + esc(unten) + "</span></div>";
+  }
+
+  function fragenKarte(ev, now) {
+    var fid = frage.fach || schwaechstesFach(ev);
+    var art = frageArt();
+    var text = frageEntwurf !== null ? frageEntwurf : frageBauen(ev, now);
+    return '<section class="card"><div class="card-head"><h2>Frag Claude</h2>' +
+      '<span class="note mono">' +
+      (frage.fach ? esc(ATTR_BY[fid] ? ATTR_BY[fid].nm : fid)
+                  : "Vorschlag: dein schwächstes Fach") + "</span></div>" +
+      '<p class="note">Das Mühsame am Fragen ist der Zusammenhang — und der steht ' +
+      "hier ohnehin schon. Die Seite baut daraus eine fertige Frage: Fach, deine " +
+      "Stufe, dein Schnitt, die Schwerpunkte der Woche und der Abstand zur Prüfung. " +
+      "Kopieren, in Claude einfügen, fertig.</p>" +
+      '<div class="fform">' +
+      '<label class="gf"><span>Fach</span><select id="fFach">' +
+      GEPRUEFT.map(function (id) {
+        return '<option value="' + id + '"' + (fid === id ? " selected" : "") +
+          ">" + esc(ATTR_BY[id].nm) + "</option>";
+      }).join("") + "</select></label>" +
+      '<label class="gf"><span>Art der Frage</span><select id="fArt">' +
+      FRAGEARTEN.map(function (a) {
+        return '<option value="' + a.id + '"' + (a.id === art.id ? " selected" : "") +
+          ">" + esc(a.nm) + "</option>";
+      }).join("") + "</select></label>" +
+      '<label class="gf f-thema"><span>Worum geht es</span>' +
+      '<input id="fThema" type="text" maxlength="600" placeholder="' + esc(art.platz) +
+      '" value="' + esc(frage.thema) + '"></label></div>' +
+      '<textarea id="ftext" class="mittel" spellcheck="false" ' +
+      'aria-label="Die fertige Frage — änderbar">' + esc(text) + "</textarea>" +
+      '<div class="row" style="margin-top:10px">' +
+      '<button class="btn prim" data-act="fcopy" type="button">' + icon("cards") +
+      "Frage kopieren</button>" +
+      '<a class="btn" href="https://claude.ai/new" target="_blank" rel="noopener" ' +
+      'data-act="fcopy">' + icon("globe") + "Kopieren und Claude öffnen</a>" +
+      '<button class="btn ghost" data-act="ffrisch" type="button">Neu bauen</button>' +
+      '<span class="note" id="fmsg"></span></div>' +
+      '<p class="note tiny">Die Frage steht offen da und lässt sich ändern — lies sie, ' +
+      "bevor du sie schickst. Stufe und Notenschnitt stehen darin, weil eine Erklärung " +
+      "für Stufe 2 anders aussieht als für Stufe 5; wer das nicht mitschicken will, " +
+      "löscht die Zeile im Feld. <em>Neu bauen</em> stellt den Vorschlag wieder her.</p></section>";
   }
 
   function notenKarte(now) {
@@ -3296,6 +3485,9 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
     });
     html += "</div></section>";
 
+    /* Frag Claude */
+    html += fragenKarte(ev, now);
+
     /* Noten */
     html += notenKarte(now);
 
@@ -3651,6 +3843,13 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
       if (nachholen) { nachholen = false; save(); }
       return;
     }
+    if (act === "fcopy") {
+      /*  Beim Verweis auf claude.ai kümmert sich der Rahmen ums Öffnen; hier
+          wird nur kopiert, damit die Frage dort schon in der Ablage liegt.    */
+      kopiere("ftext", "Frage kopiert — in Claude einfügen.");
+      return;
+    }
+    if (act === "ffrisch") { frageEntwurf = null; render(); return; }
     if (act === "undo") { rueckNehmen(); return; }
     if (act === "weckerAus") { weckerZurueck(); return; }
     if (act === "tstart") {
@@ -3732,12 +3931,17 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
     } else if (t.id === "themen") {
       themenEntwurf = { key: isoWeek(today()), text: t.value };
     } else if (t.id === "io") ioEntwurf = t.value;
+    else if (t.id === "fThema") {
+      frage.thema = t.value; frageEntwurf = null; frageMerken(); frageFeldFrisch();
+    } else if (t.id === "ftext") frageEntwurf = t.value;
     else if (t.id === "planio") planEntwurf = t.value;
   });
   document.addEventListener("change", function (e) {
     var t = e.target;
     if (!t || !t.id) return;
-    if (t.id === "gFach") { gForm.fach = t.value; gMsg = null; gTipp(); }
+    if (t.id === "fFach") { frage.fach = t.value; frageEntwurf = null; frageMerken(); render(); }
+    else if (t.id === "fArt") { frage.art = t.value; frageEntwurf = null; frageMerken(); render(); }
+    else if (t.id === "gFach") { gForm.fach = t.value; gMsg = null; gTipp(); }
     else if (t.id === "gGew") gForm.gew = t.value;
     else if (t.id === "gZiel") {
       var z = Number(t.value);
