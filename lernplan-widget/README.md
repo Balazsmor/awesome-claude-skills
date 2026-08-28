@@ -1,5 +1,13 @@
 # Lernplan-Widget v7.2 · Übersicht
 
+> **Überholt.** Die gepflegte Fassung ist inzwischen
+> [Lernquest](lernquest/README.md) — dasselbe Dateiformat, dieselbe Rechnung,
+> dazu Noten, Stufen, Fokus-Timer mit Wecker und ein Stundenplan, der sich in der
+> Seite selbst ändern lässt. Das Widget hier bleibt liegen und funktioniert
+> weiter; wer einen Aufkleber auf dem Schreibtisch möchte statt eines Reiters im
+> Browser, ist damit weiter gut bedient. Neue Funktionen kommen aber nur noch
+> drüben an.
+
 Ein Schreibtisch-Widget für [Übersicht](https://tracesof.net/uebersicht/), das den
 Wochenplan einer dualen Ausbildung anzeigt, abhakbar macht und auswertet. Es kennt
 Schulferien und Feiertage in Baden-Württemberg, rechnet die Prüfung herunter und

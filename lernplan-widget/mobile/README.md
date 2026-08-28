@@ -1,5 +1,11 @@
 # Lernplan fürs iPhone · Scriptable
 
+> **Überholt.** Die gepflegte Fassung ist [Lernquest](../lernquest/README.md).
+> Sie läuft im Browser und damit auch auf dem iPhone, liest dasselbe
+> Dateiformat und kann mehr. Diese Scriptable-Fassung bleibt liegen und
+> funktioniert weiter — ein Widget auf dem Sperrbildschirm kann Lernquest
+> nämlich nicht.
+
 `Lernplan.js` ist die Handy-Fassung. Sie zeigt denselben Tagesplan wie das
 Mac-Widget, kennt dieselben Schulferien und Feiertage und liest dasselbe
 Dateiformat.

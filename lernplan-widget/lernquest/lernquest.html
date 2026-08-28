@@ -231,6 +231,16 @@ button { font:inherit; color:inherit; cursor:pointer; }
 .tfremd .note { flex:1; min-width:120px; }
 .tfremd .btn { margin-left:auto; }
 
+/* Die Schlafenszeit steht abends unter dem Tagesplan — leise, solange sie
+   eingehalten wird, und deutlich, sobald sie vorbei ist. */
+.bett { display:flex; align-items:baseline; gap:11px; flex-wrap:wrap; margin-top:11px;
+        padding:9px 13px; border-radius:10px; background:var(--panel-2);
+        border:1px solid var(--rule-2); font-size:12.5px; color:var(--ink-2);
+        line-height:1.45; }
+.bett .eyebrow { flex:none; color:var(--ink-3); }
+.bett.spaet { background:var(--coral-soft); border-color:var(--coral); color:var(--ink); }
+.bett.spaet .eyebrow { color:var(--coral); }
+
 /* Der Stempel selbst */
 .stamp { display:inline-flex; align-items:center; justify-content:center;
          font-family:"Chakra Petch",sans-serif; font-weight:700; font-size:13px;
@@ -391,6 +401,15 @@ button { font:inherit; color:inherit; cursor:pointer; }
 .zeug { margin-top:18px; padding-top:16px; border-top:1px solid var(--rule); }
 .zeug .pbl { margin-top:11px; }
 .zeug .pb .pbv { color:var(--amber); font-weight:600; width:52px; }
+/*  Je Schuljahr ein eigener Block mit eigenem Schnitt — zwei Zeugnisse dürfen
+    nicht ineinanderlaufen. */
+.zjahr { margin-top:14px; }
+.zjahr + .zjahr { margin-top:18px; padding-top:14px; border-top:1px dashed var(--rule-2); }
+.zkopf { display:flex; align-items:baseline; gap:12px; flex-wrap:wrap; }
+.zkopf .zj { font-family:"Chakra Petch",sans-serif; font-weight:600; font-size:14px;
+             letter-spacing:.02em; }
+.zkopf .note { margin-left:auto; }
+.zjahr .pbl { margin-top:7px; }
 
 /* Woran man beim Wecker ist — steht in der Timerleiste, klein aber da. */
 .tstat { flex:1 1 200px; min-width:0; }
@@ -541,6 +560,15 @@ textarea { width:100%; min-height:110px; background:var(--sunk); color:var(--ink
            border:1px solid var(--rule); border-radius:10px; padding:11px 12px;
            font-family:"IBM Plex Mono",monospace; font-size:12px; resize:vertical; }
 textarea:focus-visible { outline:2px solid var(--amber); outline-offset:1px; }
+/*  Der Stundenplan ist lang — das Feld darf mehr Platz nehmen als der Zustand. */
+textarea.hoch { min-height:260px; font-size:11.5px; line-height:1.5; }
+/*  Was an einem eingefügten Plan klemmt, steht darunter. Der alte Plan bleibt
+    dabei stehen, deshalb ist das ein Hinweis und kein Alarm. */
+.planfehler { list-style:none; margin:11px 0 0; padding:11px 13px; border-radius:10px;
+              background:var(--coral-soft); border:1px solid var(--coral);
+              font-size:12.5px; color:var(--ink); line-height:1.45; }
+.planfehler li { padding:2px 0 2px 15px; position:relative; }
+.planfehler li::before { content:"\2022"; position:absolute; left:2px; color:var(--coral); }
 .row { display:flex; gap:9px; flex-wrap:wrap; align-items:center; }
 .note { font-size:12.5px; color:var(--ink-3); }
 .ok { color:var(--mint); } .bad { color:var(--coral); }
@@ -584,7 +612,9 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
   <button class="exx" data-act="examClose" type="button" aria-label="Prüfung schließen">✕</button>
 </dialog>
 
-<script type="application/json" id="state">{"v":4,"d":{},"f":{"2026-08-28":"frei"},"n":{},"w":{},"q":{},"g":[{"id":"zg26bfk","fach":"zg:bfk","was":"Jahreszeugnis 2026","n":1.9,"p":null,"dat":"2026-07-29","gew":1},{"id":"zg26de","fach":"zg:deutsch","was":"Jahreszeugnis 2026","n":2.4,"p":null,"dat":"2026-07-29","gew":1},{"id":"zg26en","fach":"zg:englisch","was":"Jahreszeugnis 2026","n":2.8,"p":null,"dat":"2026-07-29","gew":1},{"id":"zg26gk","fach":"zg:gk","was":"Jahreszeugnis 2026","n":2.2,"p":null,"dat":"2026-07-29","gew":1}],"t":null,"zn":1.9,"zw":1200,"updatedAt":1787910152629}</script>
+<script type="application/json" id="state">
+{"v":4,"d":{},"f":{"2026-08-28":"frei"},"n":{},"w":{},"q":{},"g":[{"id":"zg26bfk","fach":"zg:bfk","was":"Jahreszeugnis 2026","n":1.9,"p":null,"dat":"2026-07-29","gew":1},{"id":"zg26de","fach":"zg:deutsch","was":"Jahreszeugnis 2026","n":2.4,"p":null,"dat":"2026-07-29","gew":1},{"id":"zg26en","fach":"zg:englisch","was":"Jahreszeugnis 2026","n":2.8,"p":null,"dat":"2026-07-29","gew":1},{"id":"zg26gk","fach":"zg:gk","was":"Jahreszeugnis 2026","n":2.2,"p":null,"dat":"2026-07-29","gew":1}],"t":{"key":"2026-08-28","id":"anki","nm":"Anki 15′ · nur Fälliges","mins":15,"start":1787911045676},"zn":1.9,"zw":900,"updatedAt":1787911045677}
+</script>
 
 <script id="app">
 /* ===========================================================================
@@ -601,10 +631,15 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
               "&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap";
   var LS_KEY = "lernquest.state.v4";
 
-  /* ---- Plan ------------------------------------------------------------- */
-  var PLAN = {
+  /* ---- Plan ---------------------------------------------------------------
+     PLAN_BASIS ist der eingebaute Grundplan. Was im Zustand unter `p` steht,
+     gewinnt dagegen — dieselbe Regel, nach der beim Mac-Widget die
+     Konfigurationsdatei gegen die Defaults gewinnt. PLAN ist die Mischung aus
+     beidem und das, was der Rest der Seite liest.                            */
+  var PLAN_BASIS = {
     core: ["morgen", "anki", "lesen"],
     weeklyGoalMin: 900,
+    sleepHours: 7.5,
     durations: { morg: 30, anki: 15, deep: 60, wdh: 45, lese: 45, frei: 0, fix: 0 },
     /*  Keine Verkürzung — so entschieden im Karriereplan. Der frühere Eintrag
         "IHK Teil 1 (falls verkürzt), 01.10.2026" war damit hinfällig.        */
@@ -777,6 +812,146 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
       { id: "frei", t: "—", nm: "Erholung", sub: "kein schlechtes Gewissen", kind: "frei" }
     ]}
   };
+  var PLAN = PLAN_BASIS;
+
+  /*  Ein Tag wird ganz ersetzt, nicht blockweise gemischt: bei umgestellten
+      Zeiten kämen sonst Zwitter aus altem und neuem Tagesablauf heraus.
+      Wer nur den Mittwoch ändert, schreibt auch nur den Mittwoch.            */
+  function planMischen(basis, eigen) {
+    var p = {};
+    Object.keys(basis).forEach(function (k) { p[k] = basis[k]; });
+    if (!eigen || typeof eigen !== "object") return p;
+    ["core", "weeklyGoalMin", "sleepHours", "focus", "focusBis", "exams", "vacations",
+     "freeDay"].forEach(function (k) {
+      if (eigen[k] !== undefined) p[k] = eigen[k];
+    });
+    if (eigen.durations && typeof eigen.durations === "object") {
+      p.durations = {};
+      Object.keys(basis.durations).forEach(function (k) { p.durations[k] = basis.durations[k]; });
+      Object.keys(eigen.durations).forEach(function (k) {
+        if (isFinite(Number(eigen.durations[k]))) p.durations[k] = Number(eigen.durations[k]);
+      });
+    }
+    ["days", "vacationDays"].forEach(function (gruppe) {
+      if (!eigen[gruppe] || typeof eigen[gruppe] !== "object") return;
+      var neu = {};
+      Object.keys(basis[gruppe]).forEach(function (k) { neu[k] = basis[gruppe][k]; });
+      Object.keys(eigen[gruppe]).forEach(function (k) {
+        if (eigen[gruppe][k]) neu[k] = eigen[gruppe][k];
+      });
+      p[gruppe] = neu;
+    });
+    return p;
+  }
+
+  /*  Gespeichert wird nur, was vom Grundplan abweicht. Sonst überdeckte eine
+      vollständige Kopie alles, was ich später am Grundplan verbessere.        */
+  function planDelta(voll) {
+    var d = {};
+    ["core", "weeklyGoalMin", "sleepHours", "focus", "focusBis", "exams", "vacations",
+     "durations", "freeDay"].forEach(function (k) {
+      if (voll[k] === undefined) return;
+      if (JSON.stringify(voll[k]) !== JSON.stringify(PLAN_BASIS[k])) d[k] = voll[k];
+    });
+    ["days", "vacationDays"].forEach(function (gruppe) {
+      if (!voll[gruppe] || typeof voll[gruppe] !== "object") return;
+      var raus = {};
+      Object.keys(voll[gruppe]).forEach(function (tag) {
+        var alt = (PLAN_BASIS[gruppe] || {})[tag];
+        if (JSON.stringify(voll[gruppe][tag]) !== JSON.stringify(alt)) {
+          raus[tag] = voll[gruppe][tag];
+        }
+      });
+      if (Object.keys(raus).length) d[gruppe] = raus;
+    });
+    return d;
+  }
+
+  var KINDS = ["morg", "anki", "deep", "wdh", "lese", "frei", "fix"];
+  var DATUM = /^\d{4}-\d{2}-\d{2}$/;
+
+  /*  Vor dem Übernehmen wird geprüft. Ein Tippfehler darf die Seite nicht
+      lahmlegen — findet sich etwas, bleibt der alte Plan stehen und der Kasten
+      sagt, was klemmt.                                                        */
+  function planPruefen(eigen) {
+    var fehler = [];
+    if (!eigen || typeof eigen !== "object" || Array.isArray(eigen)) {
+      return ["Der Plan muss ein Objekt sein — geschweifte Klammern, keine Liste."];
+    }
+    ["days", "vacationDays"].forEach(function (gruppe) {
+      var g = eigen[gruppe];
+      if (g === undefined) return;
+      if (!g || typeof g !== "object" || Array.isArray(g)) {
+        fehler.push(gruppe + " muss ein Objekt mit Wochentagen sein."); return;
+      }
+      Object.keys(g).forEach(function (tag) {
+        if (DAY_KEYS.indexOf(tag) < 0) {
+          fehler.push(gruppe + ": „" + tag + "“ ist kein Wochentag (mo, di, mi, do, fr, sa, so).");
+          return;
+        }
+        var bl = g[tag] && g[tag].blocks;
+        if (!Array.isArray(bl) || !bl.length) {
+          fehler.push(gruppe + "." + tag + " braucht eine nicht leere Liste blocks."); return;
+        }
+        var gesehen = {};
+        bl.forEach(function (b, i) {
+          var wo = gruppe + "." + tag + ", Block " + (i + 1);
+          if (!b || typeof b !== "object") { fehler.push(wo + " ist kein Objekt."); return; }
+          if (!b.id) fehler.push(wo + ": id fehlt.");
+          else if (gesehen[b.id]) fehler.push(wo + ": die id „" + b.id + "“ kommt doppelt vor.");
+          else gesehen[b.id] = true;
+          if (!b.nm) fehler.push(wo + ": nm (der Name) fehlt.");
+          if (b.kind && KINDS.indexOf(b.kind) < 0) {
+            fehler.push(wo + ": kind „" + b.kind + "“ kennt die Seite nicht — erlaubt sind " +
+                        KINDS.join(", ") + ".");
+          }
+          if (b.min !== undefined && !(Number(b.min) >= 0)) {
+            fehler.push(wo + ": min muss eine Zahl sein.");
+          }
+        });
+      });
+    });
+    if (eigen.core !== undefined) {
+      if (!Array.isArray(eigen.core)) fehler.push("core muss eine Liste von Block-Kennungen sein.");
+      else {
+        // Ein Kern-Block, den es an keinem Tag gibt, wäre nie zu schaffen.
+        var probe = planMischen(PLAN_BASIS, eigen);
+        eigen.core.forEach(function (id) {
+          var da = Object.keys(probe.days).some(function (t) {
+            return ((probe.days[t] || {}).blocks || []).some(function (b) { return b.id === id; });
+          });
+          if (!da) fehler.push("core: den Block „" + id + "“ gibt es an keinem Tag.");
+        });
+      }
+    }
+    if (eigen.exams !== undefined) {
+      if (!Array.isArray(eigen.exams)) fehler.push("exams muss eine Liste sein.");
+      else eigen.exams.forEach(function (e, i) {
+        if (!e || !DATUM.test(e.date)) fehler.push("exams[" + i + "]: date muss JJJJ-MM-TT sein.");
+        if (!e || !e.label) fehler.push("exams[" + i + "]: label fehlt.");
+      });
+    }
+    if (eigen.vacations !== undefined) {
+      if (!Array.isArray(eigen.vacations)) fehler.push("vacations muss eine Liste sein.");
+      else eigen.vacations.forEach(function (v, i) {
+        if (!Array.isArray(v) || v.length < 3 || !DATUM.test(v[0]) || !DATUM.test(v[1])) {
+          fehler.push("vacations[" + i + "]: erwartet [\"von\", \"bis\", \"Name\"] mit JJJJ-MM-TT.");
+        }
+      });
+    }
+    if (eigen.sleepHours !== undefined && !(Number(eigen.sleepHours) >= 0)) {
+      fehler.push("sleepHours muss eine Zahl sein, etwa 7.5.");
+    }
+    return fehler.slice(0, 8);
+  }
+
+  /*  Die Mischung neu bilden. Feiertage und die gemerkte Auswertung hängen am
+      Plan und müssen mit ihm verfallen.                                       */
+  function planAnwenden() {
+    PLAN = planMischen(PLAN_BASIS, state.p);
+    HOL = {};
+    evMemo = null;
+  }
 
   var RANKS = [
     { xp: 0, name: "Neuling" }, { xp: 600, name: "Azubi" },
@@ -943,6 +1118,31 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
   ];
   function istZeugnis(e) { return String(e.fach).indexOf("zg:") === 0; }
   function istIhk(e) { return String(e.fach).indexOf("ihk:") === 0; }
+
+  /*  Das Schuljahr läuft von August bis Juli: der 29.07.2026 gehört noch zu
+      2025/26, der 01.09.2026 schon zu 2026/27. Ohne diese Trennung mittelte
+      die Seite das nächste Zeugnis still mit dem vorigen zusammen.           */
+  function schuljahr(dat) {
+    var m = /^(\d{4})-(\d{2})/.exec(String(dat || ""));
+    if (!m) return "";
+    var von = Number(m[2]) >= 8 ? Number(m[1]) : Number(m[1]) - 1;
+    return von + "/" + pad((von + 1) % 100);
+  }
+  /*  Ein selbst benanntes Zeugnisfach bekommt seine eigene Kennung aus dem
+      Namen — sonst fielen zwei verschiedene Zusatzfächer in denselben Topf.  */
+  function kennung(s) {
+    return String(s || "").toLowerCase()
+      .replace(/ä/g, "ae").replace(/ö/g, "oe").replace(/ü/g, "ue").replace(/ß/g, "ss")
+      .replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 30);
+  }
+  /*  Zu einem Eintrag das Zeugnisfach finden: entweder aus der Liste, oder —
+      bei einem eigenen Fach — aus dem, was unter "Was" steht.                */
+  function zeugFach(e) {
+    var f = String(e.fach);
+    var z = ZEUGNIS.filter(function (x) { return "zg:" + x.id === f; })[0];
+    if (z) return { id: f, nm: z.nm, de: z.de, ausF: z.ausF };
+    return { id: f, nm: e.was || f.replace(/^zg:x:/, ""), de: "", ausF: null };
+  }
 
   /*  Drei Zahlen statt einer: was jetzt schon feststeht, was im besten und im
       schlechtesten Fall herauskommt — und die einzige Zahl, die etwas ändert:
@@ -1530,6 +1730,24 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
     var x = d || new Date();
     return x.getHours() * 60 + x.getMinutes();
   }
+  function hhmm(min) {
+    var m = ((min % 1440) + 1440) % 1440;
+    return pad(Math.floor(m / 60)) + ":" + pad(m % 60);
+  }
+  /*  Schlafenszeit rückwärts vom Weckruf des nächsten Tages, wortgleich mit dem
+      Mac-Widget: steht dort 5:30 und sind 7,5 Stunden eingestellt, ist um 22:00
+      Schluss. Ohne Morgenblock am Folgetag gibt es keine Antwort.            */
+  function bettzeit(morgenPlan, stunden) {
+    var h = Number(stunden);
+    if (!(h > 0)) return null;
+    var erst = ((morgenPlan && morgenPlan.blocks) || []).filter(function (b) {
+      return b.kind === "morg" && blockZeit(b) !== null;
+    })[0];
+    if (!erst) return null;
+    var weck = blockZeit(erst), bett = weck - Math.round(h * 60);
+    while (bett < 0) bett += 1440;
+    return { bett: bett, weck: weck };
+  }
   /*  Welcher Block läuft gerade, welcher kommt als Nächstes. Ein Block läuft
       von seiner Zeit bis zur Zeit des nächsten — die Blöcke stehen ohnehin in
       Tagesreihenfolge, eine Enddauer führt nur zu Lücken und Überschneidungen. */
@@ -1583,7 +1801,11 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
     var d = state.d || {}, marks = state.f || {};
     var keys = Object.keys(d).concat(Object.keys(marks)).sort();
     var start = keys.length ? fromYmd(keys[0]) : new Date(today.getTime());
-    var maxBack = addDays(today, -400);
+    /*  Gezählt wird ab dem ersten Eintrag. Vorher standen hier 400 Tage — ab
+        dem 401. fiel der Anfang wieder heraus, die Punkte wären mitten in der
+        Ausbildung gesunken und die Stufe mit ihnen. Die fünf Jahre fangen nur
+        noch Unsinn aus einem eingelesenen Fremdstand ab.                      */
+    var maxBack = addDays(today, -1830);
     if (start < maxBack) start = maxBack;
 
     var xp = 0, streak = 0, best = 0, counted = 0, coreDays = 0, fullDays = 0;
@@ -1827,7 +2049,7 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
   }
 
   /* ---- Zustand ---------------------------------------------------------- */
-  var state = { v: 4, d: {}, f: {}, n: {}, w: {}, q: {}, g: [], t: null,
+  var state = { v: 4, d: {}, f: {}, n: {}, w: {}, q: {}, g: [], t: null, p: null,
                 zn: 1.9, zw: 900, updatedAt: 0 };
   var saveMode = "lokal";  // "lokal" | "geteilt"
   var statusTxt = "nur auf diesem Gerät";
@@ -1877,6 +2099,7 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
     if (!was) return;
     state = rueck.stand;
     rueck = null;
+    planAnwenden();   // der zurückgeholte Stand kann einen anderen Plan tragen
     save(); render(); sag("Zurückgenommen: " + was);
   }
 
@@ -1941,7 +2164,7 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
   }
   var gid = 0;
   function normalize(o) {
-    var s = { v: 4, d: {}, f: {}, n: {}, w: {}, q: {}, g: [], t: null,
+    var s = { v: 4, d: {}, f: {}, n: {}, w: {}, q: {}, g: [], t: null, p: null,
               zn: 1.9, zw: 900, updatedAt: 0 };
     if (!o || typeof o !== "object") return s;
     if (o.d && typeof o.d === "object") {
@@ -2003,11 +2226,23 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
     // gestarteter Block läuft hier weiter, und umgekehrt.
     if (o.t && typeof o.t === "object" && o.t.id) {
       var st = Number(o.t.start), mi = Number(o.t.mins);
-      if (isFinite(st) && st > 0 && isFinite(mi) && mi > 0 && mi <= 600) {
+      /*  Ein Timer, der schon länger als eine halbe Stunde abgelaufen ist,
+          gehört nicht mehr wiederbelebt: Beim Öffnen am nächsten Morgen stünde
+          sonst der Wecker von gestern Abend da und verlangte einen Klick, ehe
+          wieder gesichert wird. Frisch Abgelaufenes bleibt — dort ist die
+          Meldung ja richtig.                                                  */
+      var ueber = Date.now() - (st + mi * 60000);
+      if (isFinite(st) && st > 0 && isFinite(mi) && mi > 0 && mi <= 600 &&
+          ueber < 30 * 60000) {
         s.t = { key: String(o.t.key || ""), id: String(o.t.id),
                 nm: String(o.t.nm || o.t.id).slice(0, 60),
                 mins: Math.round(mi), start: Math.round(st) };
       }
+    }
+    // p: der eigene Stundenplan, nur die Abweichungen vom Grundplan. Geprüft
+    // wird beim Übernehmen; hier zählt nur, dass es überhaupt ein Objekt ist.
+    if (o.p && typeof o.p === "object" && !Array.isArray(o.p)) {
+      try { s.p = JSON.parse(JSON.stringify(o.p)); } catch (e) { s.p = null; }
     }
     var z = Number(o.zn);
     s.zn = isFinite(z) && z >= 1 && z <= 6 ? Math.round(z * 10) / 10 : 1.9;
@@ -2021,6 +2256,7 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
     // Der neuere Stand gewinnt — so überlebt ein Klick, dessen Veröffentlichung
     // nicht durchkam, und ein fremdes Gerät bringt seinen Stand mit.
     state = loc.updatedAt > emb.updatedAt ? loc : emb;
+    planAnwenden();
   }
   function writeLocal() {
     try { localStorage.setItem(LS_KEY, JSON.stringify(state)); } catch (e) { /* privater Modus */ }
@@ -2416,6 +2652,8 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
   var notizEntwurf = null;    // { key, text }
   var themenEntwurf = null;   // { key, text }
   var ioEntwurf = null;       // Zeichenkette oder null für "aus dem Zustand"
+  var planEntwurf = null;     // dasselbe für den Stundenplan
+  var planFehler = [];        // was beim letzten Übernehmen im Weg stand
   var monatOffset = 0;        // 0 = aktueller Monat, negativ = zurückgeblättert
 
   function fachName(id) {
@@ -2544,39 +2782,62 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
         "</span></div>";
     }).join("") + "</div>";
 
-    /* Zeugnis */
+    /* Zeugnis — je Schuljahr ein eigener Block */
     var zl = gl.filter(istZeugnis);
-    var zSchnitt = schnitt(zl);
+    var jahre = {};
+    zl.forEach(function (e) {
+      var j = schuljahr(e.dat) || "ohne Jahr";
+      (jahre[j] = jahre[j] || []).push(e);
+    });
+    var jListe = Object.keys(jahre).sort().reverse();
+
     h += '<div class="zeug"><div class="proghead">' +
       '<span class="eyebrow">Berufsschulzeugnis</span>' +
       '<span class="note mono">' +
-      (zSchnitt === null ? "noch nichts eingetragen" : "Schnitt " + num(zSchnitt, 2)) +
-      "</span></div>";
-    if (zl.length) {
-      h += '<ul class="pbl">' + ZEUGNIS.map(function (z) {
-        var treffer = zl.filter(function (e) { return e.fach === "zg:" + z.id; });
-        if (!treffer.length) return "";
-        // Bei der BFK zur Gegenprobe: was ergeben die eigenen Klassenarbeiten
-        // aus BWL, WiSo und SUK? Weicht das ab, gewichtet die Schule anders.
-        var eigen = z.ausF ? schnitt(gl.filter(function (e) {
-          return z.ausF.indexOf(e.fach) >= 0;
-        })) : null;
-        var unten = [];
-        if (z.de) unten.push(esc(z.de));
-        if (eigen !== null) unten.push("deine Klassenarbeiten ergeben " + num(eigen, 2));
-        return '<li class="pb have">' +
-          '<span class="pbn">' + esc(z.nm) +
-          (unten.length ? "<em>" + unten.join(" · ") + "</em>" : "") + "</span>" +
-          '<span class="pbv mono">' + num(schnitt(treffer)) + "</span></li>";
-      }).join("") + "</ul>" +
-        '<p class="note tiny">Je Zeile eine Note, gleich gewichtet — so steht es auf ' +
-        "dem Zeugnis. Diese Rechnung ist unabhängig von der IHK-Prognose darunter: " +
-        "das Weiterbildungsstipendium hängt an der Abschlussprüfung, nicht am " +
-        "Berufsschulzeugnis.</p>";
-    } else {
+      (jListe.length
+        ? jListe.length + (jListe.length === 1 ? " Schuljahr" : " Schuljahre")
+        : "noch nichts eingetragen") + "</span></div>";
+
+    if (!jListe.length) {
       h += '<p class="note tiny">Noch keine Zeugnisnote eingetragen. Oben im Feld ' +
         "<em>Fach</em> stehen sie unter <em>Berufsschulzeugnis</em> — BWL, WiSo und " +
         "SUK zusammen als Berufsfachliche Kompetenz.</p>";
+    }
+    jListe.forEach(function (j) {
+      var imJahr = jahre[j];
+      // Zeilen entstehen aus den Einträgen, nicht aus einer festen Liste —
+      // so bekommt jedes selbst benannte Fach seine eigene Zeile.
+      var reihen = [], gesehen = {};
+      imJahr.forEach(function (e) {
+        if (gesehen[e.fach]) return;
+        gesehen[e.fach] = true;
+        reihen.push(zeugFach(e));
+      });
+      h += '<div class="zjahr"><div class="zkopf">' +
+        '<span class="zj">Schuljahr ' + esc(j) + "</span>" +
+        '<span class="note mono">Schnitt ' + num(schnitt(imJahr), 2) + "</span></div>" +
+        '<ul class="pbl">' + reihen.map(function (f) {
+          var treffer = imJahr.filter(function (e) { return e.fach === f.id; });
+          /*  Gegenprobe nur mit Klassenarbeiten aus demselben Schuljahr — sonst
+              hielte die Seite dem Zeugnis Arbeiten vor, die es nie bewertet hat. */
+          var eigen = f.ausF ? schnitt(gl.filter(function (e) {
+            return f.ausF.indexOf(e.fach) >= 0 && schuljahr(e.dat) === j;
+          })) : null;
+          var unten = [];
+          if (f.de) unten.push(esc(f.de));
+          if (eigen !== null) unten.push("deine Klassenarbeiten ergeben " + num(eigen, 2));
+          return '<li class="pb have">' +
+            '<span class="pbn">' + esc(f.nm) +
+            (unten.length ? "<em>" + unten.join(" · ") + "</em>" : "") + "</span>" +
+            '<span class="pbv mono">' + num(schnitt(treffer)) + "</span></li>";
+        }).join("") + "</ul></div>";
+    });
+
+    if (jListe.length) {
+      h += '<p class="note tiny">Je Zeile eine Note, gleich gewichtet — so steht es ' +
+        "auf dem Zeugnis, und jedes Schuljahr rechnet für sich. Diese Rechnung ist " +
+        "unabhängig von der IHK-Prognose darunter: das Weiterbildungsstipendium hängt " +
+        "an der Abschlussprüfung, nicht am Berufsschulzeugnis.</p>";
     }
     h += "</div>";
 
@@ -2638,6 +2899,17 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
     }
     if (pk !== null && isFinite(pk) && (pk < 0 || pk > 100)) {
       gMsg = "Punkte gehen von 0 bis 100."; render(); return;
+    }
+    /*  "Weiteres Fach" ist kein Fach, sondern ein Platzhalter: der Name steht
+        unter "Was" und wird zur Kennung. Sonst fielen Religion und
+        Wirtschaftsinformatik in denselben Topf und würden gemittelt.          */
+    if (fach === "zg:sonst") {
+      var eigenerName = kennung(gForm.was);
+      if (!eigenerName) {
+        gMsg = "Bei „Weiteres Fach“ den Namen des Fachs ins Feld Was schreiben.";
+        render(); return;
+      }
+      fach = "zg:x:" + eigenerName;
     }
     // Gespeichert wird nur, was wirklich eingetragen wurde. Die andere Zahl
     // rechnet die Anzeige aus und schreibt ein Zirka davor — sonst sähe eine
@@ -2858,6 +3130,33 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
         '<button class="btn small" data-act="kern" type="button">Kern \u2713</button></span>';
     }
     html += "</div>";
+
+    /*  Am Abend zeigt die Seite, wann Schluss sein müsste — gerechnet vom
+        nächsten Weckruf. Tagsüber stünde die Zeile nur herum.                 */
+    if (view === 0 && PLAN.sleepHours) {
+      var jm = jetztMin();
+      /*  Nach Mitternacht ist der nächste Weckruf der von heute, nicht der von
+          morgen — sonst nennt die Zeile um 0:40 den Sonntag statt des Samstags. */
+      var frueh = jm < 4 * 60;
+      var bz = bettzeit(dayInfo(frueh ? now : addDays(now, 1), state.f).plan,
+                        PLAN.sleepHours);
+      if (bz && (jm >= 19 * 60 || frueh)) {
+        /*  Verglichen wird auf einer Zeitleiste, die abends anfängt und erst am
+            nächsten Morgen endet. Sonst hiesse es um 20:00 bei einer
+            Schlafenszeit von 0:30 „zu spät“, bloss weil 1200 > 30 ist.        */
+        var bettAb = bz.bett >= 12 * 60 ? bz.bett : bz.bett + 1440;
+        var jetztAb = frueh ? jm + 1440 : jm;
+        var zuSpaet = jetztAb >= bettAb;
+        html += '<div class="bett' + (zuSpaet ? " spaet" : "") + '">' +
+          '<span class="eyebrow">Schlaf</span><span>' +
+          (zuSpaet
+            ? "Es ist nach " + hhmm(bz.bett) + " — " + (frueh ? "heute" : "morgen") +
+              " klingelt es um " + hhmm(bz.weck) + "."
+            : "Um " + hhmm(bz.bett) + " ins Bett, dann sind es " +
+              num(PLAN.sleepHours) + " Stunden bis " + hhmm(bz.weck) + ".") +
+          "</span></div>";
+      }
+    }
 
     // Tagesnotiz — derselbe Schlüssel, den auch das Mac-Widget beschreibt.
     var notizWert = notizEntwurf && notizEntwurf.key === info.key
@@ -3105,7 +3404,7 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
       '<textarea id="io" spellcheck="false" aria-label="Zustand als JSON">' +
       esc(ioEntwurf !== null ? ioEntwurf
           : JSON.stringify({ v: 4, d: state.d, f: state.f, n: state.n, w: state.w,
-                             q: state.q, g: state.g, t: state.t,
+                             q: state.q, g: state.g, t: state.t, p: state.p,
                              zn: state.zn, zw: state.zw })) + "</textarea>" +
       '<div class="row" style="margin-top:10px">' +
       '<button class="btn" data-act="copy" type="button">' + icon("cards") + "Kopieren</button>" +
@@ -3115,6 +3414,31 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
       '<p class="note tiny">Zusammenführen behält beides: je Tag die Vereinigung der ' +
       "Häkchen, Noten kommen dazu. Ersetzen wirft den hiesigen Stand weg — beides " +
       "lässt sich eine Minute lang zurücknehmen.</p></section>";
+
+    /* Stundenplan */
+    html += '<section class="card"><div class="card-head"><h2>Dein Stundenplan</h2>' +
+      '<span class="note mono">' + (state.p ? "angepasst" : "wie eingebaut") + "</span></div>" +
+      '<p class="note">Ändert sich dein Stundenplan, änderst du ihn hier: Zeiten, ' +
+      "Blöcke, Ferien, Prüfungstermine. Es sind dieselben Schlüssel wie in der " +
+      'Konfigurationsdatei des Mac-Widgets — eine vorhandene ' +
+      '<code class="mono">lernplan-config.json</code> lässt sich einfach einfügen.</p>' +
+      '<textarea id="planio" class="hoch" spellcheck="false" aria-label="Stundenplan als JSON">' +
+      esc(planEntwurf !== null ? planEntwurf : JSON.stringify(PLAN, null, 2)) + "</textarea>" +
+      '<div class="row" style="margin-top:10px">' +
+      '<button class="btn prim" data-act="planNehmen" type="button">' + icon("check") +
+      "Plan übernehmen</button>" +
+      '<button class="btn" data-act="planFrisch" type="button">Feld neu füllen</button>' +
+      '<button class="btn ghost" data-act="planReset" type="button">Zurück zum eingebauten</button>' +
+      "</div>";
+    if (planFehler.length) {
+      html += '<ul class="planfehler">' + planFehler.map(function (f) {
+        return "<li>" + esc(f) + "</li>";
+      }).join("") + "</ul>";
+    }
+    html += '<p class="note tiny">Gespeichert wird nur, was vom eingebauten Plan ' +
+      "abweicht — so erreichen dich spätere Verbesserungen am Grundplan trotzdem. " +
+      "Ein Tag wird ganz ersetzt, nicht blockweise gemischt. Vor dem Übernehmen wird " +
+      "geprüft: bei einem Fehler bleibt der alte Plan stehen.</p></section>";
 
     html += "</div>";
 
@@ -3196,6 +3520,35 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
     save(); render();
   }
 
+  function planNehmen() {
+    var feld = document.getElementById("planio");
+    var text = planEntwurf !== null ? planEntwurf : (feld ? feld.value : "");
+    var eigen;
+    try { eigen = JSON.parse(text); }
+    catch (err) {
+      planFehler = ["Das ist kein gültiges JSON — " + err.message];
+      render(); return;
+    }
+    var fehler = planPruefen(eigen);
+    if (fehler.length) { planFehler = fehler; render(); return; }
+    merke("Stundenplan geändert");
+    var d = planDelta(eigen);
+    state.p = Object.keys(d).length ? d : null;
+    planFehler = []; planEntwurf = null;
+    planAnwenden();
+    save(); render();
+    sag(state.p ? "Stundenplan übernommen." : "Stundenplan entspricht wieder dem eingebauten.");
+  }
+  function planZurueck() {
+    planEntwurf = null; planFehler = [];
+    if (!state.p) { render(); return; }
+    merke("Stundenplan zurückgesetzt");
+    state.p = null;
+    planAnwenden();
+    save(); render();
+    sag("Eingebauter Stundenplan wiederhergestellt.");
+  }
+
   /*  Zusammenführen statt überschreiben. Häkchen werden vereinigt, bestandene
       Stufen auf den höheren Wert gezogen, Noten ergänzt. Wo beide Seiten etwas
       haben, das sich nicht vereinigen lässt — Markierungen, Notizen,
@@ -3216,6 +3569,9 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
     var habe = {};
     (state.g || []).forEach(function (e) { habe[e.id] = true; });
     (fremd.g || []).forEach(function (e) { if (!habe[e.id]) state.g.push(e); });
+    // Einen eigenen Stundenplan übernimmt das Zusammenführen nur, wenn hier
+    // keiner steht — sonst überschriebe ein alter Stand die neuere Fassung.
+    if (!state.p && fremd.p) state.p = fremd.p;
   }
 
   document.addEventListener("click", function (e) {
@@ -3260,6 +3616,9 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
     if (act === "mprev") { monatOffset -= 1; render(); return; }
     if (act === "mnext") { if (monatOffset < 0) { monatOffset += 1; render(); } return; }
     if (act === "kern") { kernStempeln(); return; }
+    if (act === "planNehmen") { planNehmen(); return; }
+    if (act === "planFrisch") { planEntwurf = null; planFehler = []; render(); return; }
+    if (act === "planReset") { planZurueck(); return; }
     if (act === "toggle") toggleBlock(el.getAttribute("data-id"));
     else if (act === "prev") { setView(view - 1); render(); }
     else if (act === "next") { if (view < 0) { setView(view + 1); render(); } }
@@ -3300,7 +3659,9 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
           if (Object.prototype.hasOwnProperty.call(roh, "g")) state.g = incoming.g;
           if (Object.prototype.hasOwnProperty.call(roh, "zn")) state.zn = incoming.zn;
           if (Object.prototype.hasOwnProperty.call(roh, "zw")) state.zw = incoming.zw;
+          if (Object.prototype.hasOwnProperty.call(roh, "p")) state.p = incoming.p;
         }
+        planAnwenden();
         ioEntwurf = null;
         save(); render();
         msg(act === "merge" ? "zusammengeführt" : "ersetzt", true);
@@ -3322,6 +3683,7 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
     } else if (t.id === "themen") {
       themenEntwurf = { key: isoWeek(today()), text: t.value };
     } else if (t.id === "io") ioEntwurf = t.value;
+    else if (t.id === "planio") planEntwurf = t.value;
   });
   document.addEventListener("change", function (e) {
     var t = e.target;

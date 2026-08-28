@@ -8,15 +8,25 @@ const HOOK = `  try { window.__T = { punkteZuNote:punkteZuNote, noteZuPunkte:not
     view:function(){return view;}, PLAN:PLAN, QUIZ:QUIZ,
     isoWeek:isoWeek, timerLeft:timerLeft, blockZeit:blockZeit, tagesLage:tagesLage,
     zieheFragen:zieheFragen, state:function(){return state;}, render:render,
-    ZEUGNIS:ZEUGNIS }; } catch (e) {}\n})();\n</script>`;
+    ZEUGNIS:ZEUGNIS, schuljahr:schuljahr, kennung:kennung, hhmm:hhmm,
+    bettzeit:bettzeit, evaluate:evaluate, dayInfo:dayInfo, addDays:addDays,
+    ymd:ymd, planMischen:planMischen, planDelta:planDelta, planPruefen:planPruefen,
+    PLAN_BASIS:PLAN_BASIS, plan:function(){return PLAN;} }; } catch (e) {}\n})();\n</script>`;
 
 const kaputt = process.argv.includes("--ohne-fix");
+const ohneXp = process.argv.includes("--ohne-xp-fix");
 let src = readFileSync("lernquest.html", "utf8").replace("})();\n</script>", HOOK);
 if (kaputt) {
   // Den Tagesspeicher stilllegen — so sah die Seite vor der Behebung aus.
   src = src.replace("sessionStorage.setItem(VIEW_KEY,", "void 0 && sessionStorage.setItem(VIEW_KEY,");
 }
-const datei = kaputt ? "preview-ohne-fix.html" : "preview-test.html";
+if (ohneXp) {
+  // Das Punktefenster wieder auf 400 Tage stutzen: so fielen alte Einträge aus
+  // der Wertung, die XP wären mitten in der Ausbildung gesunken.
+  src = src.replace("addDays(today, -1830)", "addDays(today, -400)");
+}
+const datei = kaputt ? "preview-ohne-fix.html"
+            : ohneXp ? "preview-ohne-xp.html" : "preview-test.html";
 writeFileSync(datei,
 `<!doctype html><html lang="de"><head><meta charset="utf-8"><style>*{margin:0}</style></head><body>\n${src}\n</body></html>`);
 
@@ -382,10 +392,10 @@ await p.evaluate(() => {
     { id:"z2", fach:"zg:deutsch",  was:"Jahreszeugnis 2026", n:2.4, p:null, dat:"2026-07-29", gew:1 },
     { id:"z3", fach:"zg:englisch", was:"Jahreszeugnis 2026", n:2.8, p:null, dat:"2026-07-29", gew:1 },
     { id:"z4", fach:"zg:gk",       was:"Jahreszeugnis 2026", n:2.2, p:null, dat:"2026-07-29", gew:1 },
-    { id:"k1", fach:"bwl",     was:"Test Beschaffung", n:2.0, p:null, dat:"2026-08-01", gew:1 },
-    { id:"k2", fach:"wiso",    was:"Test SV",          n:2.3, p:null, dat:"2026-08-02", gew:1 },
-    { id:"k3", fach:"suk",     was:"KA Buchführung",   n:1.7, p:null, dat:"2026-08-03", gew:2 },
-    { id:"k4", fach:"deutsch", was:"Erörterung",       n:3.0, p:null, dat:"2026-08-04", gew:1 }
+    { id:"k1", fach:"bwl",     was:"Test Beschaffung", n:2.0, p:null, dat:"2026-05-04", gew:1 },
+    { id:"k2", fach:"wiso",    was:"Test SV",          n:2.3, p:null, dat:"2026-05-11", gew:1 },
+    { id:"k3", fach:"suk",     was:"KA Buchführung",   n:1.7, p:null, dat:"2026-06-08", gew:2 },
+    { id:"k4", fach:"deutsch", was:"Erörterung",       n:3.0, p:null, dat:"2026-06-15", gew:1 }
   ];
   window.__T.render();
 });
@@ -404,7 +414,13 @@ const zeug = await p.evaluate(() => {
   };
   return {
     kopf: karte.querySelector(".card-head .note").textContent,
-    schnitt: document.querySelector(".zeug .proghead .note").textContent,
+    kopfZeug: document.querySelector(".zeug .proghead .note").textContent,
+    jahre: Array.from(document.querySelectorAll(".zjahr")).map(b => ({
+      jahr: b.querySelector(".zj").textContent,
+      schnitt: b.querySelector(".zkopf .note").textContent,
+      faecher: Array.from(b.querySelectorAll(".pb .pbn"))
+        .map(x => x.childNodes[0].textContent.trim())
+    })),
     zeilen: zeilen,
     deutschKachel: kachel("Deutsch"),
     punkteInListe: Array.from(document.querySelectorAll(".glist .gitem"))
@@ -412,7 +428,9 @@ const zeug = await p.evaluate(() => {
       .map(li => li.querySelector(".gm").textContent)
   };
 });
-eq("Zeugnisschnitt", zeug.schnitt, "Schnitt 2,33");
+eq("Ein Schuljahr im Kopf", zeug.kopfZeug, "1 Schuljahr");
+eq("Der Block trägt sein Schuljahr", zeug.jahre[0].jahr, "Schuljahr 2025/26");
+eq("Zeugnisschnitt", zeug.jahre[0].schnitt, "Schnitt 2,33");
 eq("Vier Zeugniszeilen", zeug.zeilen.length, 4);
 eq("BFK steht oben", zeug.zeilen[0].nm, "Berufsfachliche Kompetenz");
 eq("mit der Zeugnisnote", zeug.zeilen[0].note, "1,9");
@@ -444,7 +462,283 @@ eq("und folgt der Änderung", await p.evaluate(() => {
   return el.querySelector(".bd").textContent;
 }), "Wochenziel von 15 h erreicht");
 
-/* ---- 22. Kein Skriptfehler ---------------------------------------------- */
+/* ---- 22. Punkte sind ein Konto, kein 400-Tage-Fenster ------------------- */
+const xpAlt = await p.evaluate(() => {
+  const heute = new Date();
+  const ymdV = d => window.__T.ymd(d);
+  // Einen vollen Tag weit in der Vergangenheit suchen — Ferien und Feiertage
+  // zählen nicht, deshalb wird gesucht statt gerechnet.
+  const vollerTag = ab => {
+    for (let t = ab; t < ab + 60; t++) {
+      const d = window.__T.addDays(heute, -t);
+      const info = window.__T.dayInfo(d, {});
+      if (info.counts) return { tage: t, key: ymdV(d), ids: (info.plan.blocks || []).map(b => b.id) };
+    }
+    return null;
+  };
+  const weit = vollerTag(500), nah = vollerTag(3);
+  const xp = st => window.__T.evaluate(st, heute).xp;
+  return {
+    tageWeit: weit.tage,
+    nurWeit: xp({ d: { [weit.key]: weit.ids }, f: {} }),
+    nurNah:  xp({ d: { [nah.key]: nah.ids }, f: {} }),
+    beide:   xp({ d: { [weit.key]: weit.ids, [nah.key]: nah.ids }, f: {} })
+  };
+});
+wahr("Der weit zurückliegende Tag liegt jenseits von 400 Tagen", xpAlt.tageWeit > 400);
+if (ohneXp) {
+  eq("(Regressionswächter) ohne den Fix bringt er nichts", xpAlt.nurWeit, 0);
+  eq("(Regressionswächter) und fehlt auch in der Summe", xpAlt.beide, xpAlt.nurNah);
+  console.log("  Ohne den Fix fällt alles vor heute − 400 Tagen aus der Wertung.");
+} else {
+  wahr("Er bringt für sich genommen Punkte", xpAlt.nurWeit > 0);
+  eq("und beide Tage zählen zusammen", xpAlt.beide, xpAlt.nurWeit + xpAlt.nurNah);
+}
+
+/* ---- 23. Zwei Schuljahre bleiben getrennt ------------------------------- */
+eq("schuljahr aus dem Datum", await p.evaluate(() =>
+  ["2026-07-29", "2026-08-01", "2027-01-15", "", "Unsinn"].map(window.__T.schuljahr)),
+  ["2025/26", "2026/27", "2026/27", "", ""]);
+const zwei = await p.evaluate(() => {
+  const st = window.__T.state();
+  st.g = [
+    { id:"a1", fach:"zg:deutsch", was:"Zeugnis 2026", n:2.4, p:null, dat:"2026-07-29", gew:1 },
+    { id:"a2", fach:"zg:bfk",     was:"Zeugnis 2026", n:1.9, p:null, dat:"2026-07-29", gew:1 },
+    { id:"b1", fach:"zg:deutsch", was:"Zeugnis 2027", n:3.4, p:null, dat:"2027-07-28", gew:1 },
+    { id:"b2", fach:"zg:bfk",     was:"Zeugnis 2027", n:2.1, p:null, dat:"2027-07-28", gew:1 }
+  ];
+  window.__T.render();
+  return Array.from(document.querySelectorAll(".zjahr")).map(b => ({
+    jahr: b.querySelector(".zj").textContent,
+    schnitt: b.querySelector(".zkopf .note").textContent,
+    noten: Array.from(b.querySelectorAll(".pb .pbv")).map(x => x.textContent)
+  }));
+});
+eq("Zwei Blöcke", zwei.length, 2);
+eq("Das jüngste Schuljahr steht oben", zwei[0].jahr, "Schuljahr 2026/27");
+eq("und darunter das ältere", zwei[1].jahr, "Schuljahr 2025/26");
+// Deutsch 2,4 und Deutsch 3,4 dürfen nicht zu 2,9 verschmelzen.
+eq("Deutsch 2027 steht für sich", zwei[0].noten.indexOf("3,4") >= 0, true);
+eq("Deutsch 2026 auch", zwei[1].noten.indexOf("2,4") >= 0, true);
+eq("Schnitt 2026/27", zwei[0].schnitt, "Schnitt 2,75");
+eq("Schnitt 2025/26", zwei[1].schnitt, "Schnitt 2,15");
+
+/* ---- 24. Zwei Zusatzfächer sind zwei Zeilen ----------------------------- */
+const zusatz = await p.evaluate(() => {
+  const st = window.__T.state();
+  st.g = [
+    { id:"x1", fach:"zg:x:religion", was:"Religion",  n:1.0, p:null, dat:"2026-07-29", gew:1 },
+    { id:"x2", fach:"zg:x:informatik", was:"Informatik", n:3.0, p:null, dat:"2026-07-29", gew:1 }
+  ];
+  window.__T.render();
+  return Array.from(document.querySelectorAll(".zjahr .pb")).map(li => ({
+    nm: li.querySelector(".pbn").childNodes[0].textContent.trim(),
+    note: li.querySelector(".pbv").textContent
+  }));
+});
+eq("Zwei eigene Zeilen", zusatz.length, 2);
+eq("mit dem selbst vergebenen Namen", zusatz.map(z => z.nm), ["Religion", "Informatik"]);
+eq("und je eigener Note", zusatz.map(z => z.note), ["1,0", "3,0"]);
+eq("kennung macht aus Umlauten Buchstaben",
+   await p.evaluate(() => ["Religionslehre", "Wirtschaft & Recht", "Übungsfirma"]
+     .map(window.__T.kennung)),
+   ["religionslehre", "wirtschaft-recht", "uebungsfirma"]);
+await p.evaluate(() => { window.__T.state().g = []; window.__T.render(); });
+
+/* ---- 25. Schlafenszeit rechnet rückwärts vom Weckruf -------------------- */
+const schlaf = await p.evaluate(() => {
+  const B = window.__T.bettzeit, H = window.__T.hhmm;
+  const plan = t => ({ blocks: [{ id:"m", t:t, nm:"Morgen", kind:"morg" },
+                                { id:"s", t:"7:45", nm:"Schule", kind:"fix" }] });
+  return {
+    normal:  B(plan("5:30"), 7.5),
+    text:    H(B(plan("5:30"), 7.5).bett),
+    umbruch: H(B(plan("5:30"), 9).bett),      // 5:30 − 9 h → 20:30 am Vortag
+    knapp:   H(B(plan("0:30"), 2).bett),      // über Mitternacht zurück
+    ohne:    B({ blocks: [{ id:"s", t:"7:45", nm:"Schule", kind:"fix" }] }, 7.5),
+    leer:    B({ blocks: [] }, 7.5),
+    nullStd: B(plan("5:30"), 0)
+  };
+});
+eq("5:30 minus 7,5 h ergibt 22:00", schlaf.text, "22:00");
+eq("Der Weckruf steht mit dabei", schlaf.normal.weck, 330);
+eq("5:30 minus 9 h ergibt 20:30", schlaf.umbruch, "20:30");
+eq("0:30 minus 2 h bricht über Mitternacht um", schlaf.knapp, "22:30");
+eq("Ohne Morgenblock keine Antwort", schlaf.ohne, null);
+eq("Ohne Blöcke erst recht nicht", schlaf.leer, null);
+eq("Ohne Stundenzahl auch nicht", schlaf.nullStd, null);
+eq("hhmm füllt auf zwei Stellen",
+   await p.evaluate(() => [0, 59, 330, 1439, 1440, -30].map(window.__T.hhmm)),
+   ["00:00", "00:59", "05:30", "23:59", "00:00", "23:30"]);
+
+/* ---- 26. Der Stundenplan lässt sich ändern ------------------------------ */
+const eigenerPlan = JSON.stringify({
+  days: { mi: { label:"Mittwoch", tag:"Neu", note:"", blocks: [
+    { id:"morgen", t:"6:15", nm:"Morgenroutine", kind:"morg", track:true, min:20 },
+    { id:"schule", t:"8:00", nm:"Berufsschule", kind:"fix" }
+  ]}}
+});
+await p.fill("#planio", eigenerPlan);
+await p.click('[data-act="planNehmen"]');
+await p.waitForTimeout(250);
+const nachPlan = await p.evaluate(() => ({
+  mi: window.__T.plan().days.mi.blocks.map(b => b.id + "@" + b.t),
+  do_: window.__T.plan().days.do.blocks.length,
+  gespeichert: Object.keys(window.__T.state().p || {}),
+  nurMi: Object.keys((window.__T.state().p || {}).days || {}),
+  fehler: document.querySelectorAll(".planfehler li").length
+}));
+eq("Der geänderte Mittwoch gilt", nachPlan.mi, ["morgen@6:15", "schule@8:00"]);
+wahr("Der Donnerstag bleibt, wie er war", nachPlan.do_ > 2);
+eq("Gespeichert wird nur die Abweichung", nachPlan.gespeichert, ["days"]);
+eq("und darin nur der Mittwoch", nachPlan.nurMi, ["mi"]);
+eq("Keine Fehlermeldung", nachPlan.fehler, 0);
+
+// Kaputtes JSON: der alte Plan bleibt stehen, der Kasten sagt, was klemmt.
+await p.fill("#planio", '{ "days": { "mi": ');
+await p.click('[data-act="planNehmen"]');
+await p.waitForTimeout(200);
+const kaputtesJson = await p.evaluate(() => ({
+  fehler: Array.from(document.querySelectorAll(".planfehler li")).map(li => li.textContent),
+  mi: window.__T.plan().days.mi.blocks.map(b => b.t)
+}));
+wahr("Kaputtes JSON wird benannt", /kein gültiges JSON/.test(kaputtesJson.fehler[0] || ""));
+eq("und der übernommene Plan steht noch", kaputtesJson.mi, ["6:15", "8:00"]);
+
+// Doppelte Block-Kennung an einem Tag.
+await p.fill("#planio", JSON.stringify({ days: { mi: { label:"Mittwoch", blocks: [
+  { id:"a", t:"6:00", nm:"Eins", kind:"morg" },
+  { id:"a", t:"7:00", nm:"Zwei", kind:"deep" }
+]}}}));
+await p.click('[data-act="planNehmen"]');
+await p.waitForTimeout(200);
+const doppelt = await p.evaluate(() => ({
+  fehler: Array.from(document.querySelectorAll(".planfehler li")).map(li => li.textContent),
+  mi: window.__T.plan().days.mi.blocks.map(b => b.t)
+}));
+wahr("Eine doppelte id wird gefunden", doppelt.fehler.some(f => /doppelt/.test(f)));
+eq("und der Plan bleibt unberührt", doppelt.mi, ["6:15", "8:00"]);
+
+// Unbekanntes kind.
+await p.fill("#planio", JSON.stringify({ days: { mi: { label:"Mittwoch", blocks: [
+  { id:"a", t:"6:00", nm:"Eins", kind:"schlaf" }
+]}}}));
+await p.click('[data-act="planNehmen"]');
+await p.waitForTimeout(200);
+wahr("Ein unbekanntes kind wird gefunden", await p.evaluate(() =>
+  Array.from(document.querySelectorAll(".planfehler li")).some(li => /schlaf/.test(li.textContent))));
+
+// Zurücksetzen stellt den eingebauten Plan wieder her.
+await p.click('[data-act="planReset"]');
+await p.waitForTimeout(250);
+const zurueck = await p.evaluate(() => ({
+  mi: window.__T.plan().days.mi.blocks.map(b => b.t),
+  basis: window.__T.PLAN_BASIS.days.mi.blocks.map(b => b.t),
+  p: window.__T.state().p,
+  fehler: document.querySelectorAll(".planfehler li").length
+}));
+eq("Zurücksetzen holt den eingebauten Mittwoch", zurueck.mi, zurueck.basis);
+eq("und löscht die gespeicherte Abweichung", zurueck.p, null);
+eq("Die Fehlerliste ist weg", zurueck.fehler, 0);
+
+/* ---- 27. Die Schlafenszeile nennt den richtigen Tag --------------------- */
+/*  Zwei Dinge müssen festgenagelt werden, sonst hängt der Lauf davon ab, wann
+    am Tag er startet: die Ortszeit über eine Festzeitzone (Etc/GMT-1 ist
+    UTC+1, das Vorzeichen ist dort umgekehrt), und der Stundenplan über einen
+    eigenen unter `p` — jeder Wochentag derselbe, damit der Weckruf feststeht.  */
+function zoneFuerStunde(ziel) {
+  let o = ziel - new Date().getUTCHours();
+  while (o > 14) o -= 24;
+  while (o < -12) o += 24;
+  return o === 0 ? "UTC" : o > 0 ? "Etc/GMT-" + o : "Etc/GMT+" + -o;
+}
+function planMitWeckruf(zeit, stunden) {
+  const tag = { label:"Testtag", blocks: [
+    { id:"morgen", t:zeit, nm:"Morgenroutine", kind:"morg", track:true, min:20 },
+    { id:"lesen",  t:"20:00", nm:"Lesen", kind:"lese", track:true, min:30 }
+  ]};
+  const alle = {};
+  ["mo","di","mi","do","fr","sa","so"].forEach(k => { alle[k] = tag; });
+  return { sleepHours: stunden, days: alle, vacationDays: alle, freeDay: tag };
+}
+async function schlafZeile(stunde, plan) {
+  const st = JSON.parse(JSON.stringify(start));
+  if (plan) st.p = plan;
+  const c = await b.newContext({ viewport:{width:900,height:900}, colorScheme:"dark",
+                                 locale:"de-DE", timezoneId: zoneFuerStunde(stunde) });
+  const q = await c.newPage();
+  await q.addInitScript(`localStorage.setItem("lernquest.state.v4", ${JSON.stringify(JSON.stringify(st))})`);
+  await q.goto("file://" + process.cwd() + "/" + datei);
+  await q.waitForTimeout(400);
+  const r = await q.evaluate(() => {
+    const el = document.querySelector(".bett");
+    return el ? { txt: el.innerText.replace(/\s+/g, " ").trim(),
+                  spaet: el.classList.contains("spaet") } : null;
+  });
+  await c.close();
+  return r;
+}
+const wach6  = planMitWeckruf("6:00", 7.5);    // Schlafenszeit 22:30
+const spaet9 = planMitWeckruf("9:30", 7.5);    // Schlafenszeit 02:00
+
+eq("Mittags steht keine Schlafenszeile da", await schlafZeile(12, wach6), null);
+
+const zAbend = await schlafZeile(20, wach6);   // 20 Uhr, Schluss wäre 22:30
+wahr("Am Abend steht sie da", !!zAbend);
+wahr("und nennt die Uhrzeit fürs Bett", /Um 22:30 ins Bett/.test(zAbend.txt));
+wahr("und die Schlafdauer bis zum Weckruf", /7,5 Stunden bis 06:00/.test(zAbend.txt));
+eq("ohne Warnfarbe", zAbend.spaet, false);
+
+const zSpaet = await schlafZeile(23, wach6);   // 23 Uhr, halbe Stunde drüber
+eq("Nach der Schlafenszeit wird sie deutlich", zSpaet.spaet, true);
+wahr("und meint den Weckruf von morgen", /morgen klingelt es um 06:00/.test(zSpaet.txt));
+
+const zNacht = await schlafZeile(1, wach6);    // 1 Uhr, längst drüber
+eq("Nach Mitternacht erst recht", zNacht.spaet, true);
+wahr("und meint dann den Weckruf von heute, nicht von morgen",
+     /heute klingelt es um 06:00/.test(zNacht.txt) && !/morgen klingelt/.test(zNacht.txt));
+
+/*  Der Fall, an dem sich der Vergleich verrät: liegt die Schlafenszeit selbst
+    nach Mitternacht, ist man um 20:00 noch lange nicht zu spät — und um 1:00
+    immer noch nicht.                                                          */
+const zNachMitternacht = await schlafZeile(20, spaet9);
+wahr("Eine Schlafenszeit nach Mitternacht wird abends erkannt",
+     /Um 02:00 ins Bett/.test(zNachMitternacht.txt));
+eq("und gilt um 20:00 noch nicht als überschritten", zNachMitternacht.spaet, false);
+const zEinUhr = await schlafZeile(1, spaet9);
+eq("um 1:00 ebenso wenig", zEinUhr.spaet, false);
+wahr("und sie nennt den Weckruf von heute",
+     /7,5 Stunden bis 09:30/.test(zEinUhr.txt));
+
+/* ---- 28. Ein längst abgelaufener Timer wird nicht wiederbelebt ---------- */
+async function mitTimer(vorMin, dauerMin) {
+  const st = JSON.parse(JSON.stringify(start));
+  st.t = { key: "x", id: "anki", nm: "Anki", mins: dauerMin,
+           start: Date.now() - vorMin * 60000 };
+  const c = await b.newContext({ viewport:{width:900,height:900}, colorScheme:"dark",
+                                 locale:"de-DE" });
+  const q = await c.newPage();
+  await q.addInitScript(`localStorage.setItem("lernquest.state.v4", ${JSON.stringify(JSON.stringify(st))})`);
+  await q.goto("file://" + process.cwd() + "/" + datei);
+  //  Der Takt schlägt erst nach einer Sekunde — vorher steht der Wecker
+  //  noch nicht da, obwohl der Timer schon abgelaufen ist.
+  await q.waitForTimeout(1400);
+  const r = await q.evaluate(() => ({
+    t: window.__T.state().t,
+    wecker: !!document.querySelector(".wecker")
+  }));
+  await c.close();
+  return r;
+}
+const frisch = await mitTimer(16, 15);   // vor einer Minute abgelaufen
+const alt2   = await mitTimer(120, 15);  // vor über anderthalb Stunden
+const laeuft = await mitTimer(5, 15);    // läuft noch
+wahr("Ein laufender Timer wird übernommen", laeuft.t && laeuft.t.id === "anki");
+wahr("Ein eben abgelaufener meldet sich noch", frisch.wecker);
+eq("Ein längst abgelaufener wird fallen gelassen", alt2.t, null);
+eq("und meldet sich nicht mehr", alt2.wecker, false);
+
+/* ---- 29. Kein Skriptfehler ---------------------------------------------- */
 eq("Seitenfehler", errs, []);
 
 await ctx.close(); await b.close();
