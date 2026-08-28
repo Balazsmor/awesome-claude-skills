@@ -384,6 +384,17 @@ button { font:inherit; color:inherit; cursor:pointer; }
          padding:11px 13px; border-radius:10px; background:var(--amber-soft);
          border:1px solid var(--rule); }
 .note.tiny { margin-top:10px; font-size:11.5px; line-height:1.45; }
+.note.tiny em { font-style:normal; color:var(--ink-2); }
+
+/* Das Berufsschulzeugnis steht zwischen Fachschnitt und IHK-Prognose — eigene
+   Rechnung, deshalb eigene Trennlinie. */
+.zeug { margin-top:18px; padding-top:16px; border-top:1px solid var(--rule); }
+.zeug .pbl { margin-top:11px; }
+.zeug .pb .pbv { color:var(--amber); font-weight:600; width:52px; }
+
+/* Woran man beim Wecker ist — steht in der Timerleiste, klein aber da. */
+.tstat { flex:1 1 200px; min-width:0; }
+.wf .note.tiny { margin-top:6px; max-width:26ch; }
 
 /* ---- Stufenprüfung ------------------------------------------------------- */
 .attr.ready { border-color:var(--amber); background:var(--amber-soft); }
@@ -573,7 +584,7 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
   <button class="exx" data-act="examClose" type="button" aria-label="Prüfung schließen">✕</button>
 </dialog>
 
-<script type="application/json" id="state">{"v":4,"d":{"2026-08-26":["anki","englisch","lesen","morgen"],"2026-08-25":["morgen","anki","lesen"]},"f":{"2026-08-25":"frei","2026-08-28":"frei"},"n":{},"w":{},"q":{},"g":[],"zn":1.9,"updatedAt":1787900407134}</script>
+<script type="application/json" id="state">{"v":4,"d":{},"f":{"2026-08-28":"frei"},"n":{},"w":{},"q":{},"g":[{"id":"zg26bfk","fach":"zg:bfk","was":"Jahreszeugnis 2026","n":1.9,"p":null,"dat":"2026-07-29","gew":1},{"id":"zg26de","fach":"zg:deutsch","was":"Jahreszeugnis 2026","n":2.4,"p":null,"dat":"2026-07-29","gew":1},{"id":"zg26en","fach":"zg:englisch","was":"Jahreszeugnis 2026","n":2.8,"p":null,"dat":"2026-07-29","gew":1},{"id":"zg26gk","fach":"zg:gk","was":"Jahreszeugnis 2026","n":2.2,"p":null,"dat":"2026-07-29","gew":1}],"t":null,"zn":1.9,"zw":1200,"updatedAt":1787910152629}</script>
 
 <script id="app">
 /* ===========================================================================
@@ -915,6 +926,24 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
     { id: "wi", nm: "Wirtschafts- und Sozialkunde", de: "Teil 2 · schriftlich", pct: 10 },
     { id: "fa", nm: "Fachaufgabe im Einsatzgebiet", de: "Teil 2 · Report und Fachgespräch", pct: 30 }
   ];
+  /*  Das Berufsschulzeugnis führt BWL, WiSo und SUK nicht einzeln auf, sondern
+      zusammengefasst als Berufsfachliche Kompetenz. `ausF` nennt die Fächer,
+      aus denen sich die Note zusammensetzt — daraus rechnet die Seite zur
+      Gegenprobe den Schnitt der eingetragenen Klassenarbeiten.
+      Die Kennungen tragen den Vorsatz "zg:", so wie die Prüfungsblöcke "ihk:" —
+      am Format des Zustands ändert sich damit nichts.                        */
+  var ZEUGNIS = [
+    { id: "bfk", nm: "Berufsfachliche Kompetenz", de: "BWL, WiSo und SUK zusammen",
+      ausF: ["bwl", "wiso", "suk"] },
+    { id: "deutsch", nm: "Deutsch", de: "" },
+    { id: "englisch", nm: "Englisch", de: "" },
+    { id: "gk", nm: "Gemeinschaftskunde", de: "" },
+    { id: "sport", nm: "Sport", de: "" },
+    { id: "sonst", nm: "Weiteres Fach", de: "" }
+  ];
+  function istZeugnis(e) { return String(e.fach).indexOf("zg:") === 0; }
+  function istIhk(e) { return String(e.fach).indexOf("ihk:") === 0; }
+
   /*  Drei Zahlen statt einer: was jetzt schon feststeht, was im besten und im
       schlechtesten Fall herauskommt — und die einzige Zahl, die etwas ändert:
       welcher Schnitt in den offenen Blöcken für das Ziel nötig ist.          */
@@ -1752,7 +1781,9 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
         have: ev.restDays, need: 3, icon: "moon" },
       { id: "redner", nm: "Redner", de: "Fünf Feynman-Blöcke — 21 % der Endnote hängen am Fachgespräch",
         have: ev.tally.feynman, need: 5, icon: "globe" },
-      { id: "woche", nm: "Wochenmeister", de: "Wochenziel von 15 Stunden erreicht",
+      // Seit das Ziel einstellbar ist, muss die Beschreibung es nennen —
+      // sonst behauptet sie 15 Stunden, während 12 eingestellt sind.
+      { id: "woche", nm: "Wochenmeister", de: "Wochenziel von " + fmtMin(wk.goal) + " erreicht",
         have: goalHit ? 1 : 0, need: 1, icon: "flag" }
     ];
   }
@@ -2017,10 +2048,14 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
     state.updatedAt = Date.now();
     writeLocal();
     if (!artifactApi) return;
-    /*  Während einer Stufenprüfung wird nicht veröffentlicht: das Veröffentlichen
-        lädt alle offenen Ansichten neu und risse den Durchgang mittendrin ab.
-        Der Stand liegt bereits lokal — nachgeholt wird beim Schliessen.      */
+    /*  Zwei Fälle, in denen nicht veröffentlicht wird: das Veröffentlichen lädt
+        alle offenen Ansichten neu. Während einer Stufenprüfung risse das den
+        Durchgang mittendrin ab — und während ein Timer läuft, wirft es den
+        vorgelegten Weckton weg, denn der hängt an dieser Seite.
+        Der Stand liegt bereits lokal; nachgeholt wird, sobald beides vorbei ist. */
     if (exam) { nachholen = true; setStatus("wird nach der Prüfung gesichert"); return; }
+    if (state.t) { nachholen = true; setStatus("wird nach dem Timer gesichert"); return; }
+    if (weckerAn) { nachholen = true; setStatus("wird gesichert, sobald du den Wecker wegklickst"); return; }
     if (saveTimer) clearTimeout(saveTimer);
     // Klicks bündeln: eine Veröffentlichung je Handgriff, nicht je Häkchen.
     saveTimer = setTimeout(function () {
@@ -2176,7 +2211,7 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
      Der Sekundentakt schreibt bewusst nichts: er beschriftet nur die Anzeige
      neu. Ginge er über save(), löste jede Sekunde eine Veröffentlichung aus.  */
   var PAUSE_ID = "__pause";
-  var geklungen = null, weckerText = "", weckerBis = 0, letzteLage = "";
+  var geklungen = null, weckerText = "", weckerAn = false, letzteLage = "";
 
   function timerLeft(t, nowMs) {
     if (!t || !t.start || !t.mins) return null;
@@ -2191,14 +2226,20 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
   }
 
   function timerStart(b, key) {
+    // Beides gehört in den Fingertipp: nur hier darf der Ton freigeschaltet
+    // werden, und nur hier fragt der Browser nach der Benachrichtigung.
+    audioWecken();
     weckerErlauben();
     state.t = { key: key, id: b.id, nm: b.nm, mins: minutes(b) || 25, start: Date.now() };
     geklungen = null;
+    weckerStellen();
     save(); render();
     sag("Fokus gestartet: " + b.nm + ", " + state.t.mins + " Minuten.");
   }
   function timerStop() {
     state.t = null; geklungen = null;
+    toeneAbbrechen();
+    nachholen = false;   // save() darf jetzt wieder raus
     save(); render(); sag("Timer beendet.");
   }
   function timerPlus(schritt) {
@@ -2206,34 +2247,111 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
     var t = state.t;
     state.t = { key: t.key, id: t.id, nm: t.nm, mins: t.mins + (schritt || 10), start: t.start };
     geklungen = null;
+    weckerStellen();
     save(); render();
   }
   function pauseStart() {
+    audioWecken();
     weckerErlauben();
     state.t = { key: ymd(today()), id: PAUSE_ID, nm: "Pause", mins: 5, start: Date.now() };
     geklungen = null;
+    weckerStellen();
     save(); render();
   }
 
-  /*  Der Wecker läuft in der Seite: Banner plus kurzer Ton. Eine Tondatei wäre
-      durch die Inhaltsrichtlinie gesperrt, deshalb wird der Ton erzeugt. Die
-      Browser-Benachrichtigung kommt obendrauf, wenn der Rahmen sie zulässt —
-      im eingebetteten Artefakt ist sie oft gesperrt, verlassen darf sich der
-      Wecker also nicht auf sie.                                              */
+  /* ---- Der Wecker --------------------------------------------------------
+     Entscheidend ist, WANN der Ton entsteht. Vorher wurde er im Moment des
+     Ablaufs erzeugt — in einem setInterval-Rückruf, den der Browser bei einem
+     Tab im Hintergrund auf einmal pro Minute bremst und auf dem Handy ganz
+     einfriert. Dazu darf ein frisch erzeugter AudioContext ausserhalb eines
+     Fingertipps meist gar nicht loslegen. Beides zusammen ergab: zu spät oder
+     stumm.
+
+     Jetzt entsteht der Klang beim Start, innerhalb des Tippens auf ▶, und wird
+     in der Audio-Uhr auf die Endzeit vorgelegt. Die läuft im Audio-Thread und
+     kümmert sich nicht darum, ob der Tab gerade im Vordergrund ist.
+     Der Sekundentakt bleibt für das Sichtbare zuständig — zwei Wege, von denen
+     jeder allein trägt.                                                      */
+  var AUDIO = null;             // ein einziger Kontext, im Fingertipp geweckt
+  var gelegt = [];              // vorgelegte Töne, zum Abbrechen
+  var VORLAUF_MAX = 2 * 3600;   // weiter voraus hält kein Browser den Kontext
+
+  function audioWecken() {
+    try {
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return null;
+      if (!AUDIO) AUDIO = new AC();
+      if (AUDIO.state === "suspended" && AUDIO.resume) AUDIO.resume();
+      return AUDIO;
+    } catch (e) { return null; }
+  }
+  /*  Drei Schübe zu je drei Tönen über zehn Sekunden — das überhört man nicht,
+      und der Knopf "verstanden" bricht es ab.                                */
+  function tonLegen(abSek) {
+    var ctx = AUDIO;
+    if (!ctx) return;
+    toeneAbbrechen();
+    var basis = ctx.currentTime + Math.max(0, abSek);
+    [0, 5, 10].forEach(function (schub) {
+      [0, 0.22, 0.44].forEach(function (dt) {
+        try {
+          var o = ctx.createOscillator(), g = ctx.createGain();
+          var t0 = basis + schub + dt;
+          o.type = "sine";
+          o.frequency.value = 880;
+          g.gain.setValueAtTime(0.0001, t0);
+          g.gain.exponentialRampToValueAtTime(0.25, t0 + 0.02);
+          g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.17);
+          o.connect(g); g.connect(ctx.destination);
+          o.start(t0); o.stop(t0 + 0.2);
+          gelegt.push(o);
+        } catch (e) { /* einer weniger, der Rest klingt */ }
+      });
+    });
+  }
+  function toeneAbbrechen() {
+    gelegt.forEach(function (o) {
+      try { o.stop(); o.disconnect(); } catch (e) { /* lief schon ab */ }
+    });
+    gelegt = [];
+  }
+  /*  Für den laufenden Timer vorlegen — beim Start und beim Verlängern.      */
+  function weckerStellen() {
+    if (!AUDIO || !state.t) { toeneAbbrechen(); return; }
+    var sek = (state.t.start + state.t.mins * 60000 - Date.now()) / 1000;
+    if (sek < 0 || sek > VORLAUF_MAX) { toeneAbbrechen(); return; }
+    tonLegen(sek);
+  }
+
   function weckerErlauben() {
     try {
       if (window.Notification && window.Notification.permission === "default") {
         window.Notification.requestPermission();
       }
-    } catch (e) { /* nicht verfügbar — das Banner reicht */ }
+    } catch (e) { /* nicht verfügbar — der Ton in der Seite reicht */ }
   }
+  /*  Ob eine Benachrichtigung durchkommt, entscheidet der Rahmen, in dem das
+      Artefakt steckt — oft ist sie gesperrt. Das gehört gesagt statt gehofft. */
+  function meldeLage() {
+    try {
+      if (!window.Notification) return "Benachrichtigung hier nicht möglich — der Ton weckt dich";
+      if (window.Notification.permission === "granted") return "Benachrichtigung erlaubt";
+      if (window.Notification.permission === "denied") return "Benachrichtigung gesperrt — der Ton weckt dich";
+      return "Benachrichtigung noch nicht erlaubt — der Ton weckt dich";
+    } catch (e) { return "Benachrichtigung hier nicht möglich — der Ton weckt dich"; }
+  }
+
   function klingeln(t) {
     var pause = t.id === PAUSE_ID;
     var titel = pause ? "Pause vorbei" : "Fokusblock fertig";
     var text = pause ? "Weiter geht es." : t.nm + " · " + t.mins + " Minuten geschafft.";
     weckerText = titel + " — " + text;
-    weckerBis = Date.now() + 120000;
-    ton();
+    // Das Banner bleibt stehen, bis es weggeklickt wird. Ein Wecker, den man
+    // verschlafen kann, ist keiner.
+    weckerAn = true;
+    // Ist nichts vorgelegt — kein Audio, zu langer Vorlauf, Seite zwischendurch
+    // neu geladen —, wird hier noch einmal versucht.
+    if (!gelegt.length) { audioWecken(); tonLegen(0); }
     sag(titel + ". " + text);
     try {
       if (window.Notification && window.Notification.permission === "granted") {
@@ -2241,24 +2359,12 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
       }
     } catch (e) { /* dann eben nur in der Seite */ }
   }
-  function ton() {
-    try {
-      var AC = window.AudioContext || window.webkitAudioContext;
-      if (!AC) return;
-      var ctx = new AC();
-      [0, 0.2, 0.4].forEach(function (dt) {
-        var o = ctx.createOscillator(), g = ctx.createGain();
-        o.type = "sine";
-        o.frequency.value = 880;
-        g.gain.setValueAtTime(0.0001, ctx.currentTime + dt);
-        g.gain.exponentialRampToValueAtTime(0.22, ctx.currentTime + dt + 0.02);
-        g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + dt + 0.16);
-        o.connect(g); g.connect(ctx.destination);
-        o.start(ctx.currentTime + dt);
-        o.stop(ctx.currentTime + dt + 0.18);
-      });
-      setTimeout(function () { try { ctx.close(); } catch (e) { /* egal */ } }, 1200);
-    } catch (e) { /* ohne Ton eben still */ }
+  function weckerZurueck() {
+    weckerAn = false; weckerText = "";
+    toeneAbbrechen();
+    render();
+    // Was der Wecker aufgehalten hat, geht jetzt raus.
+    if (nachholen) { nachholen = false; save(); }
   }
 
   /*  Ein Takt für beides: die Timeranzeige jede Sekunde, und ein Blick darauf,
@@ -2281,7 +2387,9 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
         if (el) el.textContent = uhrzeit(sek);
       }
     }
-    if (weckerBis && Date.now() > weckerBis) { weckerBis = 0; weckerText = ""; render(); }
+    // Der Wecker verschwindet nur auf Knopfdruck. Die Aufstiegsmeldung darf
+    // von allein gehen — sie verlangt nichts.
+    if (aufstiegBis && Date.now() > aufstiegBis) { aufstiegBis = 0; aufstiegText = ""; render(); }
     lagePruefen();
   }
   function lagePruefen() {
@@ -2311,9 +2419,14 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
   var monatOffset = 0;        // 0 = aktueller Monat, negativ = zurückgeblättert
 
   function fachName(id) {
-    if (String(id).indexOf("ihk:") === 0) {
-      var b = IHK_BLOECKE.filter(function (x) { return "ihk:" + x.id === id; })[0];
-      return b ? b.nm : id;
+    var f = String(id);
+    if (f.indexOf("ihk:") === 0) {
+      var b = IHK_BLOECKE.filter(function (x) { return "ihk:" + x.id === f; })[0];
+      return b ? b.nm : f;
+    }
+    if (f.indexOf("zg:") === 0) {
+      var z = ZEUGNIS.filter(function (x) { return "zg:" + x.id === f; })[0];
+      return z ? "Zeugnis · " + z.nm : f;
     }
     return ATTR_BY[id] ? ATTR_BY[id].nm : id;
   }
@@ -2343,7 +2456,9 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
   function notenKarte(now) {
     var gl = state.g || [];
     var ziel = state.zn || 1.9;
-    var schule = gl.filter(function (e) { return String(e.fach).indexOf("ihk:") !== 0; });
+    // Eine Zeugnisnote ist bereits ein Mittel. Zählte sie hier mit, ginge
+    // dieselbe Leistung ein zweites Mal in den Schnitt ein.
+    var schule = gl.filter(function (e) { return !istIhk(e) && !istZeugnis(e); });
     var ges = schnitt(schule);
 
     var h = '<section class="card"><div class="card-head"><h2>Noten</h2>' +
@@ -2364,6 +2479,11 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
         var v = "ihk:" + b.id;
         return '<option value="' + v + '"' + (gForm.fach === v ? " selected" : "") +
           ">" + esc(b.nm) + "</option>";
+      }).join("") + '</optgroup><optgroup label="Berufsschulzeugnis">' +
+      ZEUGNIS.map(function (z) {
+        var v = "zg:" + z.id;
+        return '<option value="' + v + '"' + (gForm.fach === v ? " selected" : "") +
+          ">" + esc(z.nm) + "</option>";
       }).join("") + "</optgroup></select></label>" +
       '<label class="gf f-was"><span>Was</span><input id="gWas" type="text" maxlength="80" ' +
       'placeholder="Klassenarbeit Buchführung" value="' + esc(gForm.was) + '"></label>' +
@@ -2396,8 +2516,10 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
         // Nebenzeile aus Teilen bauen: das Fach nur, wenn es nicht schon oben steht.
         var teile = [];
         if (fn !== titel) teile.push(esc(fn));
-        teile.push(e.p !== null && e.p !== undefined
-          ? e.p + " Punkte" : "≈ " + noteZuPunkte(e.n) + " Punkte");
+        // Für eine Zeugnisnote ist der IHK-Punkteschlüssel bedeutungslos: die
+        // Schule rechnet nicht danach. Dann steht dort nur, was eingetragen wurde.
+        if (e.p !== null && e.p !== undefined) teile.push(e.p + " Punkte");
+        else if (!istZeugnis(e)) teile.push("≈ " + noteZuPunkte(e.n) + " Punkte");
         if (Number(e.gew) !== 1) teile.push("×" + String(e.gew).replace(".", ","));
         if (e.dat) teile.push(e.dat.split("-").reverse().join("."));
         return '<li class="gitem' + (nt >= 4.5 ? " bad" : nt <= 2 ? " good" : "") + '">' +
@@ -2421,6 +2543,42 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
           ? list.length + (list.length === 1 ? " Note" : " Noten") : "offen") +
         "</span></div>";
     }).join("") + "</div>";
+
+    /* Zeugnis */
+    var zl = gl.filter(istZeugnis);
+    var zSchnitt = schnitt(zl);
+    h += '<div class="zeug"><div class="proghead">' +
+      '<span class="eyebrow">Berufsschulzeugnis</span>' +
+      '<span class="note mono">' +
+      (zSchnitt === null ? "noch nichts eingetragen" : "Schnitt " + num(zSchnitt, 2)) +
+      "</span></div>";
+    if (zl.length) {
+      h += '<ul class="pbl">' + ZEUGNIS.map(function (z) {
+        var treffer = zl.filter(function (e) { return e.fach === "zg:" + z.id; });
+        if (!treffer.length) return "";
+        // Bei der BFK zur Gegenprobe: was ergeben die eigenen Klassenarbeiten
+        // aus BWL, WiSo und SUK? Weicht das ab, gewichtet die Schule anders.
+        var eigen = z.ausF ? schnitt(gl.filter(function (e) {
+          return z.ausF.indexOf(e.fach) >= 0;
+        })) : null;
+        var unten = [];
+        if (z.de) unten.push(esc(z.de));
+        if (eigen !== null) unten.push("deine Klassenarbeiten ergeben " + num(eigen, 2));
+        return '<li class="pb have">' +
+          '<span class="pbn">' + esc(z.nm) +
+          (unten.length ? "<em>" + unten.join(" · ") + "</em>" : "") + "</span>" +
+          '<span class="pbv mono">' + num(schnitt(treffer)) + "</span></li>";
+      }).join("") + "</ul>" +
+        '<p class="note tiny">Je Zeile eine Note, gleich gewichtet — so steht es auf ' +
+        "dem Zeugnis. Diese Rechnung ist unabhängig von der IHK-Prognose darunter: " +
+        "das Weiterbildungsstipendium hängt an der Abschlussprüfung, nicht am " +
+        "Berufsschulzeugnis.</p>";
+    } else {
+      h += '<p class="note tiny">Noch keine Zeugnisnote eingetragen. Oben im Feld ' +
+        "<em>Fach</em> stehen sie unter <em>Berufsschulzeugnis</em> — BWL, WiSo und " +
+        "SUK zusammen als Berufsfachliche Kompetenz.</p>";
+    }
+    h += "</div>";
 
     /* Prognose */
     var pr = prognose(gl, ziel);
@@ -2587,7 +2745,7 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
       html += '<div class="aufstieg"><span class="ic">' + icon("star", 18) + "</span>" +
         "<span><b>Aufstieg</b> " + esc(aufstiegText) + "</span></div>";
     }
-    if (weckerText) {
+    if (weckerAn && weckerText) {
       html += '<div class="wecker" role="alert"><span class="ic">' + icon("bell", 18) + "</span>" +
         "<span>" + esc(weckerText) + "</span>" +
         '<button class="btn" data-act="weckerAus" type="button">verstanden</button></div>';
@@ -2709,20 +2867,29 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
       'placeholder="was lief heute, was ging schief — ein Satz genügt">' +
       "</div>";
 
-    // Der Timer läuft, aber sein Block steht heute nicht im Plan (etwa eine
-    // Pause oder ein am Mac gestarteter Block von gestern).
-    if (state.t && !(info.plan.blocks || []).some(function (b) {
-      return b.id === state.t.id && state.t.key === info.key;
-    })) {
-      html += '<div class="tfremd"><span class="eyebrow">Läuft</span>' +
-        "<span>" + esc(state.t.nm) + "</span>" +
-        '<span class="tlauf mono" id="tuhr">' + uhrzeit(timerSek(state.t, Date.now()) || 0) + "</span>" +
-        '<button class="btn small" data-act="tplus" type="button">+10 min</button>' +
-        '<button class="btn small" data-act="tstop" type="button">beenden</button></div>';
-    } else if (!state.t && view === 0) {
-      html += '<div class="tfremd"><span class="eyebrow">Pause</span>' +
-        '<span class="note">Fünf Minuten zwischen zwei Blöcken — der Wecker holt dich zurück.</span>' +
-        '<button class="btn small" data-act="tpause" type="button">Pause starten</button></div>';
+    /*  Die Timerleiste steht am heutigen Tag immer da — sie ist zugleich die
+        Stelle, an der ehrlich steht, ob eine Benachrichtigung durchkommt.
+        Läuft der Timer auf einem Block dieses Tages, zeigt schon dessen Zeile
+        die Uhr; dann darf hier keine zweite mit derselben Kennung stehen.     */
+    if (view === 0 || state.t) {
+      var tImPlan = state.t && (info.plan.blocks || []).some(function (b) {
+        return b.id === state.t.id && state.t.key === info.key;
+      });
+      html += '<div class="tfremd">';
+      if (state.t) {
+        html += '<span class="eyebrow">Läuft</span><span>' + esc(state.t.nm) + "</span>" +
+          (tImPlan ? "" : '<span class="tlauf mono" id="tuhr">' +
+            uhrzeit(timerSek(state.t, Date.now()) || 0) + "</span>") +
+          '<span class="note tstat">' + esc(meldeLage()) + "</span>" +
+          '<button class="btn small" data-act="tplus" type="button">+10 min</button>' +
+          '<button class="btn small" data-act="tstop" type="button">beenden</button>';
+      } else {
+        html += '<span class="eyebrow">Pause</span>' +
+          '<span class="note">Fünf Minuten zwischen zwei Blöcken — der Wecker holt dich zurück.</span>' +
+          '<span class="note tstat">' + esc(meldeLage()) + "</span>" +
+          '<button class="btn small" data-act="tpause" type="button">Pause starten</button>';
+      }
+      html += "</div>";
     }
     html += "</section>";
 
@@ -2761,7 +2928,9 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
       'placeholder="zwei Themen, getrennt mit  ·  oder  ;"></label>' +
       '<label class="wf ziel"><span class="eyebrow">Wochenziel</span>' +
       '<span class="zeile"><input id="wziel" type="number" min="0" max="60" step="0.5" ' +
-      'value="' + (Math.round((wk.goal / 60) * 10) / 10) + '"><span class="einheit">Stunden</span></span></label>' +
+      'value="' + (Math.round((wk.goal / 60) * 10) / 10) + '"><span class="einheit">Stunden</span></span>' +
+      '<span class="note tiny">wirkt auf die Anzeige oben und das Abzeichen ' +
+      "„Wochenmeister“ — nicht auf XP oder Stufen</span></label>" +
       "</div>";
 
     if (themen.length) {
@@ -3078,7 +3247,7 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
       return;
     }
     if (act === "undo") { rueckNehmen(); return; }
-    if (act === "weckerAus") { weckerBis = 0; weckerText = ""; render(); return; }
+    if (act === "weckerAus") { weckerZurueck(); return; }
     if (act === "tstart") {
       var tb = (dayInfo(shownDate(), state.f).plan.blocks || [])
         .filter(function (x) { return x.id === el.getAttribute("data-id"); })[0];
@@ -3214,6 +3383,11 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
   render();
   // Ein Takt für Timer, Wecker und den Jetzt-Marker. Er schreibt nichts.
   setInterval(takt, 1000);
+  // Im Hintergrund bremst der Browser den Takt. Beim Zurückkommen deshalb
+  // sofort nachsehen, statt bis zur nächsten Sekunde zu warten.
+  document.addEventListener("visibilitychange", function () {
+    if (!document.hidden) takt();
+  });
 
   if (window.claude && typeof window.claude.use === "function") {
     window.claude.use("artifact").then(function (api) {

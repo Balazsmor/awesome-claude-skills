@@ -7,7 +7,8 @@ const HOOK = `  try { window.__T = { punkteZuNote:punkteZuNote, noteZuPunkte:not
     schnitt:schnitt, prognose:prognose, num:num, notenName:notenName,
     view:function(){return view;}, PLAN:PLAN, QUIZ:QUIZ,
     isoWeek:isoWeek, timerLeft:timerLeft, blockZeit:blockZeit, tagesLage:tagesLage,
-    zieheFragen:zieheFragen, state:function(){return state;} }; } catch (e) {}\n})();\n</script>`;
+    zieheFragen:zieheFragen, state:function(){return state;}, render:render,
+    ZEUGNIS:ZEUGNIS }; } catch (e) {}\n})();\n</script>`;
 
 const kaputt = process.argv.includes("--ohne-fix");
 let src = readFileSync("lernquest.html", "utf8").replace("})();\n</script>", HOOK);
@@ -373,7 +374,77 @@ wahr("Am aktuellen Monat ist Schluss",
 wahr("Monatszellen sind klickbar",
   await p.locator('.month .cell[data-act="day"]:not([disabled])').count() > 0);
 
-/* ---- 20. Kein Skriptfehler ---------------------------------------------- */
+/* ---- 20. Zeugnisnoten rechnen getrennt von den Klassenarbeiten ---------- */
+await p.evaluate(() => {
+  const st = window.__T.state();
+  st.g = [
+    { id:"z1", fach:"zg:bfk",      was:"Jahreszeugnis 2026", n:1.9, p:null, dat:"2026-07-29", gew:1 },
+    { id:"z2", fach:"zg:deutsch",  was:"Jahreszeugnis 2026", n:2.4, p:null, dat:"2026-07-29", gew:1 },
+    { id:"z3", fach:"zg:englisch", was:"Jahreszeugnis 2026", n:2.8, p:null, dat:"2026-07-29", gew:1 },
+    { id:"z4", fach:"zg:gk",       was:"Jahreszeugnis 2026", n:2.2, p:null, dat:"2026-07-29", gew:1 },
+    { id:"k1", fach:"bwl",     was:"Test Beschaffung", n:2.0, p:null, dat:"2026-08-01", gew:1 },
+    { id:"k2", fach:"wiso",    was:"Test SV",          n:2.3, p:null, dat:"2026-08-02", gew:1 },
+    { id:"k3", fach:"suk",     was:"KA Buchführung",   n:1.7, p:null, dat:"2026-08-03", gew:2 },
+    { id:"k4", fach:"deutsch", was:"Erörterung",       n:3.0, p:null, dat:"2026-08-04", gew:1 }
+  ];
+  window.__T.render();
+});
+await p.waitForTimeout(200);
+const zeug = await p.evaluate(() => {
+  const karte = document.querySelector(".zeug").closest(".card");
+  const zeilen = Array.from(document.querySelectorAll(".zeug .pb")).map(li => ({
+    nm: li.querySelector(".pbn").childNodes[0].textContent.trim(),
+    unten: (li.querySelector(".pbn em") || {}).textContent || "",
+    note: li.querySelector(".pbv").textContent
+  }));
+  const kachel = nm => {
+    const el = Array.from(document.querySelectorAll(".gavg .ga"))
+      .filter(x => x.querySelector(".gan").textContent === nm)[0];
+    return el ? el.querySelector(".gav").textContent : null;
+  };
+  return {
+    kopf: karte.querySelector(".card-head .note").textContent,
+    schnitt: document.querySelector(".zeug .proghead .note").textContent,
+    zeilen: zeilen,
+    deutschKachel: kachel("Deutsch"),
+    punkteInListe: Array.from(document.querySelectorAll(".glist .gitem"))
+      .filter(li => /Zeugnis/.test(li.querySelector(".gm").textContent))
+      .map(li => li.querySelector(".gm").textContent)
+  };
+});
+eq("Zeugnisschnitt", zeug.schnitt, "Schnitt 2,33");
+eq("Vier Zeugniszeilen", zeug.zeilen.length, 4);
+eq("BFK steht oben", zeug.zeilen[0].nm, "Berufsfachliche Kompetenz");
+eq("mit der Zeugnisnote", zeug.zeilen[0].note, "1,9");
+wahr("und der Gegenprobe aus den eigenen Klassenarbeiten",
+     /Klassenarbeiten ergeben 1,92/.test(zeug.zeilen[0].unten));
+// Die Zeugnisnote darf den Schnitt der Klassenarbeiten nicht verändern:
+// (2,0 + 2,3 + 2×1,7 + 3,0) ÷ 5 = 2,14 — ohne die vier Zeugniszeilen.
+eq("Schnitt der Klassenarbeiten unberührt", zeug.kopf, "Schnitt Schule 2,14 · 4 Noten");
+eq("Deutsch-Kachel zählt nur die Klassenarbeit", zeug.deutschKachel, "3,00");
+wahr("Zeugnisnoten bekommen keine IHK-Punkte angehängt",
+     zeug.punkteInListe.length === 4 && zeug.punkteInListe.every(t => !/Punkte/.test(t)));
+
+/* ---- 21. Das Wochenziel-Abzeichen nennt das eingestellte Ziel ----------- */
+await p.fill("#wziel", "12");
+await p.locator("#wziel").blur();
+await p.waitForTimeout(280);
+const abz = await p.evaluate(() => {
+  const el = Array.from(document.querySelectorAll(".badge"))
+    .filter(b => b.querySelector(".bn").textContent === "Wochenmeister")[0];
+  return el ? el.querySelector(".bd").textContent : null;
+});
+eq("Abzeichen nennt 12 h", abz, "Wochenziel von 12 h erreicht");
+await p.fill("#wziel", "15");
+await p.locator("#wziel").blur();
+await p.waitForTimeout(280);
+eq("und folgt der Änderung", await p.evaluate(() => {
+  const el = Array.from(document.querySelectorAll(".badge"))
+    .filter(b => b.querySelector(".bn").textContent === "Wochenmeister")[0];
+  return el.querySelector(".bd").textContent;
+}), "Wochenziel von 15 h erreicht");
+
+/* ---- 22. Kein Skriptfehler ---------------------------------------------- */
 eq("Seitenfehler", errs, []);
 
 await ctx.close(); await b.close();

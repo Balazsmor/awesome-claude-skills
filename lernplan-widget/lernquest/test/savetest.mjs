@@ -20,7 +20,39 @@ const seed = { v:4, d:{}, f:{}, n:{}, w:{}, q:{}, g:[], zn:1.9, updatedAt:Date.n
 for (let i=0;i<80;i++) seed.d[day(i)] = ["morgen","anki","lesen","deepA","deepB","wdh","deutsch","englisch"];
 
 // Artefakt-Ablage nachbilden und jede Veröffentlichung mitzählen
+/*  Audio-Attrappe: sie schreibt mit, wann ein Kontext entsteht, ob er
+    freigeschaltet wird und auf welchen Zeitpunkt jeder Ton gelegt wird.
+    currentTime bleibt 0, damit der gelegte Zeitpunkt direkt die Restsekunden
+    sind — daran lässt sich ablesen, ob vorgelegt oder erst beim Klingeln
+    erzeugt wurde.                                                            */
 await p.addInitScript(`
+  window.__audio = { erzeugt: 0, resumes: 0, starts: [], geplantesEnde: 0, abbrueche: 0 };
+  window.AudioContext = function () {
+    window.__audio.erzeugt++;
+    this.state = "suspended";
+    this.currentTime = 0;
+    this.destination = {};
+    this.resume = function () { window.__audio.resumes++; this.state = "running";
+                                return Promise.resolve(); };
+    this.close = function () {};
+    this.createOscillator = function () {
+      return { type: "", frequency: { value: 0 },
+               connect: function () {}, disconnect: function () {},
+               start: function (w) { window.__audio.starts.push(w); },
+               stop: function (w) {
+                 // Mit Zeitangabe: das eingeplante Ende des Tons.
+                 // Ohne: ein Abbruch durch toeneAbbrechen().
+                 if (w === undefined) window.__audio.abbrueche++;
+                 else window.__audio.geplantesEnde++;
+               } };
+    };
+    this.createGain = function () {
+      return { gain: { setValueAtTime: function () {},
+                       exponentialRampToValueAtTime: function () {} },
+               connect: function () {}, disconnect: function () {} };
+    };
+  };
+  window.webkitAudioContext = window.AudioContext;
   window.__pub = [];
   window.claude = { use: function () { return Promise.resolve({
     publish: function (html) { window.__pub.push(html.length); return Promise.resolve(); }
@@ -67,32 +99,65 @@ await p.waitForTimeout(2200);
 eq("Nach dem Schliessen veröffentlicht", await p.evaluate(()=>window.__pub.length), 2);
 eq("Prüfungsstand im veröffentlichten Stand", await p.evaluate(()=>
   JSON.parse(localStorage.getItem("lernquest.state.v4")).q.suk), 2);
-/* ---- Der Fokus-Timer veröffentlicht nicht im Sekundentakt --------------- */
+/* ---- Der Ton wird beim Start vorgelegt, nicht beim Klingeln ------------- */
 const vorTimer = await p.evaluate(() => window.__pub.length);
+eq("Vor dem Start kein Audio", await p.evaluate(() => window.__audio.erzeugt), 0);
 await p.click('.quest .tbtn[data-act="tstart"]');
-await p.waitForTimeout(2200);            // eine Veröffentlichung fürs Starten
-eq("Timerstart wird gesichert", await p.evaluate(() => window.__pub.length), vorTimer + 1);
+await p.waitForTimeout(400);
+const au1 = await p.evaluate(() => ({
+  erzeugt: window.__audio.erzeugt, resumes: window.__audio.resumes,
+  anzahl: window.__audio.starts.length,
+  frueheste: Math.min.apply(null, window.__audio.starts),
+  minuten: window.__S().t.mins
+}));
+eq("Genau ein Audio-Kontext", au1.erzeugt, 1);
+wahr("und er wurde im Fingertipp freigeschaltet", au1.resumes >= 1);
+eq("Drei Schübe zu drei Tönen sind vorgelegt", au1.anzahl, 9);
+// Vorgelegt heisst: der erste Ton liegt auf der Endzeit, nicht auf currentTime (0)
+wahr("Der Ton liegt auf der Endzeit, nicht auf jetzt",
+     au1.frueheste > au1.minuten * 60 - 5 && au1.frueheste <= au1.minuten * 60);
+
+/* ---- Während der Timer läuft, wird nicht veröffentlicht ----------------- */
+await p.waitForTimeout(2200);
+eq("Timerstart veröffentlicht nicht",
+   await p.evaluate(() => window.__pub.length), vorTimer);
+eq("und sagt auch warum", await p.textContent("#savestate"), "wird nach dem Timer gesichert");
 const a1 = await p.textContent("#tuhr");
-await p.waitForTimeout(3200);            // drei Sekunden ticken
+await p.waitForTimeout(3200);
 const a2 = await p.textContent("#tuhr");
-eq("Der Sekundentakt veröffentlicht nichts",
-   await p.evaluate(() => window.__pub.length), vorTimer + 1);
-wahr("aber die Uhr läuft weiter", a1 !== a2);
+wahr("die Uhr läuft weiter", a1 !== a2);
 wahr("Timer steht im Zustand", await p.evaluate(() => !!window.__S().t));
 
-/* ---- Ablauf: Wecker klingelt einmal, dann ist der Timer leer ------------ */
+/* ---- Verlängern bricht ab und legt neu vor ------------------------------ */
+await p.click('[data-act="tplus"]');
+await p.waitForTimeout(300);
+const au2 = await p.evaluate(() => ({
+  abbrueche: window.__audio.abbrueche, anzahl: window.__audio.starts.length,
+  spaeteste: Math.max.apply(null, window.__audio.starts), erzeugt: window.__audio.erzeugt
+}));
+eq("Kein zweiter Kontext", au2.erzeugt, 1);
+eq("Die alten Töne wurden abgebrochen", au2.abbrueche, 9);
+eq("und neun neue vorgelegt", au2.anzahl, 18);
+wahr("zehn Minuten später", au2.spaeteste > au1.frueheste + 500);
+
+/* ---- Ablauf: Wecker klingelt einmal und bleibt stehen ------------------- */
 await p.evaluate(() => { window.__S().t.start = Date.now() - window.__S().t.mins * 60000 - 500; });
 await p.waitForTimeout(1600);
 wahr("Wecker meldet sich", await p.locator(".wecker").count() === 1);
 eq("Timer ist geleert", await p.evaluate(() => window.__S().t), null);
-await p.waitForTimeout(2400);
-eq("Ablauf wird einmal gesichert",
-   await p.evaluate(() => window.__pub.length), vorTimer + 2);
-await p.waitForTimeout(2200);
+await p.waitForTimeout(2600);
 eq("und klingelt nicht noch einmal", await p.locator(".wecker").count(), 1);
+// Solange das Banner steht, hält es die Veröffentlichung auf — sonst lüde die
+// Seite neu und nähme den Wecker weg, bevor ihn jemand gesehen hat.
+eq("Das Banner hält die Veröffentlichung auf",
+   await p.evaluate(() => window.__pub.length), vorTimer);
 await p.click('[data-act="weckerAus"]');
 await p.waitForTimeout(200);
 eq("Wecker lässt sich wegklicken", await p.locator(".wecker").count(), 0);
+eq("Der Ton hört mit ihm auf", await p.evaluate(() => window.__audio.abbrueche), 18);
+await p.waitForTimeout(2400);
+wahr("und das Aufgehaltene geht danach raus",
+     await p.evaluate(() => window.__pub.length) > vorTimer);
 
 eq("Seitenfehler", errs, []);
 
