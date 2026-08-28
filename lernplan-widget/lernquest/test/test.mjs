@@ -738,7 +738,68 @@ wahr("Ein eben abgelaufener meldet sich noch", frisch.wecker);
 eq("Ein längst abgelaufener wird fallen gelassen", alt2.t, null);
 eq("und meldet sich nicht mehr", alt2.wecker, false);
 
-/* ---- 29. Kein Skriptfehler ---------------------------------------------- */
+/* ---- 29. Die Schriften halten die Anzeige nicht auf --------------------- */
+/*  Im Kopf steht media="print" — damit lädt der Browser die Schriftdatei, ohne
+    das Zeichnen zu blockieren. Erst das Skript schaltet auf "all" um.        */
+wahr("Im Quelltext steht der Verweis auf media=print",
+     /<link id="fontcss" rel="stylesheet" media="print"/.test(
+       readFileSync("lernquest.html", "utf8")));
+eq("Nach dem Start ist er scharf geschaltet",
+   await p.evaluate(() => document.getElementById("fontcss").media), "all");
+wahr("Der Ersatz-Schriftschnitt steht im Stylesheet",
+     /-apple-system, "Segoe UI", sans-serif/.test(
+       await p.evaluate(() => document.getElementById("app-style").textContent)));
+
+/* ---- 30. Ein kaputter freeDay wird abgefangen --------------------------- */
+/*  freeDay stand bis hierher ungeprüft durch — ein Tippfehler dort hätte
+    jeden frei markierten Tag und jeden Feiertag stillschweigend geleert.     */
+async function planFehlerFuer(json) {
+  await p.fill("#planio", JSON.stringify(json));
+  await p.click('[data-act="planNehmen"]');
+  await p.waitForTimeout(200);
+  return await p.evaluate(() =>
+    Array.from(document.querySelectorAll(".planfehler li")).map(li => li.textContent));
+}
+const fdLeer = await planFehlerFuer({ freeDay: { label: "Frei", blocks: [] } });
+wahr("Ein freeDay ohne Blöcke wird gemeldet",
+     fdLeer.some(f => /freeDay braucht eine nicht leere Liste/.test(f)));
+const fdKind = await planFehlerFuer({ freeDay: { label: "Frei", blocks: [
+  { id: "a", nm: "Eins", kind: "schlummer" } ]}});
+wahr("Ein unbekanntes kind im freeDay auch",
+     fdKind.some(f => /schlummer/.test(f)));
+const fdDopp = await planFehlerFuer({ freeDay: { label: "Frei", blocks: [
+  { id: "a", nm: "Eins", kind: "frei" }, { id: "a", nm: "Zwei", kind: "lese" } ]}});
+wahr("Und eine doppelte id im freeDay", fdDopp.some(f => /doppelt/.test(f)));
+eq("Der eingebaute Plan steht dabei noch",
+   await p.evaluate(() => window.__T.plan().freeDay.blocks.length),
+   await p.evaluate(() => window.__T.PLAN_BASIS.freeDay.blocks.length));
+await p.click('[data-act="planReset"]');
+await p.waitForTimeout(200);
+
+/* ---- 31. Der gedrückte Knopf bleibt unter dem Finger -------------------- */
+/*  Ein freier Tag hat einen viel kürzeren Plan. Ohne Anker sprang der Knopf,
+    den man gerade gedrückt hat, um rund achtzig Pixel weg.                   */
+await p.evaluate(() => { window.__T.state().f = {}; window.__T.render(); });
+await p.waitForTimeout(150);
+const anker = await p.evaluate(async () => {
+  const knopf = () => document.querySelector('[data-act="mark"]');
+  knopf().scrollIntoView({ block: "center" });
+  await new Promise(r => setTimeout(r, 60));
+  const vorher = knopf().getBoundingClientRect().top;
+  const hoeheVor = document.body.scrollHeight;
+  knopf().click();
+  await new Promise(r => setTimeout(r, 200));
+  return { wandert: Math.round(knopf().getBoundingClientRect().top - vorher),
+           kuerzer: document.body.scrollHeight < hoeheVor };
+});
+wahr("Der Tagesplan wird beim Freisetzen kürzer", anker.kuerzer);
+wahr("Der Knopf bleibt trotzdem stehen", Math.abs(anker.wandert) <= 2);
+await p.click('[data-act="mark"]'); await p.waitForTimeout(150);
+await p.click('[data-act="mark"]'); await p.waitForTimeout(150);
+eq("und die Markierung ist wieder weg",
+   await p.evaluate(() => Object.keys(window.__T.state().f).length), 0);
+
+/* ---- 32. Kein Skriptfehler ---------------------------------------------- */
 eq("Seitenfehler", errs, []);
 
 await ctx.close(); await b.close();

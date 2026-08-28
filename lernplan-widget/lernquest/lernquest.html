@@ -1,7 +1,7 @@
 <title>Lernquest Berichtsheft</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link id="fontcss" rel="stylesheet" media="print" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
 
 <style id="app-style">
 /* ===========================================================================
@@ -878,6 +878,29 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
     if (!eigen || typeof eigen !== "object" || Array.isArray(eigen)) {
       return ["Der Plan muss ein Objekt sein — geschweifte Klammern, keine Liste."];
     }
+    /*  Eine Blockliste prüfen — für die Wochentage und für freeDay dieselbe
+        Rechnung, deshalb einmal geschrieben.                                  */
+    function bloeckePruefen(bl, wo) {
+      if (!Array.isArray(bl) || !bl.length) {
+        fehler.push(wo + " braucht eine nicht leere Liste blocks."); return;
+      }
+      var gesehen = {};
+      bl.forEach(function (b, i) {
+        var stelle = wo + ", Block " + (i + 1);
+        if (!b || typeof b !== "object") { fehler.push(stelle + " ist kein Objekt."); return; }
+        if (!b.id) fehler.push(stelle + ": id fehlt.");
+        else if (gesehen[b.id]) fehler.push(stelle + ": die id „" + b.id + "“ kommt doppelt vor.");
+        else gesehen[b.id] = true;
+        if (!b.nm) fehler.push(stelle + ": nm (der Name) fehlt.");
+        if (b.kind && KINDS.indexOf(b.kind) < 0) {
+          fehler.push(stelle + ": kind „" + b.kind + "“ kennt die Seite nicht — erlaubt sind " +
+                      KINDS.join(", ") + ".");
+        }
+        if (b.min !== undefined && !(Number(b.min) >= 0)) {
+          fehler.push(stelle + ": min muss eine Zahl sein.");
+        }
+      });
+    }
     ["days", "vacationDays"].forEach(function (gruppe) {
       var g = eigen[gruppe];
       if (g === undefined) return;
@@ -889,28 +912,18 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
           fehler.push(gruppe + ": „" + tag + "“ ist kein Wochentag (mo, di, mi, do, fr, sa, so).");
           return;
         }
-        var bl = g[tag] && g[tag].blocks;
-        if (!Array.isArray(bl) || !bl.length) {
-          fehler.push(gruppe + "." + tag + " braucht eine nicht leere Liste blocks."); return;
-        }
-        var gesehen = {};
-        bl.forEach(function (b, i) {
-          var wo = gruppe + "." + tag + ", Block " + (i + 1);
-          if (!b || typeof b !== "object") { fehler.push(wo + " ist kein Objekt."); return; }
-          if (!b.id) fehler.push(wo + ": id fehlt.");
-          else if (gesehen[b.id]) fehler.push(wo + ": die id „" + b.id + "“ kommt doppelt vor.");
-          else gesehen[b.id] = true;
-          if (!b.nm) fehler.push(wo + ": nm (der Name) fehlt.");
-          if (b.kind && KINDS.indexOf(b.kind) < 0) {
-            fehler.push(wo + ": kind „" + b.kind + "“ kennt die Seite nicht — erlaubt sind " +
-                        KINDS.join(", ") + ".");
-          }
-          if (b.min !== undefined && !(Number(b.min) >= 0)) {
-            fehler.push(wo + ": min muss eine Zahl sein.");
-          }
-        });
+        bloeckePruefen(g[tag] && g[tag].blocks, gruppe + "." + tag);
       });
     });
+    /*  freeDay stand bisher ungeprüft durch. Ein Tippfehler dort hätte jeden
+        frei markierten Tag und jeden Feiertag stillschweigend geleert.        */
+    if (eigen.freeDay !== undefined) {
+      if (!eigen.freeDay || typeof eigen.freeDay !== "object" || Array.isArray(eigen.freeDay)) {
+        fehler.push("freeDay muss ein Objekt mit blocks sein.");
+      } else {
+        bloeckePruefen(eigen.freeDay.blocks, "freeDay");
+      }
+    }
     if (eigen.core !== undefined) {
       if (!Array.isArray(eigen.core)) fehler.push("core muss eine Liste von Block-Kennungen sein.");
       else {
@@ -2271,7 +2284,7 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
       "<title>Lernquest Berichtsheft</title>\n" +
       '<link rel="preconnect" href="https://fonts.googleapis.com">\n' +
       '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n' +
-      '<link rel="stylesheet" href="' + FONTS + '">\n' +
+      '<link id="fontcss" rel="stylesheet" media="print" href="' + FONTS + '">\n' +
       '<style id="app-style">' + css + "<\/style>\n</head>\n<body>\n" +
       '<div class="wrap" id="root"></div>\n' +
       '<dialog id="examDlg" aria-label="Stufenprüfung"><div id="examBody"></div>' +
@@ -2628,10 +2641,17 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
     if (aufstiegBis && Date.now() > aufstiegBis) { aufstiegBis = 0; aufstiegText = ""; render(); }
     lagePruefen();
   }
+  /*  Der Takt schlägt jede Sekunde, der Tagesplan kennt aber nur Minuten.
+      Deshalb wird hier nur nachgesehen, wenn die Minute umgesprungen ist —
+      einmal je Minute statt 86.400-mal am Tag.                               */
+  var letzteMinute = -1;
   function lagePruefen() {
     if (view !== 0) return;
+    var min = jetztMin();
+    if (min === letzteMinute) return;
+    letzteMinute = min;
     var info = dayInfo(today(), state.f);
-    var lg = tagesLage(info.plan, jetztMin());
+    var lg = tagesLage(info.plan, min);
     var sig = (lg.jetzt ? lg.jetzt.b.id : "-") + "/" + (lg.naechst ? lg.naechst.b.id : "-");
     if (letzteLage && sig !== letzteLage) render();
   }
@@ -3451,6 +3471,28 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
   }
 
   /* ---- Bedienung -------------------------------------------------------- */
+  /*  Ein Stempel lässt die Anleitung des Blocks verschwinden — die Zeile wird
+      kürzer, und alles darunter rutscht nach oben. Ohne Gegenmassnahme wandert
+      dabei auch die gerade angetippte Zeile unter dem Finger weg; auf dem Handy
+      liegt danach ein anderer Knopf dort, wo eben noch dieser war. Deshalb wird
+      gemerkt, wo das Element stand, und nach dem Neuzeichnen dorthin
+      zurückgescrollt.                                                         */
+  function ankern(sel, tun) {
+    var el = null, vorher = 0;
+    try {
+      el = document.querySelector(sel);
+      if (el) vorher = el.getBoundingClientRect().top;
+    } catch (e) { el = null; }
+    tun();
+    if (!el) return;
+    try {
+      var neu = document.querySelector(sel);
+      if (!neu) return;
+      var d = neu.getBoundingClientRect().top - vorher;
+      if (d) window.scrollBy(0, d);
+    } catch (e) { /* dann eben mit Sprung */ }
+  }
+
   function toggleBlock(id) {
     var info = dayInfo(shownDate(), state.f);
     var list = (state.d[info.key] || []).slice();
@@ -3459,7 +3501,9 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
     if (i >= 0) list.splice(i, 1); else list.push(id);
     if (list.length) state.d[info.key] = list; else delete state.d[info.key];
     if (i < 0 && b) lastFloat = { id: id, xp: blockXp(b) };
-    save(); render(); showFloat();
+    save();
+    ankern('.quest[data-id="' + id + '"]', render);
+    showFloat();
   }
   function showFloat() {
     if (!lastFloat) return;
@@ -3480,7 +3524,12 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
     if (!cur) state.f[key] = "frei";
     else if (cur === "frei") state.f[key] = "krank";
     else delete state.f[key];
-    save(); render();
+    save();
+    /*  Ein freier Tag hat einen viel kürzeren Plan — ohne Anker sprang der
+        Knopf, den man gerade gedrückt hat, um rund achtzig Pixel weg. Beim
+        zweiten Druck (frei → krank → wieder normal) lag dort dann etwas
+        anderes.                                                               */
+    ankern('[data-act="mark"]', render);
   }
 
   /*  Morgenroutine, Anki und Lesen in einem Griff — das ist die Schwelle,
@@ -3741,6 +3790,17 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
   }
 
   /* ---- Start ------------------------------------------------------------ */
+  /*  Die Schriften stehen als media="print" im Kopf und halten damit die erste
+      Anzeige nicht auf. Gemessen: hängt der Schriften-Dienst, blieb die Seite
+      vorher rund dreizehn Sekunden leer, weil ein Stylesheet im Kopf das
+      Zeichnen blockiert. Jetzt steht der Plan sofort da — in der Ersatzschrift
+      des Systems —, und sobald die Datei ankommt, wird umgeschaltet. Kommt sie
+      nie an, bleibt es bei der Ersatzschrift; lesbar ist beides.              */
+  (function () {
+    var fl = document.getElementById("fontcss");
+    if (fl) fl.media = "all";
+  })();
+
   load();
   render();
   // Ein Takt für Timer, Wecker und den Jetzt-Marker. Er schreibt nichts.

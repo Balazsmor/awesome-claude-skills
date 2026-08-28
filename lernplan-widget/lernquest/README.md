@@ -85,6 +85,20 @@ und die XP mitten in der Ausbildung gesunken, die Gesamtstufe mit ihr und der
 Karriereplan hinterher. Die verbliebene Schranke von fünf Jahren fängt nur Unsinn
 aus einem eingelesenen Fremdstand ab.
 
+**Die Schriften halten die Anzeige nicht auf.** Der Verweis im Kopf steht als
+`media="print"`; erst wenn die Seite steht, schaltet das Skript ihn auf `all`.
+Ein Stylesheet im Kopf blockiert sonst das Zeichnen: hängt der Schriften-Dienst,
+blieb die Seite gemessene dreizehn Sekunden leer, statt der 0,14 s bis zum
+fertigen Tagesplan. Jetzt steht der Plan sofort da — zuerst in der Ersatzschrift
+des Systems, dann wird umgeschaltet. Kommt die Datei nie an, bleibt es bei der
+Ersatzschrift; lesbar ist beides.
+
+**Der gedrückte Knopf bleibt unter dem Finger.** `render()` baut die Seite neu,
+und ein freier Tag hat einen viel kürzeren Plan — der Knopf *frei setzen* sprang
+dabei rund achtzig Pixel weg, sodass beim zweiten Druck etwas anderes dort lag.
+`ankern()` merkt sich, wo das Element stand, und scrollt danach zurück. Dasselbe
+beim Abstempeln, wo die Anleitung des Blocks verschwindet.
+
 **Ein längst abgelaufener Timer** wird beim Laden fallen gelassen: Wer die Seite
 am nächsten Morgen öffnet, soll nicht erst den Wecker von gestern Abend
 wegklicken müssen, ehe wieder gesichert wird. Die Grenze liegt bei einer halben
@@ -107,10 +121,10 @@ Ziellinie, kein Hebel.
 ```sh
 cd lernplan-widget/lernquest/test
 npm i playwright-core
-node test.mjs        # 160 Prüfungen: Notenrechnung, Zeugnis je Schuljahr, XP-Konto,
+node test.mjs        # 170 Prüfungen: Notenrechnung, Zeugnis je Schuljahr, XP-Konto,
                      # Kalenderwoche, Blockzeiten, Fragenkatalog, Rückgängig, Fokus,
                      # Zusammenführen, Schlafenszeit, eigener Stundenplan,
-                     # abgelaufener Timer
+                     # abgelaufener Timer, Schriftladen, Scroll-Anker
 node savetest.mjs    # 28: Wecker wird beim Start vorgelegt, nichts wird
                      # während Prüfung, Timer oder Wecker veröffentlicht
 
