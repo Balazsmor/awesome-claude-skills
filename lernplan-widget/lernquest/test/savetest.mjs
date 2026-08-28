@@ -4,7 +4,8 @@ import { chromium } from "playwright-core";
 import { readFileSync, writeFileSync } from "node:fs";
 const src = readFileSync("lernquest.html", "utf8")
   .replace("})();\n</script>",
-    "  try { window.__EXAM = function () { return exam; }; } catch (e) {}\n})();\n</script>");
+    "  try { window.__EXAM = function () { return exam; };\n" +
+    "        window.__S = function () { return state; }; } catch (e) {}\n})();\n</script>");
 writeFileSync("preview-save.html",
 `<!doctype html><html lang="de"><head><meta charset="utf-8"><style>*{margin:0}</style></head><body>\n${src}\n</body></html>`);
 
@@ -32,6 +33,7 @@ await p.waitForTimeout(500);
 let ok=0, bad=0;
 const eq = (nm, ist, soll) => { if (JSON.stringify(ist)===JSON.stringify(soll)) ok++;
   else { bad++; console.log(`  FEHLER ${nm}: ${JSON.stringify(ist)} statt ${JSON.stringify(soll)}`); } };
+const wahr = (nm, x) => eq(nm, !!x, true);
 
 eq("Status geteilt", await p.textContent("#savestate"), "gesichert");
 
@@ -65,6 +67,33 @@ await p.waitForTimeout(2200);
 eq("Nach dem Schliessen veröffentlicht", await p.evaluate(()=>window.__pub.length), 2);
 eq("Prüfungsstand im veröffentlichten Stand", await p.evaluate(()=>
   JSON.parse(localStorage.getItem("lernquest.state.v4")).q.suk), 2);
+/* ---- Der Fokus-Timer veröffentlicht nicht im Sekundentakt --------------- */
+const vorTimer = await p.evaluate(() => window.__pub.length);
+await p.click('.quest .tbtn[data-act="tstart"]');
+await p.waitForTimeout(2200);            // eine Veröffentlichung fürs Starten
+eq("Timerstart wird gesichert", await p.evaluate(() => window.__pub.length), vorTimer + 1);
+const a1 = await p.textContent("#tuhr");
+await p.waitForTimeout(3200);            // drei Sekunden ticken
+const a2 = await p.textContent("#tuhr");
+eq("Der Sekundentakt veröffentlicht nichts",
+   await p.evaluate(() => window.__pub.length), vorTimer + 1);
+wahr("aber die Uhr läuft weiter", a1 !== a2);
+wahr("Timer steht im Zustand", await p.evaluate(() => !!window.__S().t));
+
+/* ---- Ablauf: Wecker klingelt einmal, dann ist der Timer leer ------------ */
+await p.evaluate(() => { window.__S().t.start = Date.now() - window.__S().t.mins * 60000 - 500; });
+await p.waitForTimeout(1600);
+wahr("Wecker meldet sich", await p.locator(".wecker").count() === 1);
+eq("Timer ist geleert", await p.evaluate(() => window.__S().t), null);
+await p.waitForTimeout(2400);
+eq("Ablauf wird einmal gesichert",
+   await p.evaluate(() => window.__pub.length), vorTimer + 2);
+await p.waitForTimeout(2200);
+eq("und klingelt nicht noch einmal", await p.locator(".wecker").count(), 1);
+await p.click('[data-act="weckerAus"]');
+await p.waitForTimeout(200);
+eq("Wecker lässt sich wegklicken", await p.locator(".wecker").count(), 0);
+
 eq("Seitenfehler", errs, []);
 
 await ctx.close(); await b.close();

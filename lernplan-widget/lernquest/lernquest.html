@@ -78,7 +78,10 @@ h1,h2,h3 { font-family:"Chakra Petch","IBM Plex Sans",sans-serif; margin:0;
        gap:16px; flex-wrap:wrap; margin-bottom:22px; }
 .top h1 { font-size:clamp(26px,4vw,38px); font-weight:700; line-height:1.05; }
 .top .sub { color:var(--ink-2); font-size:13.5px; margin-top:4px; }
-.tools { display:flex; gap:8px; align-items:center; }
+.tools { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+/* Nur für Screenreader — trägt Rückmeldungen, die sonst bloss Farbe wären. */
+.sr { position:absolute; width:1px; height:1px; margin:-1px; padding:0;
+      overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0; }
 button { font:inherit; color:inherit; cursor:pointer; }
 .btn { background:var(--panel); border:1px solid var(--rule); border-radius:9px;
        padding:0 13px; min-height:38px; display:inline-flex; align-items:center;
@@ -89,6 +92,24 @@ button { font:inherit; color:inherit; cursor:pointer; }
 .btn.prim { border-color:var(--amber); color:var(--amber); background:var(--amber-soft); }
 .btn.prim:hover { border-color:var(--amber); background:var(--amber-soft); filter:brightness(1.12); }
 .btn.back { border-color:var(--amber); color:var(--amber); }
+.btn.small { min-height:32px; padding:0 11px; font-size:12.5px; }
+
+/* ---- Meldungen ------------------------------------------------------------
+   Drei schmale Bänder über dem Stapel: der Wecker des Fokus-Timers, ein
+   Aufstieg und das Rückgängig. Alle drei verschwinden von allein.          */
+.wecker, .aufstieg, .undobar {
+  display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+  margin-top:14px; padding:12px 16px; border-radius:12px;
+  border:1px solid var(--rule); font-size:14px; }
+.wecker { background:var(--coral-soft); border-color:var(--coral); }
+.wecker .ic, .aufstieg .ic { flex:none; display:grid; place-items:center; }
+.wecker .ic { color:var(--coral); }
+.aufstieg { background:var(--amber-soft); border-color:var(--amber); }
+.aufstieg .ic { color:var(--amber); }
+.aufstieg b { font-family:"Chakra Petch",sans-serif; }
+.undobar { background:var(--panel-2); justify-content:space-between; }
+.undobar span { color:var(--ink-2); font-size:13px; }
+.wecker .btn, .undobar .btn { margin-left:auto; }
 
 /* ---- Karten -------------------------------------------------------------- */
 .card { background:var(--panel); border:1px solid var(--rule); border-radius:14px;
@@ -135,6 +156,14 @@ button { font:inherit; color:inherit; cursor:pointer; }
          font-size:12.5px; color:var(--ink-2); line-height:1.45; }
 .focus .eyebrow { color:var(--blue); flex:none; }
 
+/* Was gerade dran ist — eine Zeile, kein Kasten. */
+.jetztzeile { display:flex; align-items:baseline; gap:12px; flex-wrap:wrap;
+              margin:14px 0 2px; padding:9px 13px; border-radius:10px;
+              background:var(--amber-soft); border:1px solid var(--rule); }
+.jetztzeile .eyebrow { color:var(--amber); flex:none; }
+.jetztzeile .jn { font-family:"Chakra Petch",sans-serif; font-weight:600; font-size:15px; }
+.jetztzeile .jnext { font-size:12.5px; color:var(--ink-2); margin-left:auto; }
+
 .quests { list-style:none; margin:0; padding:0;
           display:flex; flex-direction:column; }
 .quest { display:flex; align-items:center; gap:13px; padding:11px 12px;
@@ -170,6 +199,37 @@ button { font:inherit; color:inherit; cursor:pointer; }
 .stampbox:hover { border-color:var(--ink-3); }
 .stampbox:focus-visible { outline:2px solid var(--amber); outline-offset:2px; }
 .stampbox[disabled] { cursor:default; opacity:.4; }
+
+/* Fokus-Timer je Block: unauffällig, bis er läuft. */
+.tbtn { flex:none; width:30px; height:30px; border-radius:7px; background:transparent;
+        border:1px solid var(--rule-2); color:var(--ink-3); display:grid;
+        place-items:center; font-size:11px; padding:0; }
+.tbtn:hover { color:var(--amber); border-color:var(--amber); }
+.tbtn:focus-visible { outline:2px solid var(--amber); outline-offset:2px; }
+.tbtn.leer { border-color:transparent; cursor:default; }
+.tbtn.stop { color:var(--coral); border-color:var(--coral); }
+.tlauf { flex:none; min-width:52px; text-align:right; font-size:14px; font-weight:600;
+         color:var(--amber); font-variant-numeric:tabular-nums; }
+.quest.jetzt { background:var(--amber-soft); border-radius:8px; }
+.quest.fix.jetzt { opacity:1; }
+.quest.fix.jetzt .nm { color:var(--ink-2); }
+.quest.jetzt .time { color:var(--amber); font-weight:600; }
+.quest.laeuft { box-shadow:inset 3px 0 0 var(--amber); }
+
+/* Tagesnotiz und Timerleiste unter dem Tagesplan. */
+.tagnotiz { display:flex; align-items:center; gap:11px; margin-top:14px;
+            padding-top:13px; border-top:1px solid var(--rule-2); }
+.tagnotiz .eyebrow { flex:none; }
+.tagnotiz input { flex:1; min-width:0; font:inherit; font-size:13.5px; min-height:38px;
+                  background:var(--sunk); color:var(--ink); border:1px solid var(--rule);
+                  border-radius:9px; padding:0 12px; }
+.tagnotiz input:focus-visible { outline:2px solid var(--amber); outline-offset:1px; }
+.tfremd { display:flex; align-items:center; gap:11px; flex-wrap:wrap; margin-top:11px;
+          padding:10px 13px; border-radius:10px; background:var(--panel-2);
+          border:1px solid var(--rule-2); }
+.tfremd .eyebrow { flex:none; }
+.tfremd .note { flex:1; min-width:120px; }
+.tfremd .btn { margin-left:auto; }
 
 /* Der Stempel selbst */
 .stamp { display:inline-flex; align-items:center; justify-content:center;
@@ -211,6 +271,19 @@ button { font:inherit; color:inherit; cursor:pointer; }
 .day .seal.on { border-color:var(--mint); background:var(--mint-soft); }
 .day .seal.part { border-color:var(--blue); }
 .day .seal svg { width:13px; height:13px; }
+
+.wfuss { display:flex; gap:14px; flex-wrap:wrap; margin-top:14px;
+         padding-top:13px; border-top:1px solid var(--rule-2); }
+.wf { display:flex; flex-direction:column; gap:5px; min-width:0; }
+.wf.themen { flex:1 1 260px; }
+.wf.ziel { flex:0 0 auto; }
+.wf input { font:inherit; font-size:13.5px; min-height:38px; background:var(--sunk);
+            color:var(--ink); border:1px solid var(--rule); border-radius:9px;
+            padding:0 12px; width:100%; }
+.wf.ziel input { width:82px; text-align:center; font-family:"IBM Plex Mono",monospace; }
+.wf input:focus-visible { outline:2px solid var(--amber); outline-offset:1px; }
+.wf .zeile { display:flex; align-items:center; gap:8px; }
+.wf .einheit { font-size:12.5px; color:var(--ink-3); }
 
 /* ---- Attribute ----------------------------------------------------------- */
 .attrs { display:grid; grid-template-columns:repeat(auto-fill,minmax(228px,1fr)); gap:13px; }
@@ -425,13 +498,21 @@ button { font:inherit; color:inherit; cursor:pointer; }
              text-transform:uppercase; color:var(--ink-3); }
 .mstats dd { margin:2px 0 0; font-family:"Chakra Petch",sans-serif; font-weight:600;
              font-size:20px; }
-.month { display:grid; grid-template-columns:repeat(7,34px); gap:5px;
+.month { display:grid; grid-template-columns:repeat(7,38px); gap:5px;
          width:max-content; }
 .month .lbl { font-family:"IBM Plex Mono",monospace; font-size:10px; text-align:center;
               color:var(--ink-3); }
-.cell { width:34px; height:34px; border-radius:6px; background:var(--heat-0);
-        display:grid; place-items:center; font-size:11px; color:var(--ink-3);
-        font-family:"IBM Plex Mono",monospace; }
+.cell { width:38px; height:38px; border-radius:6px; background:var(--heat-0);
+        display:grid; place-items:center; font-size:11.5px; color:var(--ink-3);
+        font-family:"IBM Plex Mono",monospace; border:0; padding:0;
+        position:relative; cursor:pointer; }
+button.cell:hover:not([disabled]) { box-shadow:inset 0 0 0 1px var(--ink-3); }
+button.cell:focus-visible { outline:2px solid var(--amber); outline-offset:2px; }
+.cell[disabled] { cursor:default; opacity:.45; }
+.cell.sel { box-shadow:inset 0 0 0 2px var(--amber); }
+/* Ein Tag mit Notiz bekommt eine Ecke — im Widget ist es dieselbe Markierung. */
+.cell.memo::after { content:""; position:absolute; top:3px; right:3px; width:5px;
+                    height:5px; border-radius:50%; background:var(--amber); }
 .cell.s1 { background:var(--heat-1); } .cell.s2 { background:var(--heat-2); }
 .cell.s3 { background:var(--heat-3); color:#0E1621; }
 .cell.s4 { background:var(--heat-4); color:#0E1621; }
@@ -467,6 +548,19 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
   .gform { grid-template-columns:1fr 1fr; }
   .gf.f-fach, .gf.f-was, .f-b { grid-column:1 / -1; }
   .quest .dtl { padding-left:0; border-left:0; }
+  /* Auf dem Handy wird getippt, nicht gezielt — alles Anfassbare wird grösser. */
+  .stampbox, .tbtn { width:44px; height:44px; }
+  .tbtn.leer { display:none; }
+  /* Auf 390 px zählt jeder Punkt: die Randspalten schmaler, damit der Text
+     der Aufgabe nicht in eine Schlucht gerät. */
+  .quest { gap:9px; padding:11px 4px; }
+  .quest .time { width:44px; font-size:11.5px; }
+  .tlauf { min-width:auto; font-size:13px; }
+  .month { grid-template-columns:repeat(7,44px); }
+  .cell { width:44px; height:44px; font-size:12.5px; }
+  .gdel { width:44px; height:44px; }
+  .jetztzeile .jnext { margin-left:0; width:100%; }
+  .tfremd .btn { margin-left:0; }
 }
 </style>
 
@@ -479,7 +573,7 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
   <button class="exx" data-act="examClose" type="button" aria-label="Prüfung schließen">✕</button>
 </dialog>
 
-<script type="application/json" id="state">{"v":4,"d":{},"f":{"2026-08-26":"frei","2026-08-27":"frei","2026-08-25":"frei"},"n":{},"w":{},"q":{},"updatedAt":1787827229986}</script>
+<script type="application/json" id="state">{"v":4,"d":{"2026-08-26":["anki","englisch","lesen","morgen"],"2026-08-25":["morgen","anki","lesen"]},"f":{"2026-08-25":"frei","2026-08-28":"frei"},"n":{},"w":{},"q":{},"g":[],"zn":1.9,"updatedAt":1787900407134}</script>
 
 <script id="app">
 /* ===========================================================================
@@ -909,7 +1003,51 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
            "Sobald der lineare Betrag aus Restbuchwert und Restnutzungsdauer höher ist",
            "Immer nach genau der Hälfte der Nutzungsdauer",
            "Sobald der Restbuchwert unter 1.000 € fällt"], k:1,
-        why:"Der Wechsel lohnt genau dann, wenn Restbuchwert ÷ Restnutzungsdauer den degressiven Betrag übersteigt — sonst bliebe am Ende ein zu hoher Restwert stehen." }
+        why:"Der Wechsel lohnt genau dann, wenn Restbuchwert ÷ Restnutzungsdauer den degressiven Betrag übersteigt — sonst bliebe am Ende ein zu hoher Restwert stehen." },
+      { lv:[1,3], t:"mc", q:"Was ist das Ergebnis einer Inventur?",
+        a:["Die Bilanz","Das Inventar","Die Gewinn- und Verlustrechnung","Der Kontenplan"], k:1,
+        why:"Die Inventur ist die Tätigkeit des Zählens und Messens, das Inventar das ausführliche Verzeichnis daraus. Die Bilanz fasst dieses Verzeichnis in Kontenform zusammen." },
+      { lv:[1,3], t:"mc", q:"Auf welcher Seite eines aktiven Bestandskontos wird ein Zugang gebucht?",
+        a:["Im Soll","Im Haben","Je nach Betrag","Auf beiden Seiten gleichzeitig"], k:0,
+        why:"Aktivkonten führen den Anfangsbestand und alle Zugänge im Soll, Abgänge im Haben. Bei Passivkonten ist es genau umgekehrt." },
+      { lv:[2,4], t:"mc", q:"Wodurch unterscheidet sich eine Rückstellung von einer Verbindlichkeit?",
+        a:["Sie ist immer kleiner","Höhe oder Fälligkeit sind noch ungewiss",
+           "Sie steht auf der Aktivseite","Sie wird nicht gebucht"], k:1,
+        why:"Verbindlichkeiten sind nach Betrag und Termin sicher, Rückstellungen dem Grunde nach sicher, der Höhe oder dem Zeitpunkt nach aber ungewiss — etwa Prozesskosten oder Gewährleistung." },
+      { lv:[2,4], t:"num", q:"Eine Rechnung über 4.760 € brutto wird mit 2 % Skonto bezahlt. Wie hoch ist der Zahlbetrag in Euro?",
+        a:4664.8, tol:0.05, unit:"€",
+        why:"4.760 € − 2 % = 4.664,80 €. Skonto wird immer vom Bruttobetrag gerechnet; die Vorsteuer wird anschliessend anteilig berichtigt." },
+      { lv:[3,5], t:"num", q:"Umsatz 200.000 €, variable Kosten 120.000 €, Fixkosten 50.000 €. Wie hoch ist das Betriebsergebnis in Euro?",
+        a:30000, tol:0, unit:"€",
+        why:"Deckungsbeitrag = 200.000 − 120.000 = 80.000 €. Davon die Fixkosten ab: 80.000 − 50.000 = 30.000 € Betriebsergebnis." },
+      { lv:[3,5], t:"mc", q:"Wofür steht ein aktiver Rechnungsabgrenzungsposten?",
+        a:["Ausgabe vor dem Stichtag, Aufwand danach","Einnahme vor dem Stichtag, Ertrag danach",
+           "Aufwand vor dem Stichtag, Ausgabe danach","Eine Rückstellung für Reparaturen"], k:0,
+        why:"Klassisch die im Dezember gezahlte Miete für Januar: Das Geld ist weg, der Aufwand gehört ins neue Jahr. Deshalb steht der Betrag als aktive Abgrenzung in der Bilanz." },
+      { lv:[3,5], t:"mc", q:"Worin unterscheiden sich Gesamtkosten- und Umsatzkostenverfahren?",
+        a:["Im Ergebnis, das sie ausweisen","In der Gliederung der Aufwendungen: nach Kostenarten oder nach Funktionsbereichen",
+           "Das eine gilt nur für die AG","Nur in der Reihenfolge der Erträge"], k:1,
+        why:"Beide führen zum selben Jahresergebnis. Das Gesamtkostenverfahren gliedert nach Arten — Material, Personal, Abschreibungen —, das Umsatzkostenverfahren nach Bereichen wie Herstellung, Vertrieb, Verwaltung." },
+      { lv:[4,6], t:"num", q:"Fertigungsgemeinkosten 90.000 €, Maschinenlaufzeit 3.000 Stunden. Wie hoch ist der Maschinenstundensatz in Euro?",
+        a:30, tol:0, unit:"€/h",
+        why:"90.000 € ÷ 3.000 h = 30 €/h. Der Maschinenstundensatz ersetzt den pauschalen Zuschlag überall dort, wo die Maschine und nicht der Lohn die Kosten treibt." },
+      { lv:[4,6], t:"mc", q:"Bei steigenden Einkaufspreisen führt das Lifo-Verfahren im Vergleich zu Fifo zu …",
+        a:["einem höheren Endbestand und höherem Gewinn","einem niedrigeren Endbestand und niedrigerem Gewinn",
+           "demselben Ergebnis","einem höheren Endbestand bei gleichem Gewinn"], k:1,
+        why:"Lifo verbraucht zuerst die zuletzt und damit teuer eingekauften Mengen. Der Aufwand steigt, der Gewinn sinkt, und im Lager bleiben die alten billigen Preise stehen." },
+      { lv:[4,6], t:"num", q:"Betriebsnotwendiges Kapital 400.000 €, kalkulatorischer Zinssatz 6 %. Wie hoch sind die kalkulatorischen Zinsen in Euro?",
+        a:24000, tol:0, unit:"€",
+        why:"400.000 € × 6 % = 24.000 €. Verzinst wird das gesamte betriebsnotwendige Kapital, nicht nur das Fremdkapital — auch das eigene Geld soll etwas einbringen." },
+      { lv:[4,6], t:"num", q:"Jahresüberschuss 50.000 €, Abschreibungen 20.000 €, Zunahme der Rückstellungen 5.000 €. Wie hoch ist der Cash Flow in Euro?",
+        a:75000, tol:0, unit:"€",
+        why:"Indirekte Ermittlung: zum Jahresüberschuss alle Aufwendungen zurückrechnen, die kein Geld gekostet haben. 50.000 + 20.000 + 5.000 = 75.000 €." },
+      { lv:[4,6], t:"mc", q:"Was verlangt das Imparitätsprinzip?",
+        a:["Gewinne und Verluste gleich zu behandeln","Vorhersehbare Verluste auszuweisen, noch nicht realisierte Gewinne aber nicht",
+           "Alle Konten jährlich abzuschliessen","Nur das Anlagevermögen abzuschreiben"], k:1,
+        why:"Ungleich (imparitätisch) heisst: Verluste zählen ab dem Moment, in dem sie absehbar sind, Gewinne erst mit dem Umsatzakt. Das ist der Kern des kaufmännischen Vorsichtsprinzips." },
+      { lv:[4,6], t:"num", q:"Eigenkapital 300.000 €, Gesamtkapital 1.200.000 €. Wie hoch ist die Eigenkapitalquote in Prozent?",
+        a:25, tol:0, unit:"%",
+        why:"300.000 ÷ 1.200.000 = 25 %. Je höher die Quote, desto unabhängiger von Banken und desto mehr Verlust lässt sich aushalten, ohne überschuldet zu sein." },
     ],
     bwl: [
       { lv:[1,3], t:"num", q:"Listeneinkaufspreis 10.000 €, 10 % Rabatt, 2 % Skonto, Bezugskosten 250 €. Wie hoch ist der Bezugspreis in Euro?",
@@ -946,7 +1084,53 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
       { lv:[4,6], t:"mc", q:"Was ist die wesentliche Kehrseite der Just-in-time-Beschaffung?",
         a:["Höhere Lagerkosten","Höhere Kapitalbindung",
            "Große Abhängigkeit von Liefertreue und Lieferant","Längere Durchlaufzeiten"], k:2,
-        why:"JIT senkt Lagerbestand und Kapitalbindung, macht die Produktion aber unmittelbar von der Liefertreue abhängig — ein Ausfall stoppt die Fertigung." }
+        why:"JIT senkt Lagerbestand und Kapitalbindung, macht die Produktion aber unmittelbar von der Liefertreue abhängig — ein Ausfall stoppt die Fertigung." },
+      { lv:[1,3], t:"mc", q:"Was ist ein Sekundärbedarf?",
+        a:["Der Bedarf an verkaufsfertigen Erzeugnissen","Der Bedarf an Rohstoffen, Einzelteilen und Baugruppen für die Erzeugnisse",
+           "Der Bedarf an Hilfs- und Betriebsstoffen","Der Bedarf an Ersatzteilen"], k:1,
+        why:"Primärbedarf ist das Endprodukt, Sekundärbedarf alles, was direkt hineingeht, Tertiärbedarf sind Hilfs- und Betriebsstoffe wie Schmieröl oder Schrauben." },
+      { lv:[1,3], t:"num", q:"Bruttobedarf 1.200 Stück, Lagerbestand 300 Stück, davon 100 Stück reserviert. Wie hoch ist der Nettobedarf?",
+        a:1000, tol:0, unit:"Stück",
+        why:"Verfügbar sind nur 300 − 100 = 200 Stück. 1.200 − 200 = 1.000 Stück müssen beschafft werden. Reservierte Mengen sind schon verplant und zählen nicht mit." },
+      { lv:[2,4], t:"mc", q:"Wozu dient eine Nutzwertanalyse beim Angebotsvergleich?",
+        a:["Sie ersetzt den Preisvergleich","Sie gewichtet weiche Kriterien wie Qualität, Service und Liefertreue und macht sie vergleichbar",
+           "Sie berechnet den Bezugspreis","Sie ermittelt den Meldebestand"], k:1,
+        why:"Der quantitative Vergleich endet beim Bezugspreis. Alles Weitere — Zuverlässigkeit, Umweltstandards, Kulanz — bekommt Gewichte und Punkte und wird so entscheidbar." },
+      { lv:[2,4], t:"num", q:"Mindestbestand 200 Stück, Bestellmenge 2.000 Stück. Wie hoch ist der Höchstbestand?",
+        a:2200, tol:0, unit:"Stück",
+        why:"Höchstbestand = Mindestbestand + Bestellmenge = 200 + 2.000 = 2.200 Stück. Er wird genau in dem Moment erreicht, in dem die Lieferung eintrifft und der Sicherheitsbestand noch unangetastet ist." },
+      { lv:[3,5], t:"mc", q:"Was kennzeichnet die Sortenfertigung?",
+        a:["Jedes Stück ist ein Einzelstück","Artverwandte Erzeugnisse aus demselben Grundstoff, nacheinander gefertigt",
+           "Ununterbrochene Fertigung eines einzigen Produkts","Fertigung ausschliesslich auf Kundenauftrag"], k:1,
+        why:"Sorten sind Varianten desselben Grundstoffs — verschiedene Blechstärken, verschiedene Biersorten. Sie laufen nacheinander über dieselbe Anlage, mit Umrüstzeiten dazwischen." },
+      { lv:[3,5], t:"num", q:"Jahresbedarf 10.000 Stück, Bestellkosten 40 € je Bestellung, Einstandspreis 20 €, Lagerkostensatz 10 %. Wie gross ist die optimale Bestellmenge nach Andler, auf ganze Stück gerundet?",
+        a:632, tol:3, unit:"Stück",
+        why:"Wurzel aus (2 × 10.000 × 40) ÷ (20 × 0,1) = Wurzel aus 400.000 ≈ 632 Stück. Im Optimum sind Bestell- und Lagerkosten zusammen am kleinsten." },
+      { lv:[3,5], t:"mc", q:"Was gehört zu einer Lieferantenbewertung?",
+        a:["Nur der Preis","Preis, Qualität, Termintreue und Service, jeweils gewichtet",
+           "Nur die Lieferzeit","Nur die Zahlungsbedingungen"], k:1,
+        why:"Die Bewertung läuft über mehrere Perioden und mündet in eine Kennzahl je Lieferant. Sie ist die Grundlage für Rahmenverträge und für die Entscheidung, wen man auslistet." },
+      { lv:[4,6], t:"num", q:"Von 850 Bestellpositionen konnten 816 sofort aus dem Lager bedient werden. Wie hoch ist der Servicegrad in Prozent?",
+        a:96, tol:0.1, unit:"%",
+        why:"816 ÷ 850 = 96 %. Der Servicegrad misst die Lieferbereitschaft; die letzten Prozentpunkte kosten überproportional viel Sicherheitsbestand." },
+      { lv:[4,6], t:"mc", q:"Was ist das Kennzeichen eines Pull-Prinzips wie Kanban?",
+        a:["Zentrale Planung schiebt Material in die Fertigung","Der Verbrauch der nachgelagerten Stelle löst den Nachschub aus",
+           "Es wird auf Vorrat produziert","Bestellt wird nach festem Kalender"], k:1,
+        why:"Beim Pull zieht der Verbrauch: Erst wenn die Karte zurückkommt, wird nachgeliefert. Das senkt Bestände, verlangt aber stabile Prozesse und verlässliche Lieferanten." },
+      { lv:[4,6], t:"num", q:"Leistung 250.000 €, Kosten 200.000 €. Wie hoch ist die Wirtschaftlichkeit?",
+        a:1.25, tol:0.01, unit:"",
+        why:"250.000 ÷ 200.000 = 1,25. Über 1 heisst: die Leistung übersteigt die Kosten. Die Zahl ist dimensionslos und deshalb über Bereiche hinweg vergleichbar." },
+      { lv:[4,6], t:"num", q:"Ist-Ausbringung 1.700 Stück, Kapazität 2.000 Stück. Wie hoch ist der Beschäftigungsgrad in Prozent?",
+        a:85, tol:0, unit:"%",
+        why:"1.700 ÷ 2.000 = 85 %. Sinkt der Beschäftigungsgrad, verteilen sich die Fixkosten auf weniger Stück — die Stückkosten steigen, ohne dass sich am Verbrauch etwas ändert." },
+      { lv:[4,6], t:"mc", q:"Was beschreibt der Bullwhip-Effekt in der Lieferkette?",
+        a:["Preise steigen entlang der Kette","Kleine Nachfrageschwankungen beim Endkunden schaukeln sich stromaufwärts zu immer grösseren Bestellschwankungen auf",
+           "Lieferzeiten verkürzen sich durch Digitalisierung","Der Lagerbestand sinkt automatisch"], k:1,
+        why:"Jede Stufe legt einen Sicherheitspuffer drauf und bestellt in Losen. Am Ende der Kette schwankt die Produktion um ein Vielfaches der tatsächlichen Nachfrage. Gegenmittel sind geteilte Absatzdaten und kleinere Lose." },
+      { lv:[4,6], t:"mc", q:"Welches Risiko wiegt bei einer Auslagerung (Outsourcing) am schwersten?",
+        a:["Höhere Personalkosten","Verlust von eigenem Wissen und Abhängigkeit vom Dienstleister",
+           "Mehr Lagerfläche","Längere Zahlungsziele"], k:1,
+        why:"Was einmal ausgelagert ist, holt man schwer zurück: Die Fachleute sind weg, das Verfahren ist beim Dienstleister. Deshalb lagert man Randprozesse aus, nicht die Kernkompetenz." },
     ],
     wiso: [
       { lv:[1,3], t:"mc", q:"Bei welcher Rechtsform haften alle Gesellschafter unbeschränkt mit ihrem Privatvermögen?",
@@ -982,7 +1166,54 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
       { lv:[4,6], t:"mc", q:"Was kommt im erweiterten Wirtschaftskreislauf gegenüber dem einfachen hinzu?",
         a:["Nur der Staat","Staat, Kapitalsammelstellen und Ausland",
            "Nur die privaten Haushalte","Nur die Unternehmen"], k:1,
-        why:"Der einfache Kreislauf kennt nur Haushalte und Unternehmen. Erweitert kommen Staat, Banken als Kapitalsammelstellen und das Ausland dazu." }
+        why:"Der einfache Kreislauf kennt nur Haushalte und Unternehmen. Erweitert kommen Staat, Banken als Kapitalsammelstellen und das Ausland dazu." },
+      { lv:[1,3], t:"num", q:"Wie viele Monate darf die Probezeit in einem Berufsausbildungsverhältnis höchstens dauern?",
+        a:4, tol:0, unit:"Monate",
+        why:"Nach § 20 BBiG mindestens ein Monat, höchstens vier. In dieser Zeit kann jede Seite ohne Frist und ohne Grund kündigen." },
+      { lv:[1,3], t:"num", q:"Wie viele Werktage Urlaub stehen einem Auszubildenden zu, der zu Beginn des Kalenderjahres noch nicht 17 Jahre alt ist?",
+        a:27, tol:0, unit:"Werktage",
+        why:"§ 19 JArbSchG staffelt nach Alter am 1. Januar: unter 16 Jahren 30 Werktage, unter 17 Jahren 27, unter 18 Jahren 25. Danach gilt das Bundesurlaubsgesetz mit mindestens 24 Werktagen." },
+      { lv:[2,4], t:"mc", q:"Wie kann ein Auszubildender nach der Probezeit selbst kündigen?",
+        a:["Gar nicht","Mit vier Wochen Frist, wenn er die Ausbildung aufgeben oder einen anderen Beruf erlernen will",
+           "Fristlos ohne Grund","Nur mit Zustimmung der IHK"], k:1,
+        why:"§ 22 BBiG: Der Ausbildende kann nach der Probezeit nur noch aus wichtigem Grund fristlos kündigen, der Auszubildende zusätzlich mit vier Wochen Frist bei Berufsaufgabe oder -wechsel." },
+      { lv:[2,4], t:"mc", q:"Was besagt das Günstigkeitsprinzip im Arbeitsrecht?",
+        a:["Der Arbeitgeber darf jederzeit vom Tarif abweichen","Eine Einzelabrede geht dem Tarifvertrag vor, wenn sie für den Arbeitnehmer günstiger ist",
+           "Der Tarifvertrag gilt immer uneingeschränkt","Betriebsvereinbarungen sind unwirksam"], k:1,
+        why:"Die Rangfolge Gesetz – Tarifvertrag – Betriebsvereinbarung – Arbeitsvertrag gilt nur nach unten. Nach oben darf jede Ebene besser sein als die darüber." },
+      { lv:[3,5], t:"num", q:"Welchen Anteil am Beitrag zur gesetzlichen Rentenversicherung trägt der Arbeitnehmer in Prozent?",
+        a:50, tol:0, unit:"%",
+        why:"Renten-, Kranken- und Arbeitslosenversicherung werden hälftig geteilt. Die Unfallversicherung zahlt der Arbeitgeber allein, bei der Pflegeversicherung gibt es einen Zuschlag für Kinderlose." },
+      { lv:[3,5], t:"mc", q:"Wann kommt ein Schuldner ohne Mahnung in Verzug?",
+        a:["Nie","Wenn für die Leistung eine Zeit nach dem Kalender bestimmt ist, oder 30 Tage nach Zugang der Rechnung",
+           "Sofort mit Vertragsschluss","Erst nach der dritten Mahnung"], k:1,
+        why:"§ 286 BGB. Steht ein Datum im Vertrag, mahnt der Kalender. Sonst tritt Verzug spätestens 30 Tage nach Zugang der Rechnung ein — bei Verbrauchern nur, wenn darauf hingewiesen wurde." },
+      { lv:[3,5], t:"mc", q:"Was regelt die Montan-Mitbestimmung im Unterschied zum Drittelbeteiligungsgesetz?",
+        a:["Sie gilt für alle Betriebe","Sie sieht im Aufsichtsrat die paritätische Besetzung samt neutralem Mitglied vor",
+           "Sie schafft den Betriebsrat ab","Sie gilt nur für Auszubildende"], k:1,
+        why:"Kohle und Stahl haben die weitestgehende Mitbestimmung: Anteilseigner und Arbeitnehmer stellen gleich viele Sitze, dazu kommt ein neutrales Mitglied. Nach dem Drittelbeteiligungsgesetz ist nur ein Drittel des Aufsichtsrats Arbeitnehmerseite." },
+      { lv:[4,6], t:"num", q:"Ein Betrieb hat 900 wahlberechtigte Arbeitnehmer. Aus wie vielen Mitgliedern besteht der Betriebsrat?",
+        a:13, tol:0, unit:"Mitglieder",
+        why:"§ 9 BetrVG staffelt: 701 bis 1.000 Arbeitnehmer ergeben 13 Betriebsratsmitglieder. Ab 200 Arbeitnehmern ist mindestens ein Mitglied freizustellen." },
+      { lv:[4,6], t:"num", q:"Ein Preisindex steigt von 110 auf 115,5. Wie hoch ist die Inflationsrate in Prozent?",
+        a:5, tol:0.05, unit:"%",
+        why:"(115,5 − 110) ÷ 110 = 5 %. Die Rate misst die Veränderung des Index, nicht seinen Stand — ein Index von 115,5 sagt für sich genommen noch nichts über die Teuerung des letzten Jahres." },
+      { lv:[4,6], t:"mc", q:"Wie wirkt eine Leitzinserhöhung der Europäischen Zentralbank?",
+        a:["Kredite werden billiger, die Nachfrage steigt","Kredite werden teurer, Investitionen und Nachfrage gehen zurück, die Inflation soll sinken",
+           "Die Staatsverschuldung sinkt automatisch","Der Wechselkurs bleibt unverändert"], k:1,
+        why:"Teureres Geld bremst Konsum und Investitionen. Das ist der Preis: Die Inflation sinkt, die Konjunktur kühlt ab. Die EZB ist auf Preisstabilität verpflichtet, nicht auf Wachstum." },
+      { lv:[4,6], t:"mc", q:"Wofür haftet ein Kommanditist?",
+        a:["Unbeschränkt mit seinem Privatvermögen","Nur bis zur Höhe seiner im Handelsregister eingetragenen Einlage",
+           "Gar nicht","Gesamtschuldnerisch wie der Komplementär"], k:1,
+        why:"Die KG lebt von dieser Zweiteilung: Der Komplementär haftet unbeschränkt und führt die Geschäfte, der Kommanditist gibt Kapital und haftet begrenzt — hat dafür aber keine Geschäftsführungsbefugnis." },
+      { lv:[4,6], t:"mc", q:"Welche vier Ziele nennt das magische Viereck des Stabilitätsgesetzes?",
+        a:["Wachstum, Vollbeschäftigung, Preisstabilität, aussenwirtschaftliches Gleichgewicht",
+           "Gewinn, Umsatz, Marktanteil, Rendite","Bildung, Gesundheit, Umwelt, Verkehr",
+           "Steuern, Schulden, Zinsen, Sparen"], k:0,
+        why:"Magisch heisst es, weil sich die vier Ziele gegenseitig behindern: Vollbeschäftigung treibt oft die Preise, ein Exportüberschuss belastet das aussenwirtschaftliche Gleichgewicht. Alle vier zugleich sind kaum zu haben." },
+      { lv:[4,6], t:"mc", q:"In welcher Konjunkturphase sind die Kapazitäten voll ausgelastet und Preise wie Löhne steigen am stärksten?",
+        a:["Depression","Aufschwung","Hochkonjunktur","Rezession"], k:2,
+        why:"Im Boom ist die Arbeitslosigkeit am niedrigsten und die Auftragsbücher sind voll. Weil kaum noch Kapazität frei ist, wirkt zusätzliche Nachfrage fast nur noch auf die Preise — genau hier setzt die Notenbank mit höheren Zinsen an." },
     ],
     deutsch: [
       { lv:[1,3], t:"mc", q:"Wie ist eine lineare Erörterung aufgebaut?",
@@ -1023,7 +1254,58 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
       { lv:[4,6], t:"mc", q:"Welcher Satz ist im Nominalstil geschrieben?",
         a:["Wir prüfen den Antrag.","Die Prüfung des Antrags erfolgt durch uns.",
            "Der Antrag wird geprüft.","Prüfe den Antrag!"], k:1,
-        why:"Nominalstil türmt Substantivierungen auf und wirkt schwerfällig. Verben machen Sätze kürzer und klarer — im Fachgespräch entscheidend." }
+        why:"Nominalstil türmt Substantivierungen auf und wirkt schwerfällig. Verben machen Sätze kürzer und klarer — im Fachgespräch entscheidend." },
+      { lv:[1,3], t:"mc", q:"In welchem Tempus wird eine Inhaltsangabe geschrieben?",
+        a:["Präteritum","Präsens","Perfekt","Futur"], k:1,
+        why:"Präsens, durchgehend und ohne wörtliche Rede. Vorzeitiges wird im Perfekt wiedergegeben. Eigene Wertungen bleiben draussen." },
+      { lv:[1,3], t:"mc", q:"Wann schreibt man „seit\u201c und wann „seid\u201c?",
+        a:["seit ist immer richtig","seit meint die Zeit, seid ist die Form von sein in der 2. Person Plural",
+           "Beides ist gleichbedeutend","seid nur am Satzanfang"], k:1,
+        why:"Seit gestern, seit drei Jahren — das ist die Zeitangabe. Ihr seid pünktlich — das ist das Verb. Die Probe: Lässt sich ihr einsetzen, steht seid." },
+      { lv:[2,4], t:"mc", q:"Worin unterscheidet sich das Ergebnisprotokoll vom Verlaufsprotokoll?",
+        a:["Es ist länger","Es hält nur Beschlüsse und Ergebnisse fest, nicht den Gang der Diskussion",
+           "Es wird in der Ich-Form geschrieben","Es braucht keine Unterschrift"], k:1,
+        why:"Das Ergebnisprotokoll ist im Betrieb der Regelfall: Wer macht was bis wann. Das Verlaufsprotokoll zeichnet zusätzlich den Weg dorthin nach und ist bei strittigen Themen sinnvoll." },
+      { lv:[2,4], t:"mc", q:"Welche Schreibweise ist richtig?",
+        a:["Er ist sitzen geblieben, weil er zu wenig gelernt hat.","Er ist sitzengeblieben, weil er zu wenig gelernt hat.",
+           "Er ist Sitzen geblieben.","Er ist sitzen-geblieben."], k:0,
+        why:"Verb plus Verb wird getrennt geschrieben. Zusammen bleibt es nur bei übertragener Bedeutung, und selbst dort ist die Getrenntschreibung zulässig." },
+      { lv:[3,5], t:"mc", q:"Wie ist eine Sachtextanalyse aufgebaut?",
+        a:["Einleitung mit Textsorte, Autor, Thema — dann Inhalt, dann Aufbau und Sprache, zuletzt Wirkungsabsicht",
+           "Nacherzählung und eigene Meinung","Pro und Contra","Nur Zitate mit Zeilenangabe"], k:0,
+        why:"Die Einleitung nennt Textsorte, Verfasser, Erscheinungsdatum und Kernthese in einem Satz. Der Hauptteil arbeitet Argumentationsgang und sprachliche Mittel heraus, der Schluss beurteilt die Wirkung auf den Leser." },
+      { lv:[3,5], t:"mc", q:"Welches rhetorische Mittel liegt vor: „Wir brauchen Mut, wir brauchen Klarheit, wir brauchen Entschlossenheit\u201c?",
+        a:["Ironie","Anapher","Hyperbel","Euphemismus"], k:1,
+        why:"Die Anapher wiederholt am Satz- oder Satzgliedanfang. Sie steigert und prägt sich ein — deshalb steht sie so oft in Reden und in Werbung." },
+      { lv:[3,5], t:"mc", q:"Wie wird ein wörtliches Zitat in einer Textanalyse korrekt eingebaut?",
+        a:["Ohne Kennzeichnung","In Anführungszeichen, grammatisch in den eigenen Satz eingepasst, mit Zeilenangabe",
+           "Immer als eigener Absatz","Nur sinngemäss"], k:1,
+        why:"Das Zitat muss in den eigenen Satzbau passen; Anpassungen kommen in eckige Klammern, Auslassungen werden mit drei Punkten in eckigen Klammern markiert. Ohne Beleg ist es kein Zitat, sondern eine Behauptung." },
+      { lv:[4,6], t:"mc", q:"Wann tritt in der indirekten Rede der Konjunktiv II an die Stelle des Konjunktiv I?",
+        a:["Nie","Wenn die Form des Konjunktiv I mit dem Indikativ zusammenfällt",
+           "Immer in der Vergangenheit","Nur in der ersten Person"], k:1,
+        why:"Sie sagten, sie haben keine Zeit — hier ist haben zugleich Indikativ, die Wiedergabe wäre nicht erkennbar. Deshalb: sie hätten keine Zeit." },
+      { lv:[4,6], t:"mc", q:"Warum ist Aktiv im Geschäftsbrief dem Passiv meist vorzuziehen?",
+        a:["Passiv ist grammatisch falsch","Aktiv nennt den Handelnden und macht Verantwortung sichtbar",
+           "Aktiv ist immer kürzer","Passiv ist unhöflich"], k:1,
+        why:"Ihre Rechnung wurde geprüft lässt offen, wer geprüft hat und wer nun zuständig ist. Wir haben Ihre Rechnung geprüft benennt beides — im Fachgespräch wie im Schriftverkehr der Unterschied zwischen Auskunft und Ausflucht." },
+      { lv:[4,6], t:"mc", q:"Was ist ein normatives Argument?",
+        a:["Ein Argument mit Zahlen","Ein Argument, das sich auf allgemein anerkannte Werte und Normen stützt",
+           "Ein Argument aus eigener Erfahrung","Ein Argument einer Fachautorität"], k:1,
+        why:"Neben dem Faktenargument mit belegbaren Zahlen und dem Autoritätsargument steht das normative: Es beruft sich auf Gerechtigkeit, Fairness oder Gesundheit. Stark ist es nur, wenn die Norm wirklich geteilt wird." },
+      { lv:[4,6], t:"mc", q:"Wie ist eine Präsentation für das Fachgespräch sinnvoll aufgebaut?",
+        a:["Alle Einzelheiten der Reihe nach","Ausgangslage, Vorgehen, Ergebnis, Bewertung — und am Ende die eigene Rolle",
+           "Nur Folien mit Stichworten","Chronologisch nach Arbeitstagen"], k:1,
+        why:"Der Prüfungsausschuss fragt nach der eigenen Leistung und nach Alternativen, die verworfen wurden. Deshalb gehört die Begründung der Entscheidungen in die Struktur, nicht nur das Ergebnis." },
+      { lv:[4,6], t:"mc", q:"Welcher Satz setzt die Kommas bei der Apposition richtig?",
+        a:["Herr Weber, unser Ausbilder erklärt das Verfahren.","Herr Weber, unser Ausbilder, erklärt das Verfahren.",
+           "Herr Weber unser Ausbilder, erklärt das Verfahren.","Herr Weber unser Ausbilder erklärt das Verfahren."], k:1,
+        why:"Die Apposition wird beidseitig eingeschlossen. Fehlt das zweite Komma, ist der Satz zerrissen — ein Fehler, der in Erörterungen häufig unbemerkt bleibt." },
+      { lv:[4,6], t:"mc", q:"Welche Formulierung ist im Schriftverkehr vorzuziehen?",
+        a:["Nach Inkenntnissetzung durch Ihr Schreiben erfolgt unsererseits die Veranlassung der Prüfung.",
+           "Wir haben Ihr Schreiben erhalten und prüfen den Vorgang.",
+           "Diesbezüglich wird auf obiges Bezug genommen.","In Ansehung Ihres Anliegens verbleiben wir."], k:1,
+        why:"Substantivierungen auf -ung, Streckverben und Amtsdeutsch verlängern den Satz und verstecken den Handelnden. Kurze Sätze mit echten Verben wirken sicherer, nicht schlichter." },
     ],
     englisch: [
       { lv:[1,3], t:"mc", q:"What is an enquiry in business correspondence?",
@@ -1064,7 +1346,56 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
         why:"Der Verkäufer zahlt Fracht und Versicherung bis zum Bestimmungshafen — der Gefahrübergang findet aber bereits bei der Verladung statt." },
       { lv:[4,6], t:"mc", q:"A supplier writes: The item is currently out of stock, but we can deliver by 15 May. What is this?",
         a:["A counter-offer within the order process","A complaint","An enquiry","A final reminder"], k:0,
-        why:"Weicht die Antwort vom Bestellinhalt ab, ist es rechtlich ein neues Angebot — der Besteller muss zustimmen." }
+        why:"Weicht die Antwort vom Bestellinhalt ab, ist es rechtlich ein neues Angebot — der Besteller muss zustimmen." },
+      { lv:[1,3], t:"mc", q:"What is a quotation in business correspondence?",
+        a:["A reminder to pay","A binding or non-binding offer stating prices and terms",
+           "A delivery note","A complaint"], k:1,
+        why:"Quotation und offer meinen dasselbe: das Angebot. Achte auf die Bindung — subject to change bedeutet freibleibend, firm offer bindet den Verkäufer." },
+      { lv:[1,3], t:"mc", q:"Which document accompanies the goods and lists what has been sent?",
+        a:["The invoice","The delivery note","The order confirmation","The statement of account"], k:1,
+        why:"Delivery note ist der Lieferschein und reist mit der Ware. Die invoice kommt getrennt, oft später und an eine andere Abteilung." },
+      { lv:[2,4], t:"mc", q:"Under DDP, who clears the goods for import and pays the duty?",
+        a:["The buyer","The seller","The carrier","Customs pays nothing is due"], k:1,
+        why:"Delivered Duty Paid ist die weitestgehende Pflicht für den Verkäufer: Er trägt Transport, Risiko, Einfuhrabfertigung und Zoll bis zum benannten Ort. EXW ist das andere Ende der Skala." },
+      { lv:[2,4], t:"mc", q:"Which phrase is the more formal way to ask for a fast answer?",
+        a:["Answer quickly, please.","We would appreciate an early reply.",
+           "Write back soon!","Reply immediately."], k:1,
+        why:"Im Handelsenglisch wird die Bitte durch Konjunktiv und Substantiv gedämpft. Direkte Imperative wirken im Schriftverkehr unhöflich, auch wenn sie grammatisch richtig sind." },
+      { lv:[3,5], t:"mc", q:"Payment terms read 2/10 net 30. What do they mean?",
+        a:["2 % discount within 10 days, full amount due within 30 days",
+           "2 € discount after 10 days","10 % discount within 2 days","30 instalments over 10 months"], k:0,
+        why:"Die erste Zahl ist der Skontosatz, die zweite die Skontofrist, die dritte das Zahlungsziel. 2/10 net 30 entspricht dem deutschen 2 % Skonto in 10 Tagen, 30 Tage netto." },
+      { lv:[3,5], t:"mc", q:"What is the usual order of the three reminder stages?",
+        a:["Final demand, reminder, statement","Friendly reminder, second reminder, final demand before legal action",
+           "Invoice, delivery note, receipt","Complaint, offer, order"], k:1,
+        why:"Erst der freundliche Hinweis, dann die deutlichere Mahnung mit Frist, zuletzt die Androhung rechtlicher Schritte. Der Ton verschärft sich, die Höflichkeitsformeln bleiben." },
+      { lv:[3,5], t:"mc", q:"What does a letter of credit do?",
+        a:["It grants the buyer a loan","A bank undertakes to pay the seller once the agreed documents are presented",
+           "It insures the goods in transit","It replaces the contract"], k:1,
+        why:"Das Akkreditiv schiebt eine Bank zwischen die Parteien: Der Verkäufer bekommt sein Geld gegen Dokumente, der Käufer zahlt erst, wenn die Papiere stimmen. Üblich im Überseegeschäft mit unbekannten Partnern." },
+      { lv:[4,6], t:"mc", q:"What is a bill of lading?",
+        a:["A packing list","A document of title to the goods, issued by the carrier in sea freight",
+           "A customs declaration","An insurance policy"], k:1,
+        why:"Das Konnossement ist Empfangsbestätigung, Frachtvertrag und Warenwertpapier in einem. Wer es besitzt, kann die Ware herausverlangen — deshalb wird es beim Akkreditiv verlangt." },
+      { lv:[4,6], t:"mc", q:"What does an arbitration clause provide for?",
+        a:["Automatic cancellation of the contract","Settlement of disputes by an arbitral tribunal instead of the ordinary courts",
+           "A price adjustment","An extension of the delivery period"], k:1,
+        why:"Die Schiedsklausel bestimmt Schiedsgericht, Ort und Sprache. Sie ist im internationalen Geschäft verbreitet, weil ein Schiedsspruch leichter vollstreckbar ist als ein ausländisches Gerichtsurteil." },
+      { lv:[4,6], t:"mc", q:"A contract contains a force majeure clause. What is its effect?",
+        a:["The price may be raised at any time","Neither party is liable for delay caused by events beyond its control, such as flood or war",
+           "The buyer may cancel without reason","Delivery is always free of charge"], k:1,
+        why:"Höhere Gewalt entschuldigt die Nichterfüllung, solange das Ereignis unvorhersehbar und unabwendbar ist. Streik und Rohstoffmangel gehören nur dazu, wenn die Klausel sie ausdrücklich nennt." },
+      { lv:[4,6], t:"mc", q:"What is a proforma invoice used for?",
+        a:["To demand payment","As a preliminary invoice for customs, import licences or advance payment",
+           "To confirm receipt of goods","To cancel an order"], k:1,
+        why:"Die Proformarechnung fordert kein Geld. Sie belegt den Wert der Sendung gegenüber Zoll und Behörden oder dient als Grundlage für eine Vorauszahlung." },
+      { lv:[4,6], t:"mc", q:"An offer says: subject to prior sale. What does that mean?",
+        a:["The price is fixed for 30 days","The goods may already be sold to someone else when the order arrives",
+           "Payment is due before delivery","The buyer may return the goods"], k:1,
+        why:"Zwischenverkauf vorbehalten — das Angebot ist freibleibend. Die Bestellung des Käufers ist dann rechtlich der Antrag, den der Verkäufer noch annehmen muss." },
+      { lv:[4,6], t:"mc", q:"In a meeting, which phrase asks a colleague to say more about a point?",
+        a:["Let us move on.","Could you elaborate on that, please?","That is all for today.","I beg to differ."], k:1,
+        why:"Elaborate on bittet um Ausführung. I beg to differ ist der höfliche Widerspruch, let us move on beendet den Punkt — im Fachgespräch lohnt es, diese Wendungen parat zu haben." },
     ]
   };
 
@@ -1074,6 +1405,22 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
   function fromYmd(s) { var p = String(s).split("-").map(Number); return new Date(p[0], p[1] - 1, p[2], 12); }
   function addDays(d, n) { return new Date(d.getFullYear(), d.getMonth(), d.getDate() + n, 12); }
   function dayKey(d) { return DAY_KEYS[d.getDay()]; }
+  /*  Kalenderwoche nach ISO 8601, wortgleich mit dem Mac-Widget: über den
+      Donnerstag der Woche, denn dessen Jahr bestimmt das Jahr der Woche.
+      Der Schlüssel ist derselbe wie dort — 2026-W35 —, damit sich beide
+      Seiten dieselben Wochen-Schwerpunkte teilen.                          */
+  function isoWeek(d) {
+    var thu = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 12);
+    thu.setDate(thu.getDate() - ((thu.getDay() + 6) % 7) + 3);
+    var jahr = thu.getFullYear();
+    var jan4 = new Date(jahr, 0, 4, 12);
+    var kw1 = new Date(jahr, 0, 4 - ((jan4.getDay() + 6) % 7) + 3, 12);
+    var nr = Math.round((thu.getTime() - kw1.getTime()) / (7 * 86400000)) + 1;
+    return jahr + "-W" + pad(nr);
+  }
+  function mondayOf(d) {
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate() - ((d.getDay() + 6) % 7), 12);
+  }
 
   function easter(y) {
     var a = y % 19, b = Math.floor(y / 100), c = y % 100, d = Math.floor(b / 4), e = b % 4;
@@ -1140,6 +1487,36 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
     var v = PLAN.durations[b.kind];
     return typeof v === "number" ? v : 0;
   }
+  /*  Die Uhrzeit eines Blocks als Minuten seit Mitternacht. Erlaubt sind
+      "5:30" und "ab 19" bzw. "ab 19:30"; "opt.", "—" und Leeres haben keine
+      Zeit und liefern null. Damit weiss die Seite, was gerade dran ist.     */
+  function blockZeit(b) {
+    var m = /^\s*(?:ab\s+)?(\d{1,2})(?::(\d{2}))?\s*$/.exec(String((b && b.t) || ""));
+    if (!m) return null;
+    var std = Number(m[1]), min = m[2] ? Number(m[2]) : 0;
+    if (std > 23 || min > 59) return null;
+    return std * 60 + min;
+  }
+  function jetztMin(d) {
+    var x = d || new Date();
+    return x.getHours() * 60 + x.getMinutes();
+  }
+  /*  Welcher Block läuft gerade, welcher kommt als Nächstes. Ein Block läuft
+      von seiner Zeit bis zur Zeit des nächsten — die Blöcke stehen ohnehin in
+      Tagesreihenfolge, eine Enddauer führt nur zu Lücken und Überschneidungen. */
+  function tagesLage(plan, minute) {
+    var mit = (plan.blocks || []).map(function (b, i) { return { b: b, i: i, z: blockZeit(b) }; })
+                                 .filter(function (x) { return x.z !== null; });
+    if (!mit.length) return { jetzt: null, naechst: null };
+    var jetzt = null, naechst = null;
+    for (var k = 0; k < mit.length; k++) {
+      var bis = k + 1 < mit.length ? mit[k + 1].z : 24 * 60;
+      if (minute >= mit[k].z && minute < bis) jetzt = mit[k];
+      if (mit[k].z > minute && !naechst) naechst = mit[k];
+    }
+    return { jetzt: jetzt, naechst: naechst };
+  }
+
   function blockXp(b) {
     var w = typeof b.xpFactor === "number" ? b.xpFactor : (WEIGHT[b.kind] || 1);
     return Math.round(minutes(b) * w);
@@ -1260,7 +1637,9 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
                   core: coreDone(info.plan, ids), all: allDone(info.plan, ids),
                   future: dt > today, today: ymd(dt) === ymd(today) });
     }
-    return { days: days, done: done, planned: planned, goal: PLAN.weeklyGoalMin };
+    // Das Ziel ist einstellbar; die 900 Minuten sind nur der Startwert.
+    var ziel = state && isFinite(Number(state.zw)) ? Number(state.zw) : PLAN.weeklyGoalMin;
+    return { days: days, done: done, planned: planned, goal: ziel };
   }
 
   function nextExam(today) {
@@ -1394,7 +1773,10 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
     lock: '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
     trash: '<path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13M10 11v5M14 11v5"/>',
     plus: '<path d="M12 5v14M5 12h14"/>',
-    star: '<path d="M12 3l2.7 5.9 6.3.7-4.7 4.3 1.3 6.4L12 17l-5.6 3.3 1.3-6.4L3 9.6l6.3-.7z"/>'
+    star: '<path d="M12 3l2.7 5.9 6.3.7-4.7 4.3 1.3 6.4L12 17l-5.6 3.3 1.3-6.4L3 9.6l6.3-.7z"/>',
+    bell: '<path d="M6 16V11a6 6 0 0 1 12 0v5l2 3H4zM10 22h4"/>',
+    undo: '<path d="M4 9h11a5 5 0 0 1 0 10h-6M4 9l4-4M4 9l4 4"/>',
+    timer: '<circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2M9 2h6"/>'
   };
   function icon(name, size) {
     return '<svg viewBox="0 0 24 24" width="' + (size || 16) + '" height="' + (size || 16) +
@@ -1414,7 +1796,8 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
   }
 
   /* ---- Zustand ---------------------------------------------------------- */
-  var state = { v: 4, d: {}, f: {}, n: {}, w: {}, q: {}, g: [], zn: 1.9, updatedAt: 0 };
+  var state = { v: 4, d: {}, f: {}, n: {}, w: {}, q: {}, g: [], t: null,
+                zn: 1.9, zw: 900, updatedAt: 0 };
   var saveMode = "lokal";  // "lokal" | "geteilt"
   var statusTxt = "nur auf diesem Gerät";
   var saveTimer = null, artifactApi = null, lastFloat = null, nachholen = false;
@@ -1444,6 +1827,79 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
   }
   var view = readView();   // 0 = heute, negativ = zurückgeblättert
 
+  /* ---- Rückgängig --------------------------------------------------------
+     Wie im Mac-Widget: vor jedem Handgriff, der etwas wegnehmen kann, wandert
+     eine Kopie des Zustands beiseite. Eine Minute lang steht sie zur Verfügung,
+     danach verfällt sie — länger will das niemand zurücknehmen.             */
+  var UNDO_MS = 60000;
+  var rueck = null;   // { stand, at, was }
+
+  function merke(was) {
+    try { rueck = { stand: JSON.parse(JSON.stringify(state)), at: Date.now(), was: was }; }
+    catch (e) { rueck = null; }
+  }
+  function rueckBereit() {
+    return rueck && Date.now() - rueck.at < UNDO_MS ? rueck.was : null;
+  }
+  function rueckNehmen() {
+    var was = rueckBereit();
+    if (!was) return;
+    state = rueck.stand;
+    rueck = null;
+    save(); render(); sag("Zurückgenommen: " + was);
+  }
+
+  /* ---- Ansage ------------------------------------------------------------
+     Alles, was nur als Farbe oder Zahl erscheint, geht zusätzlich hier durch —
+     sonst bleibt jede Rückmeldung unsichtbar, wenn die Seite vorgelesen wird. */
+  function sag(txt) {
+    var el = document.getElementById("ansage");
+    if (el) el.textContent = txt;
+  }
+
+  /* ---- Auswertung merken -------------------------------------------------
+     evaluate() läuft über bis zu 400 Tage und wurde bei jedem Klick neu
+     angeworfen. Der Zustand ändert sich nur über save(), das updatedAt
+     hochsetzt — das reicht als Kennung.                                     */
+  var evMemo = null;
+  function auswerten(st, heute) {
+    var schl = st.updatedAt + "|" + ymd(heute);
+    if (evMemo && evMemo.schl === schl) return evMemo.wert;
+    evMemo = { schl: schl, wert: evaluate(st, heute) };
+    return evMemo.wert;
+  }
+
+  /* ---- Fokus über das Neuzeichnen retten ---------------------------------
+     render() ersetzt das gesamte DOM. Ohne das hier springt der Tastaturfokus
+     nach jedem Häkchen zurück an den Seitenanfang.                          */
+  var FOKUS_ATTR = ["data-id", "data-off", "data-attr"];
+  function fokusMerken() {
+    var el = document.activeElement;
+    if (!el || el === document.body || !el.getAttribute) return null;
+    var pos = null;
+    try { pos = el.selectionStart; } catch (e) { pos = null; }
+    if (el.id) return { sel: "#" + el.id, pos: pos };
+    var act = el.getAttribute("data-act");
+    if (!act) return null;
+    var sel = '[data-act="' + act + '"]';
+    for (var i = 0; i < FOKUS_ATTR.length; i++) {
+      var v = el.getAttribute(FOKUS_ATTR[i]);
+      if (v !== null) { sel += "[" + FOKUS_ATTR[i] + '="' + v + '"]'; break; }
+    }
+    return { sel: sel, pos: null };
+  }
+  function fokusSetzen(f) {
+    if (!f) return;
+    var el = null;
+    try { el = document.querySelector(f.sel); } catch (e) { return; }
+    if (!el || typeof el.focus !== "function") return;
+    try { el.focus({ preventScroll: true }); } catch (e) { el.focus(); }
+    if (f.pos !== null && f.pos !== undefined && el.setSelectionRange) {
+      // Zahlen- und Datumsfelder lassen keine Auswahl setzen — dann eben nicht.
+      try { el.setSelectionRange(f.pos, f.pos); } catch (e) { /* egal */ }
+    }
+  }
+
   function readEmbedded() {
     var el = document.getElementById("state");
     if (!el) return null;
@@ -1454,7 +1910,8 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
   }
   var gid = 0;
   function normalize(o) {
-    var s = { v: 4, d: {}, f: {}, n: {}, w: {}, q: {}, g: [], zn: 1.9, updatedAt: 0 };
+    var s = { v: 4, d: {}, f: {}, n: {}, w: {}, q: {}, g: [], t: null,
+              zn: 1.9, zw: 900, updatedAt: 0 };
     if (!o || typeof o !== "object") return s;
     if (o.d && typeof o.d === "object") {
       Object.keys(o.d).forEach(function (k) {
@@ -1466,8 +1923,22 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
         s.f[k] = typeof o.f[k] === "string" && o.f[k] ? o.f[k] : "frei";
       });
     }
-    if (o.n && typeof o.n === "object") s.n = o.n;
-    if (o.w && typeof o.w === "object") s.w = o.w;
+    // n: eine Notizzeile je Tag. w: bis zu drei Schwerpunkte je Kalenderwoche.
+    // Beide schreibt auch das Mac-Widget — deshalb hier nur prüfen, nicht deuten.
+    if (o.n && typeof o.n === "object") {
+      Object.keys(o.n).forEach(function (k) {
+        var v = o.n[k];
+        if (typeof v === "string" && v.trim()) s.n[k] = v.slice(0, 280);
+      });
+    }
+    if (o.w && typeof o.w === "object") {
+      Object.keys(o.w).forEach(function (k) {
+        if (!Array.isArray(o.w[k])) return;
+        var l = o.w[k].filter(function (x) { return typeof x === "string" && x.trim(); })
+                      .map(function (x) { return x.slice(0, 90); }).slice(0, 3);
+        if (l.length) s.w[k] = l;
+      });
+    }
     // q: höchste bestandene Stufe je Fach. Das Mac-Widget ignoriert den
     // Schlüssel, das Format bleibt also kompatibel.
     if (o.q && typeof o.q === "object") {
@@ -1497,8 +1968,20 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
         })
         .filter(function (e) { return e.fach && e.n !== null; });
     }
+    // t: der laufende Fokus-Timer, im Format des Mac-Widgets. Ein dort
+    // gestarteter Block läuft hier weiter, und umgekehrt.
+    if (o.t && typeof o.t === "object" && o.t.id) {
+      var st = Number(o.t.start), mi = Number(o.t.mins);
+      if (isFinite(st) && st > 0 && isFinite(mi) && mi > 0 && mi <= 600) {
+        s.t = { key: String(o.t.key || ""), id: String(o.t.id),
+                nm: String(o.t.nm || o.t.id).slice(0, 60),
+                mins: Math.round(mi), start: Math.round(st) };
+      }
+    }
     var z = Number(o.zn);
     s.zn = isFinite(z) && z >= 1 && z <= 6 ? Math.round(z * 10) / 10 : 1.9;
+    var zw = Number(o.zw);
+    s.zw = isFinite(zw) && zw >= 0 && zw <= 5040 ? Math.round(zw) : 900;
     s.updatedAt = Number(o.updatedAt) || 0;
     return s;
   }
@@ -1565,20 +2048,31 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
      noch einmal, mit frisch gezogenen Fragen.                               */
   var exam = null;   // { attr, ziel, fragen, i, richtig, beantwortet }
 
-  function zieheFragen(attrId, ziel) {
-    var pool = (QUIZ[attrId] || []).filter(function (f) {
-      return ziel >= f.lv[0] && ziel <= f.lv[1];
-    });
-    // Reicht das Band nicht, mit dem restlichen Fach auffüllen statt abzubrechen
-    if (pool.length < 5) {
-      (QUIZ[attrId] || []).forEach(function (f) {
-        if (pool.indexOf(f) < 0) pool.push(f);
-      });
-    }
-    var rest = pool.slice(), out = [];
-    while (rest.length && out.length < 5) {
+  var zuletztGezogen = {};   // je Fach die Fragen des vorigen Versuchs
+
+  function ziehe(liste, wieviel) {
+    var rest = liste.slice(), out = [];
+    while (rest.length && out.length < wieviel) {
       out.push(rest.splice(Math.floor(Math.random() * rest.length), 1)[0]);
     }
+    return out;
+  }
+  function zieheFragen(attrId, ziel) {
+    var alle = QUIZ[attrId] || [];
+    var pool = alle.filter(function (f) { return ziel >= f.lv[0] && ziel <= f.lv[1]; });
+    // Reicht das Band nicht, mit dem restlichen Fach auffüllen statt abzubrechen
+    if (pool.length < 5) {
+      alle.forEach(function (f) { if (pool.indexOf(f) < 0) pool.push(f); });
+    }
+    /*  Beim zweiten Anlauf zuerst das nehmen, was gerade nicht dran war.
+        Sonst übt der Wiederholungsversuch nur, wo die richtige Antwort stand.  */
+    var alt = zuletztGezogen[attrId] || [];
+    var out = ziehe(pool.filter(function (f) { return alt.indexOf(f) < 0; }), 5);
+    if (out.length < 5) {
+      out = out.concat(ziehe(pool.filter(function (f) { return out.indexOf(f) < 0; }),
+                             5 - out.length));
+    }
+    zuletztGezogen[attrId] = out;
     return out;
   }
 
@@ -1674,6 +2168,130 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
     zeigeExam();
   }
 
+  /* ---- Fokus-Timer -------------------------------------------------------
+     Vertrag wortgleich mit dem Mac-Widget: t = { key, id, nm, mins, start },
+     null wenn keiner läuft. Ein dort gestarteter Block läuft deshalb hier
+     weiter — es ist derselbe Schlüssel in derselben Datei.
+
+     Der Sekundentakt schreibt bewusst nichts: er beschriftet nur die Anzeige
+     neu. Ginge er über save(), löste jede Sekunde eine Veröffentlichung aus.  */
+  var PAUSE_ID = "__pause";
+  var geklungen = null, weckerText = "", weckerBis = 0, letzteLage = "";
+
+  function timerLeft(t, nowMs) {
+    if (!t || !t.start || !t.mins) return null;
+    return Math.ceil((t.start + t.mins * 60000 - nowMs) / 60000);
+  }
+  function timerSek(t, nowMs) {
+    if (!t || !t.start || !t.mins) return null;
+    return Math.max(0, Math.round((t.start + t.mins * 60000 - nowMs) / 1000));
+  }
+  function uhrzeit(sek) {
+    return Math.floor(sek / 60) + ":" + pad(sek % 60);
+  }
+
+  function timerStart(b, key) {
+    weckerErlauben();
+    state.t = { key: key, id: b.id, nm: b.nm, mins: minutes(b) || 25, start: Date.now() };
+    geklungen = null;
+    save(); render();
+    sag("Fokus gestartet: " + b.nm + ", " + state.t.mins + " Minuten.");
+  }
+  function timerStop() {
+    state.t = null; geklungen = null;
+    save(); render(); sag("Timer beendet.");
+  }
+  function timerPlus(schritt) {
+    if (!state.t) return;
+    var t = state.t;
+    state.t = { key: t.key, id: t.id, nm: t.nm, mins: t.mins + (schritt || 10), start: t.start };
+    geklungen = null;
+    save(); render();
+  }
+  function pauseStart() {
+    weckerErlauben();
+    state.t = { key: ymd(today()), id: PAUSE_ID, nm: "Pause", mins: 5, start: Date.now() };
+    geklungen = null;
+    save(); render();
+  }
+
+  /*  Der Wecker läuft in der Seite: Banner plus kurzer Ton. Eine Tondatei wäre
+      durch die Inhaltsrichtlinie gesperrt, deshalb wird der Ton erzeugt. Die
+      Browser-Benachrichtigung kommt obendrauf, wenn der Rahmen sie zulässt —
+      im eingebetteten Artefakt ist sie oft gesperrt, verlassen darf sich der
+      Wecker also nicht auf sie.                                              */
+  function weckerErlauben() {
+    try {
+      if (window.Notification && window.Notification.permission === "default") {
+        window.Notification.requestPermission();
+      }
+    } catch (e) { /* nicht verfügbar — das Banner reicht */ }
+  }
+  function klingeln(t) {
+    var pause = t.id === PAUSE_ID;
+    var titel = pause ? "Pause vorbei" : "Fokusblock fertig";
+    var text = pause ? "Weiter geht es." : t.nm + " · " + t.mins + " Minuten geschafft.";
+    weckerText = titel + " — " + text;
+    weckerBis = Date.now() + 120000;
+    ton();
+    sag(titel + ". " + text);
+    try {
+      if (window.Notification && window.Notification.permission === "granted") {
+        new window.Notification(titel, { body: text });
+      }
+    } catch (e) { /* dann eben nur in der Seite */ }
+  }
+  function ton() {
+    try {
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      var ctx = new AC();
+      [0, 0.2, 0.4].forEach(function (dt) {
+        var o = ctx.createOscillator(), g = ctx.createGain();
+        o.type = "sine";
+        o.frequency.value = 880;
+        g.gain.setValueAtTime(0.0001, ctx.currentTime + dt);
+        g.gain.exponentialRampToValueAtTime(0.22, ctx.currentTime + dt + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + dt + 0.16);
+        o.connect(g); g.connect(ctx.destination);
+        o.start(ctx.currentTime + dt);
+        o.stop(ctx.currentTime + dt + 0.18);
+      });
+      setTimeout(function () { try { ctx.close(); } catch (e) { /* egal */ } }, 1200);
+    } catch (e) { /* ohne Ton eben still */ }
+  }
+
+  /*  Ein Takt für beides: die Timeranzeige jede Sekunde, und ein Blick darauf,
+      ob inzwischen ein anderer Block dran ist. Neu gezeichnet wird nur, wenn
+      sich die Lage wirklich ändert — sonst ein paar Mal am Tag statt 86.400.  */
+  function takt() {
+    var t = state.t;
+    if (t) {
+      var sek = timerSek(t, Date.now());
+      var token = t.key + "|" + t.id + "|" + t.start + "|" + t.mins;
+      if (sek <= 0) {
+        if (geklungen !== token) {
+          geklungen = token;
+          klingeln(t);
+          state.t = null;
+          save(); render();
+        }
+      } else {
+        var el = document.getElementById("tuhr");
+        if (el) el.textContent = uhrzeit(sek);
+      }
+    }
+    if (weckerBis && Date.now() > weckerBis) { weckerBis = 0; weckerText = ""; render(); }
+    lagePruefen();
+  }
+  function lagePruefen() {
+    if (view !== 0) return;
+    var info = dayInfo(today(), state.f);
+    var lg = tagesLage(info.plan, jetztMin());
+    var sig = (lg.jetzt ? lg.jetzt.b.id : "-") + "/" + (lg.naechst ? lg.naechst.b.id : "-");
+    if (letzteLage && sig !== letzteLage) render();
+  }
+
   /* ---- Ansicht ---------------------------------------------------------- */
   function today() { var n = new Date(); return new Date(n.getFullYear(), n.getMonth(), n.getDate(), 12); }
   function shownDate() { return addDays(today(), view); }
@@ -1683,6 +2301,14 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
      Schnitt in den offenen Prüfungsblöcken für das Ziel noch nötig ist.      */
   var gForm = { fach: "", was: "", n: "", p: "", dat: "", gew: "1" };
   var gMsg = null;
+  /*  Jedes Eingabefeld braucht seinen Entwurf: render() ersetzt das DOM, und
+      ohne diese Zwischenspeicher wäre Getipptes beim nächsten Klick weg.
+      Notiz und Schwerpunkte hängen am Tag bzw. an der Woche — sonst zeigte ein
+      Tageswechsel den Entwurf des vorigen Tages.                             */
+  var notizEntwurf = null;    // { key, text }
+  var themenEntwurf = null;   // { key, text }
+  var ioEntwurf = null;       // Zeichenkette oder null für "aus dem Zustand"
+  var monatOffset = 0;        // 0 = aktueller Monat, negativ = zurückgeblättert
 
   function fachName(id) {
     if (String(id).indexOf("ihk:") === 0) {
@@ -1875,18 +2501,47 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
     if (el) el.focus();
   }
 
+  /*  Steigt eine Stufe, ändert sich sonst lautlos eine Zahl. Beim ersten
+      Zeichnen wird nur gemerkt, nicht gemeldet — sonst gratulierte die Seite
+      beim Öffnen zu allem, was längst erreicht ist.                          */
+  var standZuvor = null, aufstiegText = "", aufstiegBis = 0;
+  function aufstiegPruefen(ev, rank) {
+    var jetzt = { rang: rank.level, attr: {} };
+    ATTRS.forEach(function (a) {
+      jetzt.attr[a.id] = standOf(a.id, ev.attrXp[a.id] || 0).level;
+    });
+    if (!standZuvor) { standZuvor = jetzt; return null; }
+    var texte = [];
+    if (jetzt.rang > standZuvor.rang) texte.push("Stufe " + jetzt.rang + " · " + rank.name);
+    ATTRS.forEach(function (a) {
+      if (jetzt.attr[a.id] > standZuvor.attr[a.id]) {
+        texte.push(a.nm + " auf Stufe " + jetzt.attr[a.id]);
+      }
+    });
+    standZuvor = jetzt;
+    return texte.length ? texte.join(" · ") : null;
+  }
+
   var lastEv = null;
   function render() {
+    var fok = fokusMerken();
     var now = today(), shown = shownDate();
     var info = dayInfo(shown, state.f);
     var ids = state.d[info.key] || [];
-    var ev = evaluate(state, now); lastEv = ev;
+    var ev = auswerten(state, now); lastEv = ev;
+    var heutePlan = view === 0 ? info.plan : dayInfo(now, state.f).plan;
+    var lage = tagesLage(heutePlan, jetztMin());
+    letzteLage = (lage.jetzt ? lage.jetzt.b.id : "-") + "/" +
+                 (lage.naechst ? lage.naechst.b.id : "-");
     var wk = weekStats(state, now);
     var rank = rankOf(ev.xp);
     var exam = nextExam(now);
     var bl = scored(info.plan);
     var hit = bl.filter(function (b) { return ids.indexOf(b.id) >= 0; }).length;
     var kern = coreDone(info.plan, ids), voll = allDone(info.plan, ids);
+
+    var auf = aufstiegPruefen(ev, rank);
+    if (auf) { aufstiegText = auf; aufstiegBis = Date.now() + 20000; sag("Aufstieg: " + auf); }
 
     var levelPct = rank.to ? Math.round(((ev.xp - rank.from) / (rank.to - rank.from)) * 100) : 100;
     var goalPct = wk.goal ? Math.min(100, Math.round((wk.done / wk.goal) * 100)) : 0;
@@ -1925,6 +2580,25 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
     }
     html += "</div>";
 
+    // Die Ansage ist unsichtbar und trägt jede Rückmeldung an Screenreader.
+    html += '<div id="ansage" class="sr" role="status" aria-live="polite"></div>';
+
+    if (aufstiegText && aufstiegBis > Date.now()) {
+      html += '<div class="aufstieg"><span class="ic">' + icon("star", 18) + "</span>" +
+        "<span><b>Aufstieg</b> " + esc(aufstiegText) + "</span></div>";
+    }
+    if (weckerText) {
+      html += '<div class="wecker" role="alert"><span class="ic">' + icon("bell", 18) + "</span>" +
+        "<span>" + esc(weckerText) + "</span>" +
+        '<button class="btn" data-act="weckerAus" type="button">verstanden</button></div>';
+    }
+    var rb = rueckBereit();
+    if (rb) {
+      html += '<div class="undobar" id="undobar"><span>' + esc(rb) + "</span>" +
+        '<button class="btn" data-act="undo" type="button">' + icon("undo", 14) +
+        "Rückgängig</button></div>";
+    }
+
     html += '<div class="stack" style="margin-top:18px">';
 
     /* Heute */
@@ -1957,13 +2631,31 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
         esc(PLAN.focus) + "</span></div>";
     }
 
+    // Was gerade dran ist, steht nur am heutigen Tag an — im Nachtrag wäre es
+    // eine Behauptung über einen Tag, der längst vorbei ist.
+    if (view === 0 && info.counts && (lage.jetzt || lage.naechst)) {
+      html += '<div class="jetztzeile">' +
+        (lage.jetzt
+          ? '<span class="eyebrow">Jetzt</span><span class="jn">' + esc(lage.jetzt.b.nm) + "</span>"
+          : '<span class="eyebrow">Gleich</span>') +
+        (lage.naechst
+          ? '<span class="jnext">als Nächstes um ' + esc(lage.naechst.b.t) + ": " +
+            esc(lage.naechst.b.nm) + "</span>"
+          : '<span class="jnext">danach ist der Tag durch</span>') +
+        "</div>";
+    }
+
     html += '<ul class="quests">';
     (info.plan.blocks || []).forEach(function (b) {
       var on = ids.indexOf(b.id) >= 0;
       var track = !!b.track;
       var isCore = PLAN.core.indexOf(b.id) >= 0 && track && !b.opt;
+      var dauer = minutes(b);
+      var laeuft = !!(state.t && state.t.id === b.id && state.t.key === info.key);
+      var istJetzt = view === 0 && info.counts && lage.jetzt && lage.jetzt.b.id === b.id;
       html += '<li class="quest' + (on ? " done" : "") + (track ? "" : " fix") +
-        (isCore ? " kern" : "") + '" data-id="' + esc(b.id) + '">' +
+        (isCore ? " kern" : "") + (istJetzt ? " jetzt" : "") + (laeuft ? " laeuft" : "") +
+        '" data-id="' + esc(b.id) + '">' +
         '<span class="time mono">' + esc(b.t) + "</span>" +
         '<span class="body"><span class="nm">' + esc(b.nm) + "</span>" +
         (b.sub ? '<span class="sb">' + esc(b.sub) + "</span>" : "") +
@@ -1975,6 +2667,16 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
             }).join(" + ") + "</span>"
           : "") + "</span>" +
         '<span class="xp mono">' + (track ? (on ? "+" : "") + blockXp(b) + " XP" : "") + "</span>" +
+        (laeuft
+          ? '<span class="tlauf mono" id="tuhr" aria-label="verbleibende Zeit">' +
+            uhrzeit(timerSek(state.t, Date.now()) || 0) + "</span>" +
+            '<button class="tbtn stop" data-act="tstop" type="button" ' +
+            'aria-label="Timer beenden">■</button>'
+          : track && dauer > 0 && !on
+            ? '<button class="tbtn" data-act="tstart" data-id="' + esc(b.id) + '" type="button" ' +
+              'aria-label="Fokus-Timer für ' + esc(b.nm) + " starten, " + dauer +
+              ' Minuten">▶</button>'
+            : '<span class="tbtn leer" aria-hidden="true"></span>') +
         (track
           ? '<button class="stampbox" data-act="toggle" data-id="' + esc(b.id) + '" type="button" ' +
             'aria-pressed="' + (on ? "true" : "false") + '" aria-label="' + esc(b.nm) + ' abstempeln">' +
@@ -1990,13 +2692,49 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
     if (!info.counts) html += '<span class="stamp rest">Ruhetag</span>';
     else if (voll) html += '<span class="stamp done">Reinen Tisch</span>';
     else if (kern) html += '<span class="stamp saved">Tag gerettet</span>';
-    else html += '<span class="note">Kern offen: ' +
-      coreIds(info.plan).filter(function (id) { return ids.indexOf(id) < 0; }).join(" · ") + "</span>";
-    html += "</div></section>";
+    else {
+      // Der Sammelknopf steht genau dort, wo das Problem benannt wird.
+      html += '<span class="row"><span class="note">Kern offen: ' +
+        coreIds(info.plan).filter(function (id) { return ids.indexOf(id) < 0; }).join(" · ") +
+        "</span>" +
+        '<button class="btn small" data-act="kern" type="button">Kern \u2713</button></span>';
+    }
+    html += "</div>";
+
+    // Tagesnotiz — derselbe Schlüssel, den auch das Mac-Widget beschreibt.
+    var notizWert = notizEntwurf && notizEntwurf.key === info.key
+      ? notizEntwurf.text : (state.n[info.key] || "");
+    html += '<div class="tagnotiz"><label class="eyebrow" for="notiz">Notiz</label>' +
+      '<input id="notiz" type="text" maxlength="280" value="' + esc(notizWert) + '" ' +
+      'placeholder="was lief heute, was ging schief — ein Satz genügt">' +
+      "</div>";
+
+    // Der Timer läuft, aber sein Block steht heute nicht im Plan (etwa eine
+    // Pause oder ein am Mac gestarteter Block von gestern).
+    if (state.t && !(info.plan.blocks || []).some(function (b) {
+      return b.id === state.t.id && state.t.key === info.key;
+    })) {
+      html += '<div class="tfremd"><span class="eyebrow">Läuft</span>' +
+        "<span>" + esc(state.t.nm) + "</span>" +
+        '<span class="tlauf mono" id="tuhr">' + uhrzeit(timerSek(state.t, Date.now()) || 0) + "</span>" +
+        '<button class="btn small" data-act="tplus" type="button">+10 min</button>' +
+        '<button class="btn small" data-act="tstop" type="button">beenden</button></div>';
+    } else if (!state.t && view === 0) {
+      html += '<div class="tfremd"><span class="eyebrow">Pause</span>' +
+        '<span class="note">Fünf Minuten zwischen zwei Blöcken — der Wecker holt dich zurück.</span>' +
+        '<button class="btn small" data-act="tpause" type="button">Pause starten</button></div>';
+    }
+    html += "</section>";
 
     /* Woche */
+    var wkey = isoWeek(now);
+    var themen = (state.w && state.w[wkey]) || [];
+    var themenWert = themenEntwurf && themenEntwurf.key === wkey
+      ? themenEntwurf.text : themen.join(" · ");
+
     html += '<section class="card"><div class="card-head"><h2>Die Woche</h2>' +
-      '<span class="note mono">' + fmtMin(wk.done) + " von " + fmtMin(wk.planned) + " geplant</span></div>" +
+      '<span class="note mono">' + fmtMin(wk.done) + " von " + fmtMin(wk.planned) +
+      " geplant · " + esc(wkey.split("-W")[1]) + ". Woche</span></div>" +
       '<div class="week">';
     wk.days.forEach(function (dd, i) {
       var seal = dd.all ? "on" : dd.core ? "part" : "";
@@ -2014,7 +2752,24 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
         '<span class="qt mono">' + (dd.future ? "·" : dd.hit + "/" + dd.total) + "</span>" +
         '<span class="seal ' + seal + '">' + (seal ? icon("check", 13) : "") + "</span></button>";
     });
-    html += "</div></section>";
+    html += "</div>";
+
+    // Schwerpunkte und Wochenziel — dieselben Schlüssel wie im Mac-Widget.
+    html += '<div class="wfuss">' +
+      '<label class="wf themen"><span class="eyebrow">Schwerpunkte dieser Woche</span>' +
+      '<input id="themen" type="text" maxlength="200" value="' + esc(themenWert) + '" ' +
+      'placeholder="zwei Themen, getrennt mit  ·  oder  ;"></label>' +
+      '<label class="wf ziel"><span class="eyebrow">Wochenziel</span>' +
+      '<span class="zeile"><input id="wziel" type="number" min="0" max="60" step="0.5" ' +
+      'value="' + (Math.round((wk.goal / 60) * 10) / 10) + '"><span class="einheit">Stunden</span></span></label>' +
+      "</div>";
+
+    if (themen.length) {
+      html += '<div class="row" style="margin-top:10px">' + themen.map(function (t) {
+        return '<span class="chip">' + esc(t) + "</span>";
+      }).join("") + "</div>";
+    }
+    html += "</section>";
 
     /* Attribute */
     html += '<section class="card"><div class="card-head"><h2>Attribute</h2>' +
@@ -2116,12 +2871,13 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
     html += "</div></section>";
 
     /* Monat */
-    var y = now.getFullYear(), mo = now.getMonth();
+    var mBasis = new Date(now.getFullYear(), now.getMonth() + monatOffset, 1, 12);
+    var y = mBasis.getFullYear(), mo = mBasis.getMonth();
     var lead = (new Date(y, mo, 1).getDay() + 6) % 7, len = new Date(y, mo + 1, 0).getDate();
     // Zahlen nur für diesen Monat, nicht für den ganzen Verlauf
     var mStat = { counted: 0, core: 0, all: 0, mins: 0, off: 0 };
-    for (var q = 1; q <= len; q++) {
-      var r = ev.perDay[ymd(new Date(y, mo, q, 12))];
+    for (var mt = 1; mt <= len; mt++) {
+      var r = ev.perDay[ymd(new Date(y, mo, mt, 12))];
       if (!r) continue;
       if (!r.counts) { mStat.off++; continue; }
       mStat.counted++; mStat.mins += r.mins || 0;
@@ -2129,22 +2885,33 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
       if (r.all) mStat.all++;
     }
     html += '<section class="card"><div class="card-head"><h2>' + MONTHS[mo] + " " + y + "</h2>" +
-      '<span class="note mono">' + mStat.core + " von " + mStat.counted + " Tagen mit Kern</span></div>" +
+      '<div class="row">' +
+      '<span class="note mono">' + mStat.core + " von " + mStat.counted + " Tagen mit Kern</span>" +
+      '<button class="btn small" data-act="mprev" type="button" aria-label="Monat zurück">‹</button>' +
+      '<button class="btn small" data-act="mnext" type="button" aria-label="Monat vor"' +
+      (monatOffset >= 0 ? " disabled" : "") + ">›</button>" +
+      "</div></div>" +
       '<div class="monthrow"><div class="monthwrap"><div class="month">';
     WD.forEach(function (w) { html += '<span class="lbl">' + w + "</span>"; });
     for (var i = 0; i < lead; i++) html += '<span class="cell blank"></span>';
     for (var dnum = 1; dnum <= len; dnum++) {
       var dt = new Date(y, mo, dnum, 12), k = ymd(dt), rec = ev.perDay[k];
+      var kuenftig = dt > now;
+      var off = Math.round((dt - now) / 86400000);
       var cls = "cell";
-      if (dt > now) cls += "";
-      else if (!rec) cls += "";
+      if (kuenftig || !rec) cls += "";
       else if (!rec.counts) cls += " skip";
       else if (rec.ratio >= 1) cls += " s4";
       else if (rec.ratio >= 0.7) cls += " s3";
       else if (rec.ratio >= 0.4) cls += " s2";
       else if (rec.ratio > 0) cls += " s1";
       if (k === ymd(now)) cls += " today";
-      html += '<span class="' + cls + '" title="' + k + '">' + dnum + "</span>";
+      if (off === view) cls += " sel";
+      if (state.n[k]) cls += " memo";
+      // Jeder vergangene Tag ist von hier aus einen Klick zum Nachtragen weit.
+      html += '<button type="button" class="' + cls + '" data-act="day" data-off="' + off + '"' +
+        (kuenftig ? " disabled" : "") +
+        ' title="' + k + (state.n[k] ? " · " + esc(state.n[k]) : "") + '">' + dnum + "</button>";
     }
     html += "</div></div>";
     html += '<dl class="mstats">' +
@@ -2158,6 +2925,7 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
       '<i style="background:var(--heat-2)"></i><i style="background:var(--heat-3)"></i>' +
       '<i style="background:var(--heat-4)"></i><span>alles</span>' +
       '<i class="cell skip" style="margin-left:10px"></i><span>Feiertag, frei oder krank — zählt nicht</span>' +
+      '<i class="cell memo" style="margin-left:10px"></i><span>Notiz vorhanden</span>' +
       "</div></section>";
 
     /* Daten */
@@ -2166,12 +2934,18 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
       '<p class="note">Dasselbe Format wie <code class="mono">~/.lernplan-widget.json</code>. ' +
       "Von dort einfügen und einlesen, oder hier kopieren und dort ablegen.</p>" +
       '<textarea id="io" spellcheck="false" aria-label="Zustand als JSON">' +
-      esc(JSON.stringify({ v: 4, d: state.d, f: state.f, n: state.n, w: state.w,
-                           q: state.q, g: state.g, zn: state.zn })) + "</textarea>" +
+      esc(ioEntwurf !== null ? ioEntwurf
+          : JSON.stringify({ v: 4, d: state.d, f: state.f, n: state.n, w: state.w,
+                             q: state.q, g: state.g, t: state.t,
+                             zn: state.zn, zw: state.zw })) + "</textarea>" +
       '<div class="row" style="margin-top:10px">' +
       '<button class="btn" data-act="copy" type="button">' + icon("cards") + "Kopieren</button>" +
-      '<button class="btn" data-act="import" type="button">' + icon("check") + "Einlesen</button>" +
-      '<span class="note" id="iomsg"></span></div></section>';
+      '<button class="btn" data-act="merge" type="button">' + icon("check") + "Zusammenführen</button>" +
+      '<button class="btn ghost" data-act="import" type="button">Ersetzen</button>' +
+      '<span class="note" id="iomsg"></span></div>' +
+      '<p class="note tiny">Zusammenführen behält beides: je Tag die Vereinigung der ' +
+      "Häkchen, Noten kommen dazu. Ersetzen wirft den hiesigen Stand weg — beides " +
+      "lässt sich eine Minute lang zurücknehmen.</p></section>";
 
     html += "</div>";
 
@@ -2180,6 +2954,7 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
       "<span>Punkte je Minute: Deep Work ×1,6 · Anki ×1,2 · Wiederholen ×1,0 · Routine ×0,8 · Lesen ×0,7 — Kern +50, voller Tag +100</span></footer>";
 
     document.getElementById("root").innerHTML = html;
+    fokusSetzen(fok);
   }
 
   /* ---- Bedienung -------------------------------------------------------- */
@@ -2208,10 +2983,70 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
   function cycleMark() {
     var key = dayInfo(shownDate(), state.f).key;
     var cur = state.f[key];
+    merke(cur === "frei" ? "krank gesetzt" : cur ? "Markierung entfernt" : "frei gesetzt");
     if (!cur) state.f[key] = "frei";
     else if (cur === "frei") state.f[key] = "krank";
     else delete state.f[key];
     save(); render();
+  }
+
+  /*  Morgenroutine, Anki und Lesen in einem Griff — das ist die Schwelle,
+      an der ein Tag noch zählt.                                             */
+  function kernStempeln() {
+    var info = dayInfo(shownDate(), state.f);
+    var need = coreIds(info.plan);
+    if (!need.length) return;
+    var list = (state.d[info.key] || []).slice(), neu = 0;
+    need.forEach(function (id) { if (list.indexOf(id) < 0) { list.push(id); neu++; } });
+    if (!neu) return;
+    merke("Kern abgehakt");
+    state.d[info.key] = list;
+    save(); render();
+    sag("Kern abgehakt — " + neu + (neu === 1 ? " Block" : " Blöcke") + " dazu.");
+  }
+
+  function notizSetzen(txt) {
+    var key = dayInfo(shownDate(), state.f).key;
+    var alt = state.n[key] || "";
+    var neu = String(txt || "").trim().slice(0, 280);
+    if (alt === neu) { notizEntwurf = null; return; }
+    merke("Notiz geändert");
+    if (neu) state.n[key] = neu; else delete state.n[key];
+    notizEntwurf = null;
+    save(); render();
+  }
+  function themenSetzen(txt) {
+    var key = isoWeek(today());
+    var liste = String(txt || "").split(/[·;|,]/).map(function (x) { return x.trim(); })
+                 .filter(Boolean).map(function (x) { return x.slice(0, 90); }).slice(0, 3);
+    var alt = (state.w[key] || []).join(" · ");
+    if (alt === liste.join(" · ")) { themenEntwurf = null; return; }
+    merke("Schwerpunkte geändert");
+    if (liste.length) state.w[key] = liste; else delete state.w[key];
+    themenEntwurf = null;
+    save(); render();
+  }
+
+  /*  Zusammenführen statt überschreiben. Häkchen werden vereinigt, bestandene
+      Stufen auf den höheren Wert gezogen, Noten ergänzt. Wo beide Seiten etwas
+      haben, das sich nicht vereinigen lässt — Markierungen, Notizen,
+      Schwerpunkte —, behält der hiesige Stand recht; der Fremdstand füllt nur
+      die Lücken. Ersetzen bleibt als zweiter Knopf daneben.                  */
+  function zusammenfuehren(fremd) {
+    Object.keys(fremd.d).forEach(function (k) {
+      var mein = state.d[k] || [], zus = mein.slice();
+      fremd.d[k].forEach(function (id) { if (zus.indexOf(id) < 0) zus.push(id); });
+      if (zus.length) state.d[k] = zus;
+    });
+    Object.keys(fremd.f).forEach(function (k) { if (!state.f[k]) state.f[k] = fremd.f[k]; });
+    Object.keys(fremd.n).forEach(function (k) { if (!state.n[k]) state.n[k] = fremd.n[k]; });
+    Object.keys(fremd.w).forEach(function (k) { if (!state.w[k]) state.w[k] = fremd.w[k]; });
+    Object.keys(fremd.q).forEach(function (k) {
+      state.q[k] = Math.max(Number(state.q[k]) || 1, Number(fremd.q[k]) || 1);
+    });
+    var habe = {};
+    (state.g || []).forEach(function (e) { habe[e.id] = true; });
+    (fremd.g || []).forEach(function (e) { if (!habe[e.id]) state.g.push(e); });
   }
 
   document.addEventListener("click", function (e) {
@@ -2242,6 +3077,20 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
       if (nachholen) { nachholen = false; save(); }
       return;
     }
+    if (act === "undo") { rueckNehmen(); return; }
+    if (act === "weckerAus") { weckerBis = 0; weckerText = ""; render(); return; }
+    if (act === "tstart") {
+      var tb = (dayInfo(shownDate(), state.f).plan.blocks || [])
+        .filter(function (x) { return x.id === el.getAttribute("data-id"); })[0];
+      if (tb) timerStart(tb, dayInfo(shownDate(), state.f).key);
+      return;
+    }
+    if (act === "tstop") { timerStop(); return; }
+    if (act === "tplus") { timerPlus(10); return; }
+    if (act === "tpause") { pauseStart(); return; }
+    if (act === "mprev") { monatOffset -= 1; render(); return; }
+    if (act === "mnext") { if (monatOffset < 0) { monatOffset += 1; render(); } return; }
+    if (act === "kern") { kernStempeln(); return; }
     if (act === "toggle") toggleBlock(el.getAttribute("data-id"));
     else if (act === "prev") { setView(view - 1); render(); }
     else if (act === "next") { if (view < 0) { setView(view + 1); render(); } }
@@ -2250,6 +3099,8 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
     else if (act === "gadd") noteEintragen();
     else if (act === "gdel") {
       var gi = el.getAttribute("data-id");
+      var weg = (state.g || []).filter(function (x) { return x.id === gi; })[0];
+      merke("Note gelöscht" + (weg && weg.was ? ": " + weg.was : ""));
       state.g = (state.g || []).filter(function (x) { return x.id !== gi; });
       save(); render();
     }
@@ -2265,17 +3116,25 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
       ta.select();
       try { document.execCommand("copy"); msg("kopiert", true); }
       catch (err) { msg("Kopieren ging nicht — von Hand markieren", false); }
-    } else if (act === "import") {
+    } else if (act === "import" || act === "merge") {
       try {
         var roh = JSON.parse(document.getElementById("io").value);
         var incoming = normalize(roh);
-        state.d = incoming.d; state.f = incoming.f; state.n = incoming.n;
-        state.w = incoming.w; state.q = incoming.q;
-        // Das Mac-Widget kennt weder Noten noch Zielnote. Käme sein JSON hier
-        // an, würden beide sonst kommentarlos verschwinden.
-        if (Object.prototype.hasOwnProperty.call(roh, "g")) state.g = incoming.g;
-        if (Object.prototype.hasOwnProperty.call(roh, "zn")) state.zn = incoming.zn;
-        save(); render(); msg("eingelesen", true);
+        merke(act === "merge" ? "zusammengeführt" : "Stand ersetzt");
+        if (act === "merge") {
+          zusammenfuehren(incoming);
+        } else {
+          state.d = incoming.d; state.f = incoming.f; state.n = incoming.n;
+          state.w = incoming.w; state.q = incoming.q;
+          // Das Mac-Widget kennt weder Noten noch Zielnote. Käme sein JSON hier
+          // an, würden beide sonst kommentarlos verschwinden.
+          if (Object.prototype.hasOwnProperty.call(roh, "g")) state.g = incoming.g;
+          if (Object.prototype.hasOwnProperty.call(roh, "zn")) state.zn = incoming.zn;
+          if (Object.prototype.hasOwnProperty.call(roh, "zw")) state.zw = incoming.zw;
+        }
+        ioEntwurf = null;
+        save(); render();
+        msg(act === "merge" ? "zusammengeführt" : "ersetzt", true);
       } catch (err) { msg("Das ist kein gültiges JSON", false); }
     }
   });
@@ -2289,6 +3148,11 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
     else if (t.id === "gPkt") { gForm.p = t.value; gMsg = null; gTipp(); }
     else if (t.id === "gWas") gForm.was = t.value;
     else if (t.id === "gDat") gForm.dat = t.value;
+    else if (t.id === "notiz") {
+      notizEntwurf = { key: dayInfo(shownDate(), state.f).key, text: t.value };
+    } else if (t.id === "themen") {
+      themenEntwurf = { key: isoWeek(today()), text: t.value };
+    } else if (t.id === "io") ioEntwurf = t.value;
   });
   document.addEventListener("change", function (e) {
     var t = e.target;
@@ -2300,12 +3164,34 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
       state.zn = isFinite(z) && z >= 1 && z <= 6 ? Math.round(z * 10) / 10 : 1.9;
       save(); render();
     }
+    // Notiz und Schwerpunkte werden beim Verlassen des Feldes gesichert, nicht
+    // bei jedem Buchstaben — sonst veröffentlichte die Seite im Tippen.
+    else if (t.id === "notiz") notizSetzen(t.value);
+    else if (t.id === "themen") themenSetzen(t.value);
+    else if (t.id === "wziel") {
+      var std = Number(t.value);
+      state.zw = isFinite(std) && std >= 0 && std <= 60 ? Math.round(std * 60) : 900;
+      save(); render();
+    }
   });
   document.addEventListener("keydown", function (e) {
     if (e.key !== "Enter") return;
     var t = e.target;
     if (!t || !t.id) return;
     if (["gWas", "gNote", "gPkt", "gDat"].indexOf(t.id) >= 0) { e.preventDefault(); noteEintragen(); }
+    else if (t.id === "notiz") { e.preventDefault(); notizSetzen(t.value); }
+    else if (t.id === "themen") { e.preventDefault(); themenSetzen(t.value); }
+  });
+
+  /*  Am Rechner blättern die Pfeiltasten durch die Tage — aber nur, wenn
+      gerade nicht in ein Feld getippt wird.                                 */
+  document.addEventListener("keydown", function (e) {
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    var t = e.target;
+    if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT")) return;
+    if (document.getElementById("examDlg") && document.getElementById("examDlg").open) return;
+    if (e.key === "ArrowLeft") { e.preventDefault(); setView(view - 1); render(); }
+    else if (e.key === "ArrowRight" && view < 0) { e.preventDefault(); setView(view + 1); render(); }
   });
   /*  Nur die eine Zeile neu schreiben — ein render() würde den Fokus aus dem
       Feld reissen, in dem gerade getippt wird.                               */
@@ -2326,6 +3212,8 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
   /* ---- Start ------------------------------------------------------------ */
   load();
   render();
+  // Ein Takt für Timer, Wecker und den Jetzt-Marker. Er schreibt nichts.
+  setInterval(takt, 1000);
 
   if (window.claude && typeof window.claude.use === "function") {
     window.claude.use("artifact").then(function (api) {

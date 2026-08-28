@@ -5,7 +5,9 @@ import { readFileSync, writeFileSync } from "node:fs";
 // in der veröffentlichten Datei.
 const HOOK = `  try { window.__T = { punkteZuNote:punkteZuNote, noteZuPunkte:noteZuPunkte,
     schnitt:schnitt, prognose:prognose, num:num, notenName:notenName,
-    view:function(){return view;}, PLAN:PLAN }; } catch (e) {}\n})();\n</script>`;
+    view:function(){return view;}, PLAN:PLAN, QUIZ:QUIZ,
+    isoWeek:isoWeek, timerLeft:timerLeft, blockZeit:blockZeit, tagesLage:tagesLage,
+    zieheFragen:zieheFragen, state:function(){return state;} }; } catch (e) {}\n})();\n</script>`;
 
 const kaputt = process.argv.includes("--ohne-fix");
 let src = readFileSync("lernquest.html", "utf8").replace("})();\n</script>", HOOK);
@@ -22,6 +24,17 @@ const ctx = await b.newContext({ viewport: { width: 1180, height: 1400 }, colorS
 const p = await ctx.newPage();
 const errs = [];
 p.on("pageerror", e => errs.push(e.message));
+/*  Eigener Ausgangsstand statt des eingebetteten: sonst hinge der Lauf davon ab,
+    was gerade im veröffentlichten Artefakt steht — ein dort als frei markierter
+    heutiger Tag hat den Jetzt-Marker und den Kern-Knopf verschwinden lassen.   */
+const heuteD = new Date();
+const ymdD = d => d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" +
+                  String(d.getDate()).padStart(2,"0");
+const tagD = n => { const x = new Date(heuteD); x.setDate(heuteD.getDate() - n); return ymdD(x); };
+const start = { v:4, d:{}, f:{}, n:{}, w:{}, q:{}, g:[], t:null, zn:1.9, zw:900,
+                updatedAt: Date.now() + 1000 };
+for (let i = 1; i < 6; i++) start.d[tagD(i)] = ["morgen", "anki", "lesen"];
+await p.addInitScript(`localStorage.setItem("lernquest.state.v4", ${JSON.stringify(JSON.stringify(start))})`);
 await p.goto("file://" + process.cwd() + "/" + datei);
 await p.waitForTimeout(400);
 
@@ -194,7 +207,173 @@ wahr("Anki-Blöcke nennen ihr Thema", det.ankiKonkret);
 wahr("Detailtext im Tag sichtbar", det.sichtbar >= 1);
 eq("Stoffhinweis steht", det.fokus, 1);
 
-/* ---- 12. Kein Skriptfehler ---------------------------------------------- */
+/* ---- 12. Kalenderwoche nach ISO 8601 ------------------------------------ */
+const kw = await p.evaluate(() => ["2026-01-01","2026-12-31","2027-01-01","2027-01-04",
+  "2024-12-30","2026-08-28","2025-12-28"].map(d => {
+    const [y,m,t] = d.split("-").map(Number);
+    return window.__T.isoWeek(new Date(y, m-1, t, 12));
+  }));
+eq("isoWeek über die Jahreswechsel", kw,
+   ["2026-W01","2026-W53","2026-W53","2027-W01","2025-W01","2026-W35","2025-W52"]);
+
+/* ---- 13. Blockzeiten lesen ---------------------------------------------- */
+const bz = await p.evaluate(() => ["5:30","7:45","16:50","ab 19","ab 19:30","opt.","—","","25:00"]
+  .map(t => window.__T.blockZeit({ t: t })));
+eq("blockZeit", bz, [330, 465, 1010, 1140, 1170, null, null, null, null]);
+
+const lage = await p.evaluate(() => {
+  const plan = { blocks: [ {id:"a", t:"5:30"}, {id:"b", t:"7:00"}, {id:"c", t:"17:00"},
+                           {id:"x", t:"opt."} ] };
+  const L = m => { const r = window.__T.tagesLage(plan, m);
+    return [r.jetzt ? r.jetzt.b.id : null, r.naechst ? r.naechst.b.id : null]; };
+  return { frueh: L(5*60), mittag: L(12*60), spaet: L(23*60), vorher: L(4*60) };
+});
+eq("Lage am Morgen",   lage.frueh,  [null, "a"]);
+eq("Lage am Mittag",   lage.mittag, ["b", "c"]);
+eq("Lage am Abend",    lage.spaet,  ["c", null]);
+eq("Lage vor dem Tag", lage.vorher, [null, "a"]);
+
+/* ---- 14. Fokus-Timer, reine Rechnung ------------------------------------ */
+const tl = await p.evaluate(() => {
+  const jetzt = 1000000000;
+  const T = window.__T.timerLeft;
+  return [ T(null, jetzt), T({start:jetzt, mins:25}, jetzt),
+           T({start:jetzt - 24*60000, mins:25}, jetzt),
+           T({start:jetzt - 25*60000, mins:25}, jetzt),
+           T({start:jetzt - 30*60000, mins:25}, jetzt),
+           T({start:0, mins:0}, jetzt) ];
+});
+eq("timerLeft", tl, [null, 25, 1, 0, -5, null]);
+
+/* ---- 15. Der Fragenkatalog trägt jede Zielstufe -------------------------- */
+const bank = await p.evaluate(() => {
+  const raus = {};
+  Object.keys(window.__T.QUIZ).forEach(f => {
+    raus[f] = { gesamt: window.__T.QUIZ[f].length, jeStufe: [] };
+    for (let ziel = 2; ziel <= 6; ziel++) {
+      raus[f].jeStufe.push(window.__T.QUIZ[f]
+        .filter(q => ziel >= q.lv[0] && ziel <= q.lv[1]).length);
+    }
+  });
+  return raus;
+});
+Object.keys(bank).forEach(f => {
+  wahr(`${f}: mindestens 8 Fragen je Zielstufe`, Math.min(...bank[f].jeStufe) >= 8);
+  wahr(`${f}: mindestens 20 Fragen insgesamt`, bank[f].gesamt >= 20);
+});
+// Zwei Ziehungen hintereinander dürfen sich nicht decken
+const zieh = await p.evaluate(() => {
+  const a = window.__T.zieheFragen("suk", 2);
+  const b = window.__T.zieheFragen("suk", 2);
+  return { erste: a.length, zweite: b.length,
+           doppelt: b.filter(q => a.indexOf(q) >= 0).length };
+});
+eq("Fünf Fragen je Durchgang", [zieh.erste, zieh.zweite], [5, 5]);
+eq("Der zweite Versuch zieht neue Fragen", zieh.doppelt, 0);
+
+/* ---- 16. Rückgängig ------------------------------------------------------ */
+await p.click('[data-act="today"]').catch(() => {});
+await p.waitForTimeout(120);
+const vorKern = await p.evaluate(() => JSON.stringify(window.__T.state().d));
+await p.click('[data-act="kern"]');
+await p.waitForTimeout(250);
+const nachKern = await p.evaluate(() => JSON.stringify(window.__T.state().d));
+wahr("Kern ✓ setzt Häkchen", vorKern !== nachKern);
+wahr("Rückgängig steht bereit", await p.locator("#undobar").count() === 1);
+await p.click('[data-act="undo"]');
+await p.waitForTimeout(250);
+eq("Rückgängig stellt den Stand her",
+   await p.evaluate(() => JSON.stringify(window.__T.state().d)), vorKern);
+
+/* ---- 17. Fokus überlebt das Abstempeln ---------------------------------- */
+const fokus = await p.evaluate(async () => {
+  const box = document.querySelector('.stampbox[data-act="toggle"]');
+  const id = box.getAttribute("data-id");
+  box.focus();
+  box.click();
+  await new Promise(r => setTimeout(r, 260));
+  const jetzt = document.activeElement;
+  return { erwartet: id,
+           tatsaechlich: jetzt && jetzt.getAttribute ? jetzt.getAttribute("data-id") : null,
+           klasse: jetzt ? jetzt.className : "" };
+});
+eq("Fokus bleibt auf demselben Stempel", fokus.tatsaechlich, fokus.erwartet);
+wahr("und es ist wieder ein Stempelfeld", /stampbox/.test(fokus.klasse));
+
+/* ---- 18. Zusammenführen verliert nichts --------------------------------- */
+const merge = await p.evaluate(async () => {
+  const st = window.__T.state();
+  const heute = new Date();
+  const tag = n => { const x = new Date(heute); x.setDate(heute.getDate() - n);
+    return x.getFullYear() + "-" + String(x.getMonth()+1).padStart(2,"0") + "-" +
+           String(x.getDate()).padStart(2,"0"); };
+  st.d[tag(3)] = ["morgen"];
+  const fremd = { v:4, d: { [tag(3)]: ["anki"], [tag(9)]: ["lesen"] }, f:{}, n:{}, w:{}, q:{} };
+  document.getElementById("io").value = JSON.stringify(fremd);
+  document.getElementById("io").dispatchEvent(new Event("input", { bubbles: true }));
+  document.querySelector('[data-act="merge"]').click();
+  await new Promise(r => setTimeout(r, 300));
+  const d = window.__T.state().d;
+  return { alt: (d[tag(3)] || []).slice().sort(), neu: (d[tag(9)] || []).slice() };
+});
+eq("Zusammenführen vereinigt den Tag", merge.alt, ["anki", "morgen"]);
+eq("und bringt fehlende Tage mit", merge.neu, ["lesen"]);
+
+/* ---- 19. Tagesnotiz, Wochenziel, Monatsblättern ------------------------- */
+await p.click('[data-act="today"]').catch(() => {});
+await p.waitForTimeout(150);
+wahr("Jetzt-Marker steht am heutigen Tag", await p.locator(".jetztzeile").count() === 1);
+
+await p.fill("#notiz", "Skonto nochmal ansehen");
+await p.locator("#notiz").blur();
+await p.waitForTimeout(280);
+const notiz = await p.evaluate(() => {
+  const st = window.__T.state();
+  const heute = new Date();
+  const k = heute.getFullYear() + "-" + String(heute.getMonth()+1).padStart(2,"0") + "-" +
+            String(heute.getDate()).padStart(2,"0");
+  return { text: st.n[k] || null,
+           imFeld: document.getElementById("notiz").value,
+           memo: document.querySelectorAll(".month .cell.memo").length };
+});
+eq("Notiz gespeichert", notiz.text, "Skonto nochmal ansehen");
+eq("Notiz steht wieder im Feld", notiz.imFeld, "Skonto nochmal ansehen");
+wahr("Der Tag bekommt im Monat eine Ecke", notiz.memo >= 1);
+
+await p.fill("#wziel", "12");
+await p.locator("#wziel").blur();
+await p.waitForTimeout(280);
+eq("Wochenziel in Minuten", await p.evaluate(() => window.__T.state().zw), 720);
+wahr("Wochenziel steht in der Anzeige",
+  /Ziel 12 h/.test(await p.evaluate(() => document.querySelector(".gauges").innerText)));
+
+await p.fill("#themen", "Buchungssätze sicher · Erörterung unter Zeit");
+await p.locator("#themen").blur();
+await p.waitForTimeout(280);
+eq("Zwei Schwerpunkte gespeichert", await p.evaluate(() => {
+  const w = window.__T.state().w;
+  return w[Object.keys(w)[0]];
+}), ["Buchungssätze sicher", "Erörterung unter Zeit"]);
+
+const monatVor = await p.evaluate(() => document.querySelector(".monthrow")
+  .closest(".card").querySelector("h2").textContent);
+await p.click('[data-act="mprev"]');
+await p.waitForTimeout(200);
+const monatZurueck = await p.evaluate(() => document.querySelector(".monthrow")
+  .closest(".card").querySelector("h2").textContent);
+wahr("Monat blättert zurück", monatVor !== monatZurueck);
+wahr("Vorwärts ist jetzt möglich",
+  !(await p.locator('[data-act="mnext"]').isDisabled()));
+await p.click('[data-act="mnext"]');
+await p.waitForTimeout(200);
+eq("und wieder im aktuellen Monat", await p.evaluate(() => document.querySelector(".monthrow")
+  .closest(".card").querySelector("h2").textContent), monatVor);
+wahr("Am aktuellen Monat ist Schluss",
+  await p.locator('[data-act="mnext"]').isDisabled());
+wahr("Monatszellen sind klickbar",
+  await p.locator('.month .cell[data-act="day"]:not([disabled])').count() > 0);
+
+/* ---- 20. Kein Skriptfehler ---------------------------------------------- */
 eq("Seitenfehler", errs, []);
 
 await ctx.close(); await b.close();
