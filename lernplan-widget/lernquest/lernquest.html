@@ -396,6 +396,24 @@ button { font:inherit; color:inherit; cursor:pointer; }
 .note.tiny { margin-top:10px; font-size:11.5px; line-height:1.45; }
 .note.tiny em { font-style:normal; color:var(--ink-2); }
 
+/*  Die vier Bedingungen fürs Bestehen. Kein Alarm, sondern eine Auskunft —
+    deshalb dieselbe ruhige Liste wie bei den Prüfungsblöcken, nur mit einem
+    Zeichen davor. Rot bekommt allein, was wirklich schon verletzt ist. */
+.besteh { margin-top:18px; padding-top:16px; border-top:1px solid var(--rule); }
+.bl { list-style:none; margin:11px 0 0; padding:0; }
+.bl li { display:flex; align-items:baseline; gap:10px; padding:7px 2px;
+         border-bottom:1px solid var(--rule-2); font-size:13.5px; }
+.bl li:last-child { border-bottom:0; }
+.bl em { display:block; font-style:normal; font-size:11.5px; color:var(--ink-3);
+         margin-top:1px; }
+.bl .bz { flex:none; width:16px; text-align:center; font-weight:600; }
+.bp-ja .bz { color:var(--mint); }
+.bp-nein .bz { color:var(--coral); }
+.bp-nein { color:var(--coral); }
+.bp-nein em { color:var(--coral); }
+.bp-offen { color:var(--ink-2); }
+.bp-offen .bz { color:var(--ink-3); }
+
 /* Das Berufsschulzeugnis steht zwischen Fachschnitt und IHK-Prognose — eigene
    Rechnung, deshalb eigene Trennlinie. */
 .zeug { margin-top:18px; padding-top:16px; border-top:1px solid var(--rule); }
@@ -1118,16 +1136,31 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
     return gew ? summe / gew : null;
   }
 
-  /*  Die vier Blöcke der Abschlussprüfung mit ihrem Anteil an der Endnote.
-      Teil 1 mit 25 % und die Fachaufgabe mit 30 % stehen in der Verordnung,
-      die Aufteilung der übrigen 45 % auf Geschäftsprozesse und Wirtschafts-
-      und Sozialkunde bei der eigenen IHK gegenprüfen und hier anpassen.      */
+  /*  Die vier Prüfungsbereiche mit ihrem Anteil an der Endnote, nach § 14 der
+      Industriekaufleuteausbildungsverordnung (IndKflAusbV), in Kraft seit dem
+      1. August 2024. Die vier Anteile ergeben zusammen 100 % — das ist zugleich
+      die Gegenprobe.
+
+      Zwei Namen standen hier bis zuletzt in der Fassung von 2002: „Teil 1"
+      heisst amtlich „Leistungserstellung, Logistik, Beschaffung und
+      Buchhaltung", und „Geschäftsprozesse" gibt es nicht mehr — der 35-%-Bereich
+      umfasst Marketing, Vertrieb, Personalwesen und die kaufmännische Steuerung
+      und Kontrolle. Kein Etikettenwechsel: dein SUK-Stoff sitzt dort, nicht in
+      Teil 1.
+
+      Die Kennungen t1, gp, wi und fa bleiben, obwohl zwei Namen sich ändern —
+      an ihnen hängen eingetragene Noten, eine Umbenennung liesse sie verwaisen.  */
   var IHK_BLOECKE = [
-    { id: "t1", nm: "Teil 1", de: "Februar 2027 · schriftlich", pct: 25 },
-    { id: "gp", nm: "Geschäftsprozesse", de: "Teil 2 · schriftlich", pct: 35 },
-    { id: "wi", nm: "Wirtschafts- und Sozialkunde", de: "Teil 2 · schriftlich", pct: 10 },
-    { id: "fa", nm: "Fachaufgabe im Einsatzgebiet", de: "Teil 2 · Report und Fachgespräch", pct: 30 }
+    { id: "t1", nm: "Teil 1", pct: 25,
+      de: "Leistungserstellung, Logistik, Beschaffung und Buchhaltung · schriftlich" },
+    { id: "gp", nm: "Marketing, Vertrieb, Personal, KSK", pct: 35,
+      de: "Teil 2 · schriftlich · amtlich „Marketing, Vertrieb, Personalwesen und " +
+          "kaufmännische Steuerung und Kontrolle“" },
+    { id: "wi", nm: "Wirtschafts- und Sozialkunde", pct: 10, de: "Teil 2 · schriftlich" },
+    { id: "fa", nm: "Fachaufgabe im Einsatzgebiet", pct: 30,
+      de: "Teil 2 · Dokumentation 10 %, Präsentation 20 %, Fachgespräch 70 %" }
   ];
+  var TEIL2 = ["gp", "wi", "fa"];
   /*  Das Berufsschulzeugnis führt BWL, WiSo und SUK nicht einzeln auf, sondern
       zusammengefasst als Berufsfachliche Kompetenz. `ausF` nennt die Fächer,
       aus denen sich die Note zusammensetzt — daraus rechnet die Seite zur
@@ -1195,6 +1228,84 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
   function num(x, k) {
     if (x === null || x === undefined || !isFinite(x)) return "—";
     return Number(x).toFixed(k === undefined ? 1 : k).replace(".", ",");
+  }
+
+  /* ---- Bestehen -----------------------------------------------------------
+     Die Prognose sagt, welche Note herauskommt — nicht, ob sie reicht. Nach der
+     Verordnung ist die Prüfung nur bestanden, wenn ALLE VIER Bedingungen
+     erfüllt sind. Man kann also rechnerisch bei 3,5 landen und trotzdem
+     durchfallen, wenn ein Bereich von Teil 2 ungenügend ist.
+
+     Die Schwellen kommen aus demselben Punkteschlüssel wie der Rest der Karte,
+     nicht aus neuen Zahlen: mindestens ausreichend sind 50 Punkte (Note 4,0),
+     ungenügend beginnt unter 30 Punkten (hinter Note 5,0).
+
+     Je Bedingung drei Zustände, und "offen" ist eine ehrliche Antwort:
+       "ja"      steht rechnerisch fest,
+       "nein"    ist mit den eingetragenen Noten schon verletzt,
+       "offen"   hängt an Blöcken, die noch nicht eingetragen sind.            */
+  function mindAusreichend(nt) { return nt !== null && noteZuPunkte(nt) >= 50; }
+  function istUngenuegend(nt) { return nt !== null && noteZuPunkte(nt) < 30; }
+
+  /*  Schnitt eines Blocksatzes mit den amtlichen Gewichten; offene Blöcke
+      bekommen `fuellwert` (1 für den besten, 6 für den schlechtesten Fall)
+      oder werden mit null übersprungen.                                       */
+  function blockSchnitt(noten, ids, fuellwert) {
+    var summe = 0, gew = 0;
+    ids.forEach(function (id) {
+      var b = IHK_BLOECKE.filter(function (x) { return x.id === id; })[0];
+      var nt = noten[id];
+      if (nt === null || nt === undefined) {
+        if (fuellwert === null || fuellwert === undefined) return;
+        nt = fuellwert;
+      }
+      summe += nt * b.pct; gew += b.pct;
+    });
+    return gew ? summe / gew : null;
+  }
+
+  function bestehen(list) {
+    var noten = {};
+    IHK_BLOECKE.forEach(function (b) {
+      noten[b.id] = schnitt((list || []).filter(function (e) {
+        return e.fach === "ihk:" + b.id;
+      }));
+    });
+    var alle = IHK_BLOECKE.map(function (b) { return b.id; });
+    /*  Eine Bedingung über einen Schnitt: steht sie im besten UND im
+        schlechtesten Fall gleich, ist sie entschieden — sonst offen.          */
+    function ueberSchnitt(ids) {
+      var best = blockSchnitt(noten, ids, 1), schlecht = blockSchnitt(noten, ids, 6);
+      if (mindAusreichend(best) === mindAusreichend(schlecht)) {
+        return mindAusreichend(best) ? "ja" : "nein";
+      }
+      return "offen";
+    }
+    // 3: mindestens zwei der drei Bereiche von Teil 2 mindestens ausreichend
+    var gut = 0, offen = 0;
+    TEIL2.forEach(function (id) {
+      if (noten[id] === null) offen++;
+      else if (mindAusreichend(noten[id])) gut++;
+    });
+    var zwei = gut >= 2 ? "ja" : (gut + offen < 2 ? "nein" : "offen");
+    // 4: kein Bereich von Teil 2 ungenügend
+    var keinUng = TEIL2.some(function (id) { return istUngenuegend(noten[id]); })
+      ? "nein" : (offen ? "offen" : "ja");
+
+    var punkte = [
+      { nm: "Gesamtergebnis aus Teil 1 und Teil 2 mindestens ausreichend",
+        stand: ueberSchnitt(alle) },
+      { nm: "Teil 2 für sich mindestens ausreichend", stand: ueberSchnitt(TEIL2) },
+      { nm: "mindestens zwei der drei Bereiche von Teil 2 mindestens ausreichend",
+        stand: zwei },
+      { nm: "kein Bereich von Teil 2 ungenügend", stand: keinUng }
+    ];
+    var eingetragen = alle.filter(function (id) { return noten[id] !== null; }).length;
+    return {
+      punkte: punkte, eingetragen: eingetragen,
+      gefaehrdet: punkte.some(function (x) { return x.stand === "nein"; }),
+      steht: punkte.every(function (x) { return x.stand === "ja"; })
+    };
   }
 
   var DAY_KEYS = ["so", "mo", "di", "mi", "do", "fr", "sa"];
@@ -3086,10 +3197,39 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
              " % der Note) im Schnitt " + num(pr.noetig, 2) + ".";
     }
     if (satz) h += '<p class="pnote">' + esc(satz) + "</p>";
+
+    /*  Die Note allein sagt nicht, ob es reicht. Solange nichts eingetragen ist,
+        steht hier ein Satz statt vier Zeilen Nichts — vier „offen" wären keine
+        Auskunft, sondern Lärm.                                                */
+    var bs = bestehen(gl);
+    h += '<div class="besteh"><div class="proghead">' +
+      '<span class="eyebrow">Bestehen</span>' +
+      '<span class="note mono">' +
+      (bs.gefaehrdet ? "eine Bedingung ist verletzt"
+        : bs.steht ? "alle vier erfüllt"
+        : bs.eingetragen ? bs.eingetragen + " von 4 Bereichen eingetragen"
+        : "noch nichts eingetragen") + "</span></div>";
+    if (!bs.eingetragen) {
+      h += '<p class="note tiny">Die Prüfung ist nur bestanden, wenn vier ' +
+        "Bedingungen zugleich gelten — ein guter Schnitt allein genügt nicht. " +
+        "Sobald der erste Block eingetragen ist, steht hier, welche davon schon " +
+        "feststehen und welche noch offen sind.</p>";
+    } else {
+      h += '<ul class="bl">' + bs.punkte.map(function (x) {
+        return '<li class="bp-' + x.stand + '"><span class="bz" aria-hidden="true">' +
+          (x.stand === "ja" ? "✓" : x.stand === "nein" ? "✕" : "·") + "</span>" +
+          "<span>" + esc(x.nm) +
+          '<em>' + (x.stand === "ja" ? "steht fest"
+                  : x.stand === "nein" ? "mit den eingetragenen Noten verletzt"
+                  : "hängt an den offenen Blöcken") + "</em></span></li>";
+      }).join("") + "</ul>";
+    }
+    h += "</div>";
     h += '<p class="note tiny">1,9 ist die Schwelle fürs Weiterbildungsstipendium. ' +
-      "Gewichte: Teil 1 25 %, Geschäftsprozesse 35 %, Wirtschafts- und Sozialkunde 10 %, " +
-      "Fachaufgabe 30 % — die Aufteilung der schriftlichen Bereiche bei deiner IHK gegenprüfen " +
-      "und im Quelltext anpassen.</p></div></section>";
+      "Die Gewichte stehen in § 14 der Industriekaufleuteausbildungsverordnung " +
+      "(seit 1. August 2024) und ergeben zusammen 100 %. <em>Mindestens ausreichend</em> " +
+      "heisst Note 4,0 oder besser, <em>ungenügend</em> beginnt hinter 5,0 — gerechnet " +
+      "über denselben Punkteschlüssel wie oben.</p></div></section>";
     return h;
   }
 

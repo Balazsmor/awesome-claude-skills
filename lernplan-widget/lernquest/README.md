@@ -72,6 +72,30 @@ Klassenarbeit, `ihk:` ein Block der Abschlussprüfung, `zg:` eine Zeugnisnote.
 Die drei werden getrennt gerechnet — eine Zeugnisnote ist bereits ein Mittel und
 darf den Schnitt der Klassenarbeiten nicht ein zweites Mal belasten.
 
+**Die IHK-Gewichte stehen in der Verordnung**, nicht in einer Schätzung: § 14
+IndKflAusbV, in Kraft seit dem 1. August 2024 — Teil 1 („Leistungserstellung,
+Logistik, Beschaffung und Buchhaltung") 25 %, „Marketing, Vertrieb,
+Personalwesen und kaufmännische Steuerung und Kontrolle" 35 %, „Fachaufgabe im
+Einsatzgebiet" 30 %, „Wirtschafts- und Sozialkunde" 10 %. Zusammen 100 % — das
+ist zugleich die Gegenprobe, und der Prüflauf rechnet sie nach. Innerhalb der
+Fachaufgabe zählen Dokumentation 10 %, Präsentation 20 % und das fallbezogene
+Fachgespräch 70 %; das Fachgespräch ist damit 21 % der Endnote.
+
+Zwei Namen standen bis zuletzt in der Fassung von 2002. „Geschäftsprozesse" gibt
+es nicht mehr — kein Etikettenwechsel, denn Marketing, Vertrieb, Personalwesen
+und die kaufmännische Steuerung und Kontrolle sitzen in diesem Bereich. Die
+Kennungen `t1`, `gp`, `wi`, `fa` blieben trotzdem: an ihnen hängen eingetragene
+Noten.
+
+**Ein guter Schnitt allein besteht nicht.** Nach der Verordnung müssen vier
+Bedingungen zugleich gelten: Gesamtergebnis aus Teil 1 und Teil 2 mindestens
+ausreichend, Teil 2 für sich mindestens ausreichend, mindestens zwei der drei
+Teil-2-Bereiche mindestens ausreichend, und kein Teil-2-Bereich ungenügend. Man
+kann rechnerisch bei 2,5 landen und trotzdem durchfallen — die Karte zeigt das
+jetzt statt es zu verschweigen. Je Bedingung drei Zustände: *steht fest*,
+*verletzt*, *hängt an den offenen Blöcken*. Solange nichts eingetragen ist,
+steht ein Satz da und keine Liste aus vier „offen".
+
 **Zeugnisnoten rechnen je Schuljahr.** Das Schuljahr kommt aus dem Datum, August
 bis Juli: `2026-07-29` gehört zu 2025/26. Jedes Jahr bekommt einen eigenen Block
 mit eigenem Schnitt, das jüngste oben; Deutsch 2026 wird also nicht still mit
@@ -135,11 +159,11 @@ Ziellinie, kein Hebel.
 ```sh
 cd lernplan-widget/lernquest/test
 npm i playwright-core
-node test.mjs        # 195 Prüfungen: Notenrechnung, Zeugnis je Schuljahr, XP-Konto,
+node test.mjs        # 222 Prüfungen: Notenrechnung, Zeugnis je Schuljahr, XP-Konto,
                      # Kalenderwoche, Blockzeiten, Fragenkatalog, Rückgängig, Fokus,
                      # Zusammenführen, Schlafenszeit, eigener Stundenplan,
                      # abgelaufener Timer, Schriftladen, Scroll-Anker,
-                     # Frage-Werkstatt
+                     # Frage-Werkstatt, IHK-Gewichte, Bestehensregel
 node savetest.mjs    # 28: Wecker wird beim Start vorgelegt, nichts wird
                      # während Prüfung, Timer oder Wecker veröffentlicht
 

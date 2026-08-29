@@ -13,7 +13,9 @@ const HOOK = `  try { window.__T = { punkteZuNote:punkteZuNote, noteZuPunkte:not
     ymd:ymd, planMischen:planMischen, planDelta:planDelta, planPruefen:planPruefen,
     PLAN_BASIS:PLAN_BASIS, plan:function(){return PLAN;},
     schwaechstesFach:schwaechstesFach, frageBauen:frageBauen,
-    frage:function(){return frage;}, FRAGEARTEN:FRAGEARTEN }; } catch (e) {}\n})();\n</script>`;
+    frage:function(){return frage;}, FRAGEARTEN:FRAGEARTEN,
+    IHK_BLOECKE:IHK_BLOECKE, bestehen:bestehen,
+    mindAusreichend:mindAusreichend, istUngenuegend:istUngenuegend }; } catch (e) {}\n})();\n</script>`;
 
 const kaputt = process.argv.includes("--ohne-fix");
 const ohneXp = process.argv.includes("--ohne-xp-fix");
@@ -906,7 +908,91 @@ eq("Der Verweis zeigt auf einen neuen Claude-Chat", ziel && ziel.href, "https://
 eq("und öffnet ihn in einem neuen Reiter", ziel && ziel.ziel, "_blank");
 eq("mit noopener", ziel && ziel.rel, "noopener");
 
-/* ---- 33. Kein Skriptfehler ---------------------------------------------- */
+/* ---- 33. Die Gewichte der Prüfungsbereiche ------------------------------ */
+/*  § 14 IndKflAusbV, seit 1. August 2024. Die Gegenprobe steht in der Sache
+    selbst: die vier Anteile müssen zusammen 100 % ergeben.                   */
+const bloecke = await p.evaluate(() =>
+  window.__T.IHK_BLOECKE.map(b => ({ id: b.id, nm: b.nm, pct: b.pct, de: b.de })));
+eq("Vier Prüfungsbereiche", bloecke.length, 4);
+eq("Die Anteile ergeben zusammen 100 %",
+   bloecke.reduce((s, b) => s + b.pct, 0), 100);
+eq("Teil 1 zählt 25 %", bloecke.filter(b => b.id === "t1")[0].pct, 25);
+eq("der schriftliche Teil-2-Bereich 35 %", bloecke.filter(b => b.id === "gp")[0].pct, 35);
+eq("Wirtschafts- und Sozialkunde 10 %", bloecke.filter(b => b.id === "wi")[0].pct, 10);
+eq("die Fachaufgabe 30 %", bloecke.filter(b => b.id === "fa")[0].pct, 30);
+/*  Die Kennungen dürfen sich nicht ändern — an ihnen hängen eingetragene
+    Noten. Die Namen dagegen waren von 2002 und sind berichtigt.              */
+eq("Die Kennungen bleiben", bloecke.map(b => b.id), ["t1", "gp", "wi", "fa"]);
+wahr("„Geschäftsprozesse“ steht nirgends mehr",
+     !bloecke.some(b => /Geschäftsprozesse/.test(b.nm + " " + b.de)));
+wahr("Teil 1 nennt seinen amtlichen Namen",
+     /Leistungserstellung, Logistik, Beschaffung und Buchhaltung/.test(
+       bloecke.filter(b => b.id === "t1")[0].de));
+wahr("und der 35-%-Bereich seinen",
+     /kaufmännische Steuerung und Kontrolle/.test(
+       bloecke.filter(b => b.id === "gp")[0].de));
+wahr("Die Fachaufgabe nennt ihre innere Aufteilung",
+     /Dokumentation 10 %, Präsentation 20 %, Fachgespräch 70 %/.test(
+       bloecke.filter(b => b.id === "fa")[0].de));
+
+/* ---- 34. Die Bestehensregel -------------------------------------------- */
+/*  Vier Bedingungen, die zugleich gelten müssen. Ein guter Schnitt allein
+    genügt nicht — genau das hat die Karte vorher verschwiegen.               */
+const bstd = (noten) => p.evaluate((nn) => {
+  const g = Object.keys(nn).map((id, i) => ({
+    id: "x" + i, fach: "ihk:" + id, was: id, n: nn[id], p: null, dat: "2028-04-25", gew: 1
+  }));
+  const r = window.__T.bestehen(g);
+  return { stand: r.punkte.map(x => x.stand), steht: r.steht,
+           gefaehrdet: r.gefaehrdet, eingetragen: r.eingetragen };
+}, noten);
+
+eq("Die Schwelle für „mindestens ausreichend“ liegt bei 4,0",
+   await p.evaluate(() => [3.9, 4.0, 4.1, 5.0].map(window.__T.mindAusreichend)),
+   [true, true, false, false]);
+eq("„ungenügend“ beginnt hinter 5,0",
+   await p.evaluate(() => [4.0, 5.0, 5.1, 6.0].map(window.__T.istUngenuegend)),
+   [false, false, true, true]);
+
+const alleVier = await bstd({ t1: 4.0, gp: 4.0, wi: 4.0, fa: 4.0 });
+eq("Vier Vieren bestehen", alleVier.stand, ["ja", "ja", "ja", "ja"]);
+wahr("und gelten als bestanden", alleVier.steht && !alleVier.gefaehrdet);
+
+// Zwei Bereiche mangelhaft, einer sehr gut: Bedingung 3 fällt.
+const zweiSchlecht = await bstd({ t1: 1.0, gp: 5.0, wi: 5.0, fa: 2.0 });
+eq("Nur ein Bereich von Teil 2 ausreichend — Bedingung 3 fällt",
+   zweiSchlecht.stand[2], "nein");
+wahr("und die Prüfung gilt als gefährdet", zweiSchlecht.gefaehrdet);
+
+// Ein ungenügender Bereich kippt es, obwohl der Schnitt gut ist.
+const einUng = await bstd({ t1: 2.0, gp: 2.5, wi: 5.5, fa: 2.0 });
+eq("Ein ungenügender Bereich verletzt Bedingung 4", einUng.stand[3], "nein");
+eq("Gesamt und Teil 2 stehen trotzdem", einUng.stand.slice(0, 3), ["ja", "ja", "ja"]);
+wahr("Trotz gutem Schnitt gefährdet", einUng.gefaehrdet);
+
+// Zu schlechtes Gesamtergebnis.
+const zuSchwach = await bstd({ t1: 4.5, gp: 4.5, wi: 4.5, fa: 4.5 });
+eq("Ein Gesamtschnitt von 4,5 verletzt Bedingung 1", zuSchwach.stand[0], "nein");
+
+/*  Solange etwas offen ist, wird nichts behauptet — weder gut noch schlecht.  */
+const nurT1 = await bstd({ t1: 2.0 });
+eq("Mit nur Teil 1 ist alles offen", nurT1.stand, ["offen", "offen", "offen", "offen"]);
+wahr("nichts gilt als gefährdet", !nurT1.gefaehrdet && !nurT1.steht);
+eq("und ein Bereich ist eingetragen", nurT1.eingetragen, 1);
+
+/*  Auch ohne jeden Eintrag darf nichts rot sein — nur der erklärende Satz.    */
+await p.evaluate(() => { window.__T.state().g = []; window.__T.render(); });
+await p.waitForTimeout(200);
+const leer = await p.evaluate(() => ({
+  zeilen: document.querySelectorAll(".bl li").length,
+  kopf: document.querySelector(".besteh .proghead .note").textContent,
+  satz: !!document.querySelector(".besteh .note.tiny")
+}));
+eq("Ohne Eintrag keine Bedingungsliste", leer.zeilen, 0);
+eq("sondern ein Hinweis im Kopf", leer.kopf, "noch nichts eingetragen");
+wahr("und ein erklärender Satz", leer.satz);
+
+/* ---- 35. Kein Skriptfehler ---------------------------------------------- */
 eq("Seitenfehler", errs, []);
 
 await ctx.close(); await b.close();
