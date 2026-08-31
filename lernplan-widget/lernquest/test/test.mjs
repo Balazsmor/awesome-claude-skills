@@ -1487,7 +1487,197 @@ wahr("Die Anzeige nennt die zuletzt gerissene Serie",
 wahr("und weiterhin den Bestwert", /Bestwert /.test(eMittag.kopf));
 wahr("Bei laufender Serie steht das nicht da", !/gerissen am/.test(eFertig.kopf));
 
-/* ---- 44. Kein Skriptfehler ---------------------------------------------- */
+/* ---- 44. Der Kern-Knopf bleibt unter dem Finger --------------------------
+   Gefunden mit ECCs click-path-audit: toggleBlock und cycleMark verankerten
+   das Neuzeichnen, kernStempeln nicht. Der Knopf hakt drei Blöcke auf einmal
+   ab, deren Anleitungen gleichzeitig verschwinden — gemessen sprang auf 390 px
+   alles um 108 px nach oben, und auf dem Handy lag der Finger danach über
+   etwas anderem.                                                            */
+async function kernSprung() {
+  const st = JSON.parse(JSON.stringify(start));
+  const c = await b.newContext({ viewport:{width:390,height:780}, colorScheme:"dark",
+                                 locale:"de-DE" });
+  const q = await c.newPage();
+  await q.addInitScript(`localStorage.setItem("lernquest.state.v4", ${JSON.stringify(JSON.stringify(st))})`);
+  await q.goto("file://" + process.cwd() + "/" + datei);
+  await q.waitForSelector('[data-act="kern"]', { timeout: 30000 });
+  await q.locator('[data-act="kern"]').scrollIntoViewIfNeeded();
+  await q.waitForTimeout(250);
+  const vor = await q.evaluate(() => ({
+    fuss: document.querySelector(".tagfuss").getBoundingClientRect().top,
+    hoehe: document.body.scrollHeight }));
+  await q.click('[data-act="kern"]');
+  await q.waitForTimeout(350);
+  const nach = await q.evaluate(() => ({
+    fuss: document.querySelector(".tagfuss").getBoundingClientRect().top,
+    hoehe: document.body.scrollHeight,
+    stempel: (document.querySelector(".tagfuss .stamp") || {}).textContent || null }));
+  await c.close();
+  return { versatz: Math.round(nach.fuss - vor.fuss),
+           kuerzer: vor.hoehe - nach.hoehe, stempel: nach.stempel };
+}
+const ks = await kernSprung();
+wahr("Die Seite wird durch den Kern-Knopf spürbar kürzer", ks.kuerzer > 20);
+wahr("aber die Fusszeile bleibt stehen (Versatz " + ks.versatz + " px)",
+     Math.abs(ks.versatz) <= 4);
+eq("und trägt danach den Stempel", ks.stempel, "Tag gerettet");
+
+/* ---- 45. Der Jahresabschluss lässt sich zurücknehmen ---------------------
+   Ein Klick schreibt bis zu fünf Zeugnisnoten. Als einziger Massen-Schreib-
+   vorgang rief er kein merke() — ein Vertipper hiesse fünfmal einzeln löschen. */
+const jahrAbT = heuteD.getMonth() >= 7 ? heuteD.getFullYear() : heuteD.getFullYear() - 1;
+const datT = (m, tg) => `${m >= 8 ? jahrAbT : jahrAbT + 1}-${String(m).padStart(2,"0")}-${tg}`;
+await p.evaluate(([a, b2]) => {
+  const st = window.__T.state();
+  st.g = [{ id:"ka1", fach:"suk", was:"KA", p:null, n:2.4, dat:a, gew:2 },
+          { id:"ka2", fach:"deutsch", was:"KA", p:null, n:2.0, dat:b2, gew:1 }];
+  st.m = []; st.updatedAt = Date.now() + 4000;
+  window.__T.render();
+}, [datT(9,"22"), datT(10,"08")]);
+await p.waitForTimeout(250);
+const jaVorher = await p.evaluate(() => window.__T.state().g.length);
+wahr("Der Jahresabschluss steht bereit",
+     await p.evaluate(() => !!document.querySelector('[data-act="jaadd"]')));
+await p.click('[data-act="jaadd"]');
+await p.waitForTimeout(350);
+const jaMit = await p.evaluate(() => ({
+  n: window.__T.state().g.length,
+  leiste: (document.querySelector("#undobar span") || {}).textContent || null }));
+wahr("Es kommen Jahresnoten dazu", jaMit.n > jaVorher);
+eq("und die Rückgängig-Leiste nennt sie", jaMit.leiste, "Jahresnoten eingetragen");
+await p.click('[data-act="undo"]');
+await p.waitForTimeout(350);
+eq("Rückgängig stellt den Stand davor wieder her",
+   await p.evaluate(() => window.__T.state().g.length), jaVorher);
+
+/* ---- 46. Die Stufenprüfung verliert den Fokus nicht mehr -----------------
+   Gefunden mit ECCs accessibility-Skill (WCAG 2.2): zeigeExam() ersetzt bei
+   jeder Antwort das Innere des Dialogs, der gedrückte Knopf wurde zerstört und
+   der Fokus fiel auf <body>. Wer mit der Tastatur arbeitet, musste sich für
+   jede der fünf Fragen neu durchtabben.                                     */
+async function pruefungsLauf() {
+  const st = JSON.parse(JSON.stringify(start));
+  st.q = { suk: 1 };
+  st.d = {};
+  for (let i = 1; i < 40; i++) {
+    const x = new Date(heuteD); x.setDate(heuteD.getDate() - i);
+    st.d[ymdD(x)] = ["morgen","anki","lesen","deepA","deepB","wdh","deutsch","englisch"];
+  }
+  const c = await b.newContext({ viewport:{width:1180,height:900}, colorScheme:"dark",
+                                 locale:"de-DE" });
+  const q = await c.newPage();
+  await q.addInitScript(`localStorage.setItem("lernquest.state.v4", ${JSON.stringify(JSON.stringify(st))})`);
+  await q.goto("file://" + process.cwd() + "/" + datei);
+  await q.waitForSelector(".attrs", { timeout: 30000 });
+  const lage = () => q.evaluate(() => ({
+    fokus: document.activeElement.tagName +
+      (document.activeElement.id ? "#" + document.activeElement.id
+        : document.activeElement.className ? "." + String(document.activeElement.className).split(" ")[0] : ""),
+    sagt: (document.getElementById("exsage") || {}).textContent || "" }));
+  // Antworten, egal ob Auswahl- oder Rechenfrage
+  const antworte = async () => {
+    if (await q.$(".exopt:not([disabled])")) await q.click(".exopt:not([disabled])");
+    else if (await q.$("#exNum")) { await q.fill("#exNum", "1"); await q.click('[data-act="examNum"]'); }
+    await q.waitForTimeout(250);
+  };
+  const attr = await q.evaluate(() =>
+    (document.querySelector('[data-act="exam"]') || {}).getAttribute?.("data-attr"));
+  if (!attr) { await c.close(); return null; }
+  const bau = await q.evaluate(() => {
+    const dlg = document.getElementById("examDlg"), sa = document.getElementById("exsage");
+    return { da: !!sa, imDialog: !!sa && dlg.contains(sa),
+             imBody: !!sa && document.getElementById("examBody").contains(sa),
+             live: dlg.querySelectorAll("[aria-live]").length };
+  });
+  await q.click(`[data-act="exam"][data-attr="${attr}"]`);
+  await q.waitForTimeout(400);
+  const auf = await lage();
+  await antworte();
+  const beantwortet = await lage();
+  await q.click('[data-act="examNext"]'); await q.waitForTimeout(250);
+  const weiter = await lage();
+  for (let i = 0; i < 6; i++) {
+    if (await q.$(".exres")) break;
+    if (await q.$('[data-act="examNext"]')) { await q.click('[data-act="examNext"]'); await q.waitForTimeout(200); }
+    if (await q.$(".exres")) break;
+    await antworte();
+  }
+  if (await q.$('[data-act="examNext"]')) { await q.click('[data-act="examNext"]'); await q.waitForTimeout(350); }
+  const ende = await lage();
+  const ergebnis = await q.evaluate(() => (document.querySelector(".exres h3") || {}).textContent || null);
+  // Gegenprobe: bei geschlossenem Dialog schreibt sag() wieder nach #ansage
+  await q.click('[data-act="examClose"]'); await q.waitForTimeout(400);
+  await q.click('[data-act="kern"]').catch(() => {});
+  await q.waitForTimeout(300);
+  const zu = await q.evaluate(() => ({
+    ansage: (document.getElementById("ansage") || {}).textContent || "",
+    exsage: (document.getElementById("exsage") || {}).textContent || "" }));
+  await c.close();
+  return { bau, auf, beantwortet, weiter, ende, ergebnis, zu };
+}
+const lauf = await pruefungsLauf();
+wahr("Eine Stufenprüfung steht bereit", !!lauf);
+
+/*  Welche Frage zuerst kommt, wird gezogen — bei einer Rechenfrage gehört der
+    Fokus ins Zahlenfeld, bei einer Auswahlfrage auf die erste Antwort.      */
+wahr("Nach dem Öffnen liegt der Fokus auf der ersten Frage (" + lauf.auf.fokus + ")",
+     lauf.auf.fokus === "BUTTON.exopt" || lauf.auf.fokus === "INPUT#exNum");
+wahr("nach dem Antworten auf „Weiter\"", lauf.beantwortet.fokus === "BUTTON.btn");
+wahr("und danach wieder auf der Frage",
+     lauf.weiter.fokus === "BUTTON.exopt" || lauf.weiter.fokus === "INPUT#exNum");
+wahr("auf dem Ergebnis auf dessen Knopf", lauf.ende.fokus === "BUTTON.btn");
+wahr("nirgends auf <body>",
+     ![lauf.auf, lauf.beantwortet, lauf.weiter, lauf.ende].some(x => x.fokus === "BODY"));
+
+/* ---- 47. Der Prüfungsdialog sagt an -------------------------------------
+   showModal() macht #root inert — #ansage erreichte während einer Prüfung
+   niemanden. Die zweite Live-Region liegt deshalb IM Dialog, aber AUSSERHALB
+   von #examBody: sonst zerstörte sie jede Antwort neu, und eine Region, die
+   gleichzeitig mit ihrem Text entsteht, sagt nichts an.                     */
+wahr("Es gibt eine Live-Region im Dialog", lauf.bau.da && lauf.bau.imDialog);
+wahr("und sie liegt nicht in #examBody", !lauf.bau.imBody);
+eq("genau eine", lauf.bau.live, 1);
+eq("Vor der ersten Antwort ist sie leer", lauf.auf.sagt, "");
+wahr("Nach dem Antworten steht das Ergebnis darin",
+     /^(Richtig|Falsch)\./.test(lauf.beantwortet.sagt));
+wahr("samt Begründung", lauf.beantwortet.sagt.length > 20);
+wahr("Das Prüfungsergebnis wird angesagt",
+     /(Bestanden|Nicht bestanden)\./.test(lauf.ende.sagt) && /\d von 5 richtig/.test(lauf.ende.sagt));
+wahr("und es steht dasselbe auf dem Schirm",
+     lauf.ergebnis !== null && lauf.ende.sagt.indexOf(lauf.ergebnis.split(" —")[0]) === 0);
+wahr("Bei geschlossenem Dialog geht die Ansage wieder nach #ansage",
+     /Kern abgehakt/.test(lauf.zu.ansage));
+
+/* ---- 48. Zielgrösse: nichts Anfassbares unter 24×24 px -------------------
+   WCAG 2.2 SC 2.5.8. Der Karriereplan-Verweis im Kartenkopf war 271×20.
+   Der Wächter misst in beiden Breiten und fängt künftige Rückfälle mit ab.  */
+async function zuKlein(breite) {
+  const c = await b.newContext({ viewport:{width:breite,height:900}, colorScheme:"dark",
+                                 locale:"de-DE" });
+  const q = await c.newPage();
+  await q.addInitScript(`localStorage.setItem("lernquest.state.v4", ${JSON.stringify(JSON.stringify(start))})`);
+  await q.goto("file://" + process.cwd() + "/" + datei);
+  await q.waitForSelector(".attrs", { timeout: 30000 });
+  const raus = await q.evaluate(() => {
+    const klein = [];
+    document.querySelectorAll("button, a, input, select, [data-act]").forEach(el => {
+      const r = el.getBoundingClientRect();
+      if (r.width === 0 || r.height === 0) return;
+      if (r.width < 24 || r.height < 24) {
+        klein.push(el.tagName.toLowerCase() + "." +
+          String(el.className).split(" ")[0] + " " +
+          Math.round(r.width) + "×" + Math.round(r.height));
+      }
+    });
+    return klein;
+  });
+  await c.close();
+  return raus;
+}
+eq("Auf 1180 px ist nichts Anfassbares kleiner als 24×24", await zuKlein(1180), []);
+eq("auf 390 px auch nicht", await zuKlein(390), []);
+
+/* ---- 49. Kein Skriptfehler ---------------------------------------------- */
 eq("Seitenfehler", errs, []);
 
 await ctx.close(); await b.close();

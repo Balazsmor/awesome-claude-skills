@@ -534,6 +534,8 @@ button { font:inherit; color:inherit; cursor:pointer; }
 .exres p { font-size:14px; color:var(--ink-2); margin:0 auto; max-width:44ch; line-height:1.5; }
 .exres .exbtns { justify-content:center; }
 .mon .mt a, .card-head a { color:inherit; text-decoration:none; border-bottom:1px solid var(--rule); }
+/* Anfassbares misst mindestens 24×24 px — der Verweis war 20 px hoch. */
+.card-head a { display:inline-flex; align-items:center; min-height:24px; }
 .card-head a:hover { border-color:currentColor; }
 
 /* ---- Karriereplan -------------------------------------------------------- */
@@ -682,11 +684,12 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
 </div>
 
 <dialog id="examDlg" aria-label="Stufenprüfung">
+  <div id="exsage" class="sr" role="status" aria-live="polite"></div>
   <div id="examBody"></div>
   <button class="exx" data-act="examClose" type="button" aria-label="Prüfung schließen">✕</button>
 </dialog>
 
-<script type="application/json" id="state">{"v":4,"d":{"2026-08-31":["morgen"]},"f":{"2026-08-28":"frei"},"n":{},"w":{},"q":{},"g":[{"id":"gmth01ejfoehi","fach":"zg:bfk","was":"","n":2,"p":null,"dat":"2026-05-05","gew":1},{"id":"gmth01p3mhzk4","fach":"zg:deutsch","was":"","n":2,"p":null,"dat":"2026-05-31","gew":1},{"id":"gmth01yvv582d","fach":"zg:englisch","was":"","n":3,"p":null,"dat":"2026-05-31","gew":1},{"id":"gmth029jesiix","fach":"zg:gk","was":"","n":2,"p":null,"dat":"2026-05-31","gew":1}],"t":null,"p":null,"zn":1.5,"zw":900,"updatedAt":1788166376053}</script>
+<script type="application/json" id="state">{"v":4,"d":{"2026-08-31":["morgen"]},"f":{"2026-08-28":"frei"},"n":{},"w":{},"q":{"deutsch":2},"g":[{"id":"gmth01ejfoehi","fach":"zg:bfk","was":"","n":2,"p":null,"dat":"2026-05-05","gew":1},{"id":"gmth01p3mhzk4","fach":"zg:deutsch","was":"","n":2,"p":null,"dat":"2026-05-31","gew":1},{"id":"gmth01yvv582d","fach":"zg:englisch","was":"","n":3,"p":null,"dat":"2026-05-31","gew":1},{"id":"gmth029jesiix","fach":"zg:gk","was":"","n":2,"p":null,"dat":"2026-05-31","gew":1}],"m":[{"id":"17nt847","fach":"deutsch","n":1,"ok":0,"dat":"2026-08-31"}],"t":null,"p":null,"zn":1.5,"zw":900,"updatedAt":1788171632257}</script>
 
 <script id="app">
 /* ===========================================================================
@@ -2399,8 +2402,14 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
   /* ---- Ansage ------------------------------------------------------------
      Alles, was nur als Farbe oder Zahl erscheint, geht zusätzlich hier durch —
      sonst bleibt jede Rückmeldung unsichtbar, wenn die Seite vorgelesen wird. */
+  /*  Steht der Prüfungsdialog offen, macht showModal() den Rest der Seite
+      inert — eine Ansage in #ansage erreicht dann niemanden mehr. Deshalb
+      liegt im Dialog eine zweite Live-Region, und sag() findet von selbst die
+      richtige. Das behebt die Fehlerklasse und nicht nur zwei Aufrufe.       */
   function sag(txt) {
-    var el = document.getElementById("ansage");
+    var dlg = document.getElementById("examDlg");
+    var el = dlg && dlg.open ? document.getElementById("exsage")
+                             : document.getElementById("ansage");
     if (el) el.textContent = txt;
   }
 
@@ -2588,7 +2597,9 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
       '<link id="fontcss" rel="stylesheet" media="print" href="' + FONTS + '">\n' +
       '<style id="app-style">' + css + "<\/style>\n</head>\n<body>\n" +
       '<div class="wrap" id="root"></div>\n' +
-      '<dialog id="examDlg" aria-label="Stufenprüfung"><div id="examBody"></div>' +
+      '<dialog id="examDlg" aria-label="Stufenprüfung">' +
+      '<div id="exsage" class="sr" role="status" aria-live="polite"></div>' +
+      '<div id="examBody"></div>' +
       '<button class="exx" data-act="examClose" type="button" aria-label="Prüfung schließen">✕</button></dialog>\n' +
       '<script type="application/json" id="state">' + json + "<\/script>\n" +
       '<script id="app">' + app + "<\/script>\n</body>\n</html>";
@@ -2775,6 +2786,14 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
               '<button class="btn ghost" data-act="examClose" type="button">Später</button>') +
         "</div></div>";
       render();
+      /*  Erst nach render(): dessen fokusSetzen() würde sonst den Fokus wieder
+          dorthin ziehen, wo er vor dem Neuzeichnen stand.                    */
+      examFokus();
+      sag(ok
+        ? "Bestanden. " + at.nm + " Stufe " + exam.ziel + ". " +
+          exam.richtig + " von " + n + " richtig."
+        : "Nicht bestanden. " + exam.richtig + " von " + n +
+          " richtig, nötig waren " + noetig + ".");
       return;
     }
 
@@ -2818,19 +2837,43 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
         "Prüfungsstruktur — wird gegen deine eigenen Schulaufgaben getauscht.</p>";
     }
     box.innerHTML = html;
-    var inp = document.getElementById("exNum");
-    if (inp && !exam.beantwortet) inp.focus();
+    examFokus();
+  }
+
+  /*  zeigeExam() ersetzt bei jeder Antwort das ganze Innere des Dialogs — der
+      gerade gedrückte Knopf wird dabei zerstört und der Fokus fiel auf <body>.
+      Wer mit der Tastatur arbeitet, musste sich für jede der fünf Fragen neu
+      durchtabben.
+
+      Nicht fokusMerken/fokusSetzen: die holen den VORIGEN Fokus zurück. Hier
+      soll er nach vorn wandern, zur nächsten Handlung — Antwort, Weiter,
+      Antwort, … , Ergebnis.                                                  */
+  function examFokus() {
+    var ziel = document.querySelector(".exres .exbtns .btn") ||
+               document.querySelector('[data-act="examNext"]') ||
+               document.getElementById("exNum") ||
+               document.querySelector(".exopt:not([disabled])");
+    if (!ziel || typeof ziel.focus !== "function") return;
+    try { ziel.focus({ preventScroll: true }); } catch (e) { ziel.focus(); }
   }
 
   function antwort(richtig, gewaehlt) {
+    var f = exam.fragen[exam.i];
     exam.beantwortet = true;
     exam.zuletztRichtig = richtig;
     exam.gewaehlt = gewaehlt;
     if (richtig) exam.richtig++;
     // Auch eine bestandene Prüfung hat etwas zu sagen: 4 von 5 heisst, dass
     // eine Frage nicht sass.
-    kontoBuchen(exam.attr, exam.fragen[exam.i], richtig);
+    kontoBuchen(exam.attr, f, richtig);
     zeigeExam();
+    /*  Nach dem Neuzeichnen ansagen, nicht davor: der Dialog steht dann, und
+        die Live-Region liegt ausserhalb von #examBody und hat den Wechsel
+        überlebt. Angesagt wird, was auch auf dem Schirm steht.               */
+    sag((richtig ? "Richtig. " : "Falsch. ") + f.why +
+        (f.t === "num" && !richtig
+          ? " Lösung: " + f.a + (f.unit ? " " + f.unit : "") + "."
+          : ""));
   }
 
   /* ---- Fokus-Timer -------------------------------------------------------
@@ -3666,6 +3709,10 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
     });
     if (fehler) { jaMsg = fehler; render(); return; }
     if (!neu.length) { jaMsg = "Kein Feld ausgefüllt."; render(); return; }
+    /*  Ein Klick, bis zu fünf Einträge: ohne Rückgängig hiesse ein Vertipper
+        fünfmal einzeln löschen. Gemerkt wird erst hier — ein an der Prüfung
+        gescheiterter Klick soll kein Angebot zum Zurücknehmen erzeugen.      */
+    merke("Jahresnoten eingetragen");
     state.g = (state.g || []).concat(neu);
     jaForm = {}; jaMsg = null;
     save(); render();
@@ -3866,7 +3913,11 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
     });
     html += "</ul>";
 
-    html += '<div class="row" style="margin-top:14px; justify-content:space-between">' +
+    /*  Die Fusszeile trägt einen Namen, weil sie der Anker fürs Neuzeichnen
+        ist: der Kern-Knopf hakt drei Blöcke auf einmal ab, deren Anleitungen
+        gleichzeitig verschwinden — ohne Anker rutscht alles um gut hundert
+        Pixel nach oben und auf dem Handy liegt der Finger woanders.          */
+    html += '<div class="row tagfuss" style="margin-top:14px; justify-content:space-between">' +
       '<span class="note mono">' + hit + " von " + bl.length + " · " +
       (info.counts ? "zählt" : "zählt nicht") + "</span>";
     if (!info.counts) html += '<span class="stamp rest">Ruhetag</span>';
@@ -4350,7 +4401,11 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
     if (!neu) return;
     merke("Kern abgehakt");
     state.d[info.key] = list;
-    save(); render();
+    save();
+    /*  Verankert wird die Fusszeile, nicht der Knopf: nach dem Abhaken steht
+        dort der Stempel „Tag gerettet". Und nicht die Notiz darunter — die
+        Einsatzzeile dazwischen verschwindet im selben Zug.                   */
+    ankern(".tagfuss", render);
     sag("Kern abgehakt — " + neu + (neu === 1 ? " Block" : " Blöcke") + " dazu.");
   }
 

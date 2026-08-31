@@ -36,7 +36,8 @@ Was sie zusätzlich kann:
 | **Fokus-Timer** | `▶` je Block, läuft über die Blockdauer; der Weckton wird beim Start in der Audio-Uhr vorgelegt und klingelt auch im Hintergrund-Tab |
 | **Jetzt-Marker** | Die Seite liest die Uhr: der laufende Block ist hervorgehoben, darüber steht, was als Nächstes ansteht |
 | **Tagesnotiz und Schwerpunkte** | Eine Zeile je Tag, zwei Themen je Woche — dieselben Schlüssel, die auch das Mac-Widget schreibt |
-| **Rückgängig** | Eine Minute lang lässt sich jeder Handgriff zurücknehmen, der etwas wegnimmt |
+| **Rückgängig** | Eine Minute lang lässt sich jeder Handgriff zurücknehmen, der etwas wegnimmt — und der Jahresabschluss, weil er fünf Noten auf einmal schreibt |
+| **Tastatur und Screenreader** | Fokus überlebt jedes Neuzeichnen, auch im Prüfungsdialog; zwei Live-Regionen, weil `showModal()` die Seite hinter sich inert macht; nichts Anfassbares unter 24×24 px |
 | **Monat** | Blätterbar und klickbar; ein Tag mit Notiz bekommt eine Ecke |
 | **Schlafenszeit** | Ab 19:00 steht unter dem Tagesplan, wann Schluss sein müsste — rückwärts vom nächsten Weckruf, `sleepHours` aus dem Plan |
 | **Einsatz** | Ab 17:00 bei offenem Kern: was er noch einbringt und was ein Abbruch den Multiplikator kostet |
@@ -117,6 +118,19 @@ davon zu sehen war. Dafür brauchte `evaluate()` einen neuen Wert: der Durchlauf
 endet *einschliesslich* heute, also ist `streak` an einem Abend mit offenem Kern
 längst 0 — `serieGestern` hält den Stand davor fest. Unter drei Tagen Serie steht
 der zweite Satz nicht da: dort gibt es nichts zu verlieren, und es wäre Nörgeln.
+
+**Zwei Live-Regionen, nicht eine.** `showModal()` macht alles hinter dem
+Prüfungsdialog inert — `#ansage` liegt in `#root` und erreichte während einer
+Stufenprüfung niemanden. Deshalb liegt eine zweite Region im Dialog, aber
+**ausserhalb** von `#examBody`: sonst zerstörte sie jede Antwort neu, und eine
+Live-Region, die gleichzeitig mit ihrem Text entsteht, sagt nichts an. `sag()`
+sucht sich selbst die richtige, damit die Fehlerklasse nicht wiederkommt.
+
+**Der Fokus wandert nach vorn, nicht zurück.** `zeigeExam()` ersetzt bei jeder
+Antwort das Innere des Dialogs; der gedrückte Knopf wird dabei zerstört. Statt
+`fokusMerken`/`fokusSetzen` — die holen den *vorigen* Fokus — setzt `examFokus()`
+ihn auf die nächste Handlung: Antwort → Weiter → Antwort → … → Ergebnis, ohne
+einen einzigen Tab-Weg.
 
 **Das Tempo kommt aus den letzten vier Wochen**, nicht aus dem ganzen Verlauf.
 Drei Fälle bekommen bewusst keine Zahl: unter sieben gezählten Tagen („noch zu
@@ -205,13 +219,15 @@ Ziellinie, kein Hebel.
 ```sh
 cd lernplan-widget/lernquest/test
 npm i playwright-core
-node test.mjs        # 314 Prüfungen: Notenrechnung, Zeugnis je Schuljahr, XP-Konto,
+node test.mjs        # 338 Prüfungen: Notenrechnung, Zeugnis je Schuljahr, XP-Konto,
                      # Kalenderwoche, Blockzeiten, Fragenkatalog, Rückgängig, Fokus,
                      # Zusammenführen, Schlafenszeit, eigener Stundenplan,
                      # abgelaufener Timer, Schriftladen, Scroll-Anker,
                      # Frage-Werkstatt, IHK-Gewichte, Bestehensregel,
                      # Jahresabschluss, Trennung von Schul- und IHK-Note,
-                     # Fehlerkonto samt Schonfrist, Einsatzzeile, Tempo, Wochenblick
+                     # Fehlerkonto samt Schonfrist, Einsatzzeile, Tempo, Wochenblick,
+                     # Scroll-Anker des Kern-Knopfs, Fokuskette und Ansage der
+                     # Stufenprüfung, Zielgrösse nach WCAG 2.2
 node savetest.mjs    # 34: Wecker wird beim Start vorgelegt, nichts wird
                      # während Prüfung, Timer oder Wecker veröffentlicht,
                      # das Fehlerkonto übersteht den Austausch
