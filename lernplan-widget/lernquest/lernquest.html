@@ -233,11 +233,15 @@ button { font:inherit; color:inherit; cursor:pointer; }
 
 /* Die Schlafenszeit steht abends unter dem Tagesplan — leise, solange sie
    eingehalten wird, und deutlich, sobald sie vorbei ist. */
-.bett { display:flex; align-items:baseline; gap:11px; flex-wrap:wrap; margin-top:11px;
+.bett, .einsatz { display:flex; align-items:baseline; gap:11px; flex-wrap:wrap; margin-top:11px;
         padding:9px 13px; border-radius:10px; background:var(--panel-2);
         border:1px solid var(--rule-2); font-size:12.5px; color:var(--ink-2);
         line-height:1.45; }
-.bett .eyebrow { flex:none; color:var(--ink-3); }
+.bett .eyebrow, .einsatz .eyebrow { flex:none; color:var(--ink-3); }
+/* Was der offene Kern heute Abend noch wert ist. Gleiche Form wie die
+   Schlafenszeile, aber ein eigener Name: es ist eine andere Auskunft. */
+.einsatz { background:var(--amber-soft); border-color:var(--amber); color:var(--ink); }
+.einsatz .eyebrow { color:var(--amber); }
 .bett.spaet { background:var(--coral-soft); border-color:var(--coral); color:var(--ink); }
 .bett.spaet .eyebrow { color:var(--coral); }
 
@@ -351,6 +355,26 @@ button { font:inherit; color:inherit; cursor:pointer; }
 .gdel:hover { color:var(--coral); border-color:var(--coral); }
 .gdel:focus-visible { outline:2px solid var(--amber); outline-offset:2px; }
 
+/* Das Fehlerkonto — dieselbe Zeilenform wie die Notenliste, nur mit der
+   Erklärung von damals darunter. */
+.mlist { list-style:none; margin:0; padding:0; border-top:1px solid var(--rule-2); }
+.mitem { display:flex; align-items:flex-start; gap:13px; padding:11px 2px;
+         border-bottom:1px solid var(--rule-2); }
+.mitem .mn { flex:none; width:44px; height:34px; border-radius:8px; display:grid;
+             place-items:center; font-size:13px; font-weight:600;
+             border:1px solid var(--coral); color:var(--coral);
+             background:var(--coral-soft); }
+.mitem .mb { flex:1; min-width:0; display:flex; flex-direction:column; gap:3px; }
+.mitem .mq { font-weight:500; line-height:1.35; }
+.mitem .mw { font-size:12px; color:var(--ink-2); line-height:1.45; }
+.mitem .mm { font-size:11px; color:var(--ink-3); }
+.mtools { display:flex; flex-direction:column; gap:6px; flex:none; }
+.mtools .btn { min-height:32px; padding:0 10px; font-size:12px; white-space:nowrap; }
+@media (max-width:640px) {
+  .mitem { flex-wrap:wrap; }
+  .mtools { flex-direction:row; width:100%; }
+}
+
 .gavg { display:grid; grid-template-columns:repeat(auto-fit,minmax(122px,1fr));
         gap:9px; margin-top:16px; }
 .ga { background:var(--panel-2); border:1px solid var(--rule-2); border-radius:10px;
@@ -445,6 +469,11 @@ button { font:inherit; color:inherit; cursor:pointer; }
 /* Woran man beim Wecker ist — steht in der Timerleiste, klein aber da. */
 .tstat { flex:1 1 200px; min-width:0; }
 .wf .note.tiny { margin-top:6px; max-width:26ch; }
+/* Der Wochenblick unter dem Kalender — eine Zeile, kein Bildschirm. */
+.wblick { margin-top:13px; padding-top:12px; border-top:1px solid var(--rule-2);
+          display:flex; flex-direction:column; gap:5px; }
+.wblick p { margin:0; font-size:12.5px; color:var(--ink-2); line-height:1.45; }
+.wblick .leer { color:var(--coral); }
 
 /* ---- Stufenprüfung ------------------------------------------------------- */
 .attr.ready { border-color:var(--amber); background:var(--amber-soft); }
@@ -657,7 +686,7 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
   <button class="exx" data-act="examClose" type="button" aria-label="Prüfung schließen">✕</button>
 </dialog>
 
-<script type="application/json" id="state">{"v":4,"d":{"2026-08-31":["morgen"]},"f":{"2026-08-28":"frei"},"n":{},"w":{},"q":{},"g":[{"id":"zg26bfk","fach":"zg:bfk","was":"Jahreszeugnis 2026","n":1.9,"p":null,"dat":"2026-07-29","gew":1},{"id":"zg26de","fach":"zg:deutsch","was":"Jahreszeugnis 2026","n":2.4,"p":null,"dat":"2026-07-29","gew":1},{"id":"zg26en","fach":"zg:englisch","was":"Jahreszeugnis 2026","n":2.8,"p":null,"dat":"2026-07-29","gew":1},{"id":"zg26gk","fach":"zg:gk","was":"Jahreszeugnis 2026","n":2.2,"p":null,"dat":"2026-07-29","gew":1}],"t":null,"p":null,"zn":1.9,"zw":990,"updatedAt":1788160917877}</script>
+<script type="application/json" id="state">{"v":4,"d":{"2026-08-31":["morgen"]},"f":{"2026-08-28":"frei"},"n":{},"w":{},"q":{},"g":[{"id":"gmth01ejfoehi","fach":"zg:bfk","was":"","n":2,"p":null,"dat":"2026-05-05","gew":1},{"id":"gmth01p3mhzk4","fach":"zg:deutsch","was":"","n":2,"p":null,"dat":"2026-05-31","gew":1},{"id":"gmth01yvv582d","fach":"zg:englisch","was":"","n":3,"p":null,"dat":"2026-05-31","gew":1},{"id":"gmth029jesiix","fach":"zg:gk","was":"","n":2,"p":null,"dat":"2026-05-31","gew":1}],"t":null,"p":null,"zn":1.5,"zw":900,"updatedAt":1788166376053}</script>
 
 <script id="app">
 /* ===========================================================================
@@ -2009,6 +2038,12 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
 
     var xp = 0, streak = 0, best = 0, counted = 0, coreDays = 0, fullDays = 0;
     var restDays = 0, minutesDone = 0, ankiRun = 0, ankiBest = 0;
+    /*  Der Durchlauf endet EINSCHLIESSLICH heute. An einem Abend mit offenem
+        Kern ist `streak` deshalb längst 0 — die Seite könnte gar nicht sagen,
+        wo die Serie steht. `serieGestern` hält den Wert vor dem letzten Tag
+        fest; daraus wird abends, was auf dem Spiel steht.                     */
+    var serieGestern = 0;
+    var letzterRiss = null;   // { len, bis } der zuletzt gerissenen Serie
     var tally = { morgen: 0, deep: 0, deutsch: 0, englisch: 0, anki: 0, feynman: 0 };
     var attrXp = {}, attrMin = {};
     ATTRS.forEach(function (x) { attrXp[x.id] = 0; attrMin[x.id] = 0; });
@@ -2018,6 +2053,7 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
     while (cur <= today) {
       var info = dayInfo(cur, marks);
       var ids = d[info.key] || [];
+      serieGestern = streak;
       if (!info.counts) {
         if (ids.length || marks[info.key]) restDays++;
         perDay[info.key] = { ratio: null, counts: false, kind: info.kind };
@@ -2026,6 +2062,7 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
       }
       counted++;
       var bl = scored(info.plan), hit = 0, dayXp = 0, mins = 0;
+      var tagAttr = {};   // Attributpunkte dieses Tages, für Tempo und Wochenblick
       for (var i = 0; i < bl.length; i++) {
         if (ids.indexOf(bl[i].id) >= 0) {
           hit++; dayXp += blockXp(bl[i]); mins += minutes(bl[i]);
@@ -2037,6 +2074,7 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
             av.forEach(function (id) {
               if (attrXp[id] === undefined) return;
               attrXp[id] += shareXp; attrMin[id] += shareMin;
+              tagAttr[id] = (tagAttr[id] || 0) + shareXp;
             });
           }
           if (bl[i].kind === "deep") tally.deep++;
@@ -2051,23 +2089,78 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
       var kern = coreDone(info.plan, ids), voll = allDone(info.plan, ids);
       if (kern) dayXp += 50;
       if (voll) dayXp += 100;
-      xp += Math.round(dayXp * multiplier(streak));
+      var tagPunkte = Math.round(dayXp * multiplier(streak));
+      xp += tagPunkte;
       minutesDone += mins;
       if (kern) { coreDays++; streak++; if (streak > best) best = streak; }
-      else if (bl.length) { streak = 0; }
+      else if (bl.length) {
+        // Eine gerissene Serie soll keine stumme Null sein — was sie war und
+        // wann sie riss, steht danach in der Anzeige.
+        if (streak > 0) letzterRiss = { len: streak, bis: info.key };
+        streak = 0;
+      }
       if (voll) fullDays++;
       if (ids.indexOf("anki") >= 0) { ankiRun++; if (ankiRun > ankiBest) ankiBest = ankiRun; }
       else ankiRun = 0;
       perDay[info.key] = { ratio: bl.length ? hit / bl.length : null, counts: true,
                            kind: info.kind, hit: hit, total: bl.length,
-                           core: kern, all: voll, mins: mins };
+                           core: kern, all: voll, mins: mins,
+                           xp: tagPunkte, axp: tagAttr };
       cur = addDays(cur, 1);
     }
     Object.keys(attrXp).forEach(function (k) { attrXp[k] = Math.round(attrXp[k]); });
     return { xp: xp, streak: streak, best: best, counted: counted, coreDays: coreDays,
              fullDays: fullDays, restDays: restDays, minutes: minutesDone,
              tally: tally, ankiBest: ankiBest, perDay: perDay,
-             attrXp: attrXp, attrMin: attrMin };
+             attrXp: attrXp, attrMin: attrMin,
+             serieGestern: serieGestern, letzterRiss: letzterRiss };
+  }
+
+  /* ---- Tempo -------------------------------------------------------------
+     Die Attributkarte sagte „noch 480 XP · ≈ 7 h", der Karriereplan „noch
+     ≈ 40 h". Wie lange das dauert, hängt am eigenen Tempo — und das steht in
+     perDay. Gerechnet wird über die letzten vier Wochen, nicht über den ganzen
+     Verlauf: was im Frühjahr war, sagt über den nächsten Monat wenig.
+
+     Geteilt wird durch die Kalendertage des Fensters, nicht durch die
+     gezählten: die Hochrechnung läuft über den Kalender, und freie Tage
+     gehören dazu.                                                             */
+  var TEMPO_TAGE = 28;
+  var TEMPO_MIND = 7;        // weniger Verlauf ergibt nur Rauschen
+  var TEMPO_HORIZONT = 730;  // weiter als zwei Jahre ist keine Auskunft mehr
+
+  function tempo(ev, now, tage) {
+    var fenster = tage || TEMPO_TAGE;
+    var xp = 0, axp = {}, gezaehlt = 0;
+    for (var i = 0; i < fenster; i++) {
+      var r = ev.perDay[ymd(addDays(now, -i))];
+      if (!r || !r.counts) continue;
+      gezaehlt++;
+      xp += r.xp || 0;
+      Object.keys(r.axp || {}).forEach(function (id) {
+        axp[id] = (axp[id] || 0) + r.axp[id];
+      });
+    }
+    var proTag = {};
+    Object.keys(axp).forEach(function (id) { proTag[id] = axp[id] / fenster; });
+    return { gezaehlt: gezaehlt, proTag: xp / fenster, attrProTag: proTag,
+             reif: gezaehlt >= TEMPO_MIND };
+  }
+  /*  Aus „so viel fehlt" und „so viel kommt am Tag dazu" ein Datum. Drei Fälle
+      bekommen bewusst keine Zahl: zu wenig Verlauf, Tempo null (dann ist die
+      Auskunft, dass Lernzeit fehlt — nicht ein Datum im Jahr 2400) und alles
+      jenseits von zwei Jahren.                                                */
+  function tempoDatum(fehlt, proTag, tp, now) {
+    if (!tp || !tp.reif) return { art: "jung", txt: "noch zu wenig Verlauf für eine Hochrechnung" };
+    if (!(proTag > 0)) return { art: "null", txt: "dafür fehlt Lernzeit in diesem Fach" };
+    var tage = Math.ceil(fehlt / proTag);
+    if (tage > TEMPO_HORIZONT) {
+      return { art: "fern", txt: "bei diesem Tempo dauert das über zwei Jahre" };
+    }
+    var d = addDays(now, tage);
+    return { art: "datum", tage: tage, datum: d,
+             txt: "bei deinem Tempo etwa ab " + pad(d.getDate()) + "." +
+                  pad(d.getMonth() + 1) + "." + d.getFullYear() };
   }
 
   function weekStats(state, today) {
@@ -2164,15 +2257,16 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
     // schlicht über das Datum.
     var wait = ph.von && ymd(today()) < ph.von ? fromYmd(ph.von) : null;
     if (ph.need.level && rank.level < ph.need.level) {
+      // attr: null heisst Gesamtstufe — die läuft über die Gesamtpunkte.
       miss.push({ nm: "Stufe " + ph.need.level, have: rank.level, need: ph.need.level,
-                  xp: Math.max(0, RANKS[ph.need.level - 1].xp - ev.xp) });
+                  attr: null, xp: Math.max(0, RANKS[ph.need.level - 1].xp - ev.xp) });
     }
     ATTRS.forEach(function (at) {
       var req = ph.need[at.id];
       if (!req) return;
       var lv = attrLevel(ev.attrXp[at.id] || 0);
       if (lv.level < req) {
-        miss.push({ nm: at.nm + " " + req, have: lv.level, need: req,
+        miss.push({ nm: at.nm + " " + req, have: lv.level, need: req, attr: at.id,
                     xp: Math.max(0, ATTR_LV[req - 1] - (ev.attrXp[at.id] || 0)) });
       }
     });
@@ -2248,8 +2342,8 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
   }
 
   /* ---- Zustand ---------------------------------------------------------- */
-  var state = { v: 4, d: {}, f: {}, n: {}, w: {}, q: {}, g: [], t: null, p: null,
-                zn: 1.9, zw: 900, updatedAt: 0 };
+  var state = { v: 4, d: {}, f: {}, n: {}, w: {}, q: {}, g: [], m: [], t: null,
+                p: null, zn: 1.9, zw: 900, updatedAt: 0 };
   var saveMode = "lokal";  // "lokal" | "geteilt"
   var statusTxt = "nur auf diesem Gerät";
   var saveTimer = null, artifactApi = null, lastFloat = null, nachholen = false;
@@ -2363,8 +2457,8 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
   }
   var gid = 0;
   function normalize(o) {
-    var s = { v: 4, d: {}, f: {}, n: {}, w: {}, q: {}, g: [], t: null, p: null,
-              zn: 1.9, zw: 900, updatedAt: 0 };
+    var s = { v: 4, d: {}, f: {}, n: {}, w: {}, q: {}, g: [], m: [], t: null,
+              p: null, zn: 1.9, zw: 900, updatedAt: 0 };
     if (!o || typeof o !== "object") return s;
     if (o.d && typeof o.d === "object") {
       Object.keys(o.d).forEach(function (k) {
@@ -2420,6 +2514,27 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
           };
         })
         .filter(function (e) { return e.fach && e.n !== null; });
+    }
+    /*  m: das Fehlerkonto — je Eintrag eine Frage, die in einer Stufenprüfung
+        falsch war. Liste statt Objekt, aus demselben Grund wie bei g: die
+        Reihenfolge bleibt, und das Zusammenführen läuft über die Kennung.     */
+    if (Array.isArray(o.m)) {
+      var gesehenM = {};
+      s.m = o.m.filter(function (e) { return e && typeof e === "object" && e.id; })
+        .map(function (e) {
+          return {
+            id: String(e.id).slice(0, 24), fach: String(e.fach || ""),
+            n: Math.max(1, Math.min(99, Math.round(Number(e.n)) || 1)),
+            ok: Math.max(0, Math.min(9, Math.round(Number(e.ok)) || 0)),
+            dat: /^\d{4}-\d{2}-\d{2}$/.test(e.dat) ? e.dat : ""
+          };
+        })
+        .filter(function (e) {
+          // Dieselbe Frage darf nur einmal auf der Liste stehen.
+          if (!e.fach || gesehenM[e.fach + "/" + e.id]) return false;
+          gesehenM[e.fach + "/" + e.id] = true;
+          return true;
+        });
     }
     // t: der laufende Fokus-Timer, im Format des Mac-Widgets. Ein dort
     // gestarteter Block läuft hier weiter, und umgekehrt.
@@ -2520,6 +2635,68 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
 
   var zuletztGezogen = {};   // je Fach die Fragen des vorigen Versuchs
 
+  /* ---- Fehlerkonto --------------------------------------------------------
+     Bisher warf eine Prüfung ihren Inhalt weg: gespeichert wurde nur die
+     bestandene Stufe. Wer an Buchungssätzen scheiterte, konnte mit fünf
+     anderen Fragen sofort bestehen — die Lücke blieb unberührt und kam nie
+     wieder. Jetzt merkt sich die Seite, was falsch war, und legt es nach einer
+     Schonfrist wieder vor.
+
+     Die Fragen tragen keine Kennung. Der Listenindex wäre brüchig, weil der
+     Katalog später gegen echte Klausuren getauscht wird; ein Hash aus dem
+     Fragetext übersteht das Umsortieren, und ein Eintrag zu einer Frage, die es
+     nicht mehr gibt, passt schlicht nicht mehr und wird übergangen.           */
+  var SCHONFRIST = 3;      // Tage, bevor ein Fehler wieder drankommt
+  var AUS_KONTO = 2;       // höchstens zwei der fünf Fragen von der Merkliste
+  var ZURUECKGELEGT = 2;   // zweimal richtig, dann ist die Lücke geschlossen
+
+  function frageId(f) {
+    var t = String((f && f.q) || ""), h = 5381;
+    for (var i = 0; i < t.length; i++) h = ((h * 33) ^ t.charCodeAt(i)) >>> 0;
+    return h.toString(36);
+  }
+  function kontoEintrag(attrId, id) {
+    return (state.m || []).filter(function (e) {
+      return e.fach === attrId && e.id === id;
+    })[0] || null;
+  }
+  /*  Falsch: anlegen oder hochzählen, und die Schonfrist beginnt von vorn.
+      Richtig: nur zählen, wenn die Frage überhaupt auf der Liste steht — sonst
+      entstünden Einträge für alles, was man je richtig hatte.                 */
+  function kontoBuchen(attrId, f, richtig) {
+    var id = frageId(f), da = kontoEintrag(attrId, id);
+    if (!richtig) {
+      if (da) { da.n += 1; da.ok = 0; da.dat = ymd(today()); }
+      else {
+        state.m = (state.m || []).concat([
+          { id: id, fach: attrId, n: 1, ok: 0, dat: ymd(today()) }
+        ]);
+      }
+      save();
+      return;
+    }
+    if (!da) return;
+    da.ok += 1;
+    if (da.ok >= ZURUECKGELEGT) {
+      state.m = (state.m || []).filter(function (e) { return e !== da; });
+    }
+    save();
+  }
+  /*  Fällig ist ein Fehler, dessen Schonfrist um ist. Ohne sie bekäme der
+      sofortige zweite Versuch genau die fünf Fragen, deren Lösung gerade auf
+      dem Bildschirm stand.                                                    */
+  function kontoFaellig(attrId, now) {
+    var grenze = ymd(addDays(now || today(), -SCHONFRIST));
+    return (state.m || []).filter(function (e) {
+      return e.fach === attrId && (!e.dat || e.dat <= grenze);
+    });
+  }
+  /*  Zu einem Eintrag die Frage aus dem Katalog. Findet sich keine — der
+      Katalog wurde getauscht —, ist der Eintrag verwaist und wird übergangen. */
+  function kontoFrage(e) {
+    return (QUIZ[e.fach] || []).filter(function (f) { return frageId(f) === e.id; })[0] || null;
+  }
+
   function ziehe(liste, wieviel) {
     var rest = liste.slice(), out = [];
     while (rest.length && out.length < wieviel) {
@@ -2537,7 +2714,22 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
     /*  Beim zweiten Anlauf zuerst das nehmen, was gerade nicht dran war.
         Sonst übt der Wiederholungsversuch nur, wo die richtige Antwort stand.  */
     var alt = zuletztGezogen[attrId] || [];
-    var out = ziehe(pool.filter(function (f) { return alt.indexOf(f) < 0; }), 5);
+    var frei = function (f) { return alt.indexOf(f) < 0; };
+
+    /*  Vorrang für Fehler, deren Schonfrist um ist — aber höchstens zwei von
+        fünf werden GEZIELT vorgelegt: die Stufenprüfung soll eine
+        Stufenprüfung bleiben und keine Fehlerwiederholung. Dass die drei
+        übrigen aus dem Stufenband zufällig noch eine Lücke treffen, ist kein
+        Fehler — sie sind dort ganz normale Fragen.
+        Gezogen wird aus dem ganzen Fach, nicht nur aus dem Stufenband: eine
+        Lücke aus Stufe 2 gehört auch auf Stufe 4 geschlossen.                 */
+    var faellig = kontoFaellig(attrId, today()).map(kontoFrage)
+      .filter(function (f) { return f && frei(f); });
+    var out = ziehe(faellig, AUS_KONTO);
+
+    out = out.concat(ziehe(pool.filter(function (f) {
+      return frei(f) && out.indexOf(f) < 0;
+    }), 5 - out.length));
     if (out.length < 5) {
       out = out.concat(ziehe(pool.filter(function (f) { return out.indexOf(f) < 0; }),
                              5 - out.length));
@@ -2635,6 +2827,9 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
     exam.zuletztRichtig = richtig;
     exam.gewaehlt = gewaehlt;
     if (richtig) exam.richtig++;
+    // Auch eine bestandene Prüfung hat etwas zu sagen: 4 von 5 heisst, dass
+    // eine Frage nicht sass.
+    kontoBuchen(exam.attr, exam.fragen[exam.i], richtig);
     zeigeExam();
   }
 
@@ -3075,6 +3270,59 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
       "löscht die Zeile im Feld. <em>Neu bauen</em> stellt den Vorschlag wieder her.</p></section>";
   }
 
+  /*  Was in einer Stufenprüfung falsch war, steht hier, bis es zweimal sass.
+      Verwaiste Einträge — die Frage gibt es im Katalog nicht mehr — werden
+      übergangen statt angezeigt: eine Zeile ohne Frage sagt nichts.           */
+  function kontoKarte(now) {
+    var offen = (state.m || []).map(function (e) {
+      return { e: e, f: kontoFrage(e) };
+    }).filter(function (x) { return x.f; });
+    if (!offen.length) return "";
+    // Der häufigste Fehler zuerst, bei Gleichstand der ältere.
+    offen.sort(function (a, b) {
+      if (b.e.n !== a.e.n) return b.e.n - a.e.n;
+      return (a.e.dat || "") < (b.e.dat || "") ? -1 : 1;
+    });
+    var faelligN = offen.filter(function (x) {
+      return !x.e.dat || x.e.dat <= ymd(addDays(now, -SCHONFRIST));
+    }).length;
+
+    return '<section class="card"><div class="card-head"><h2>Das sitzt noch nicht</h2>' +
+      '<span class="note mono">' + offen.length +
+      (offen.length === 1 ? " Lücke" : " Lücken") +
+      (faelligN ? " · " + faelligN + " wieder fällig" : "") + "</span></div>" +
+      '<p class="note">Was du in einer Stufenprüfung falsch hattest. Nach ' +
+      SCHONFRIST + " Tagen wird es in der nächsten Prüfung dieses Fachs gezielt " +
+      "wieder vorgelegt — bis zu zwei Fragen, damit eine Stufenprüfung eine " +
+      "Stufenprüfung bleibt und keine Fehlerwiederholung. Zweimal richtig, und " +
+      "die Zeile verschwindet.</p>" +
+      '<ul class="mlist">' + offen.map(function (x) {
+        var at = ATTR_BY[x.e.fach];
+        var reif = !x.e.dat || x.e.dat <= ymd(addDays(now, -SCHONFRIST));
+        var teile = [(at ? at.nm : x.e.fach)];
+        teile.push(x.e.n === 1 ? "einmal falsch" : x.e.n + "-mal falsch");
+        if (x.e.ok) {
+        teile.push((x.e.ok === 1 ? "einmal" : x.e.ok + "-mal") + " seither richtig");
+      }
+        if (x.e.dat) teile.push("zuletzt " + x.e.dat.split("-").reverse().join("."));
+        teile.push(reif ? "wieder fällig" : "noch in der Schonfrist");
+        return '<li class="mitem">' +
+          '<span class="mn mono">' + x.e.n + "×</span>" +
+          '<span class="mb"><span class="mq">' + esc(x.f.q) + "</span>" +
+          '<span class="mw">' + esc(x.f.why) + "</span>" +
+          '<span class="mm mono">' + esc(teile.join(" · ")) + "</span></span>" +
+          '<span class="mtools">' +
+          '<button class="btn" data-act="mfrage" data-fach="' + esc(x.e.fach) +
+          '" data-id="' + esc(x.e.id) + '" type="button">als Thema</button>' +
+          '<button class="btn ghost" data-act="mdel" data-fach="' + esc(x.e.fach) +
+          '" data-id="' + esc(x.e.id) + '" type="button">erledigt</button>' +
+          "</span></li>";
+      }).join("") + "</ul>" +
+      '<p class="note tiny">Der Fragenkatalog ist vorläufig — wer einer Frage ' +
+      "widerspricht, nimmt sie mit <em>erledigt</em> von der Liste. " +
+      "<em>Als Thema</em> setzt die Lücke oben in die Frage-Werkstatt.</p></section>";
+  }
+
   function notenKarte(now) {
     var gl = state.g || [];
     var ziel = state.zn || 1.9;
@@ -3456,6 +3704,7 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
     letzteLage = (lage.jetzt ? lage.jetzt.b.id : "-") + "/" +
                  (lage.naechst ? lage.naechst.b.id : "-");
     var wk = weekStats(state, now);
+    var tp = tempo(ev, now, TEMPO_TAGE);
     var rank = rankOf(ev.xp);
     var exam = nextExam(now);
     var bl = scored(info.plan);
@@ -3487,10 +3736,19 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
       '<div class="cap">' + esc(rank.name) +
       (rank.to ? " · noch " + (rank.to - ev.xp).toLocaleString("de-DE") + " bis " + esc(rank.next) : " · Endstufe") +
       "</div></div>";
+    /*  Eine gerissene Serie war bisher eine stumme Null. Was sie war und wann
+        sie riss, gehört daneben — sonst sieht ein schlechter Tag aus wie ein
+        leeres Konto.                                                          */
+    var serieCap = "Multiplikator ×" + String(multiplier(ev.streak)).replace(".", ",") +
+      " · Bestwert " + ev.best;
+    if (!ev.streak && ev.letzterRiss) {
+      serieCap += " · zuletzt " + ev.letzterRiss.len +
+        (ev.letzterRiss.len === 1 ? " Tag" : " Tage") + ", gerissen am " +
+        ev.letzterRiss.bis.split("-").reverse().slice(0, 2).join(".") + ".";
+    }
     html += '<div class="gauge mint"><div class="eyebrow">Kern-Serie</div>' +
       '<div class="val mono">' + ev.streak + '<small>' + (ev.streak === 1 ? "Tag" : "Tage") + "</small></div>" +
-      '<div class="cap">Multiplikator ×' + String(multiplier(ev.streak)).replace(".", ",") +
-      " · Bestwert " + ev.best + "</div></div>";
+      '<div class="cap">' + esc(serieCap) + "</div></div>";
     html += '<div class="gauge"><div class="eyebrow">Diese Woche</div>' +
       '<div class="val mono">' + fmtMin(wk.done) + "</div>" +
       '<div class="bar blue"><i style="width:' + goalPct + '%"></i></div>' +
@@ -3623,6 +3881,30 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
     }
     html += "</div>";
 
+    /*  Der Multiplikator wurde bisher erst sichtbar, wenn er weg war. Ab dem
+        späten Nachmittag steht deshalb hier, was der offene Kern heute noch
+        wert ist — und, sobald es etwas zu verlieren gibt, was ein Abbruch
+        kostet. Nur heute, nur an einem zählenden Tag, nur solange der Kern
+        offen ist: sonst wäre es Nörgeln statt Auskunft.                       */
+    if (view === 0 && info.counts && !kern && bl.length && jetztMin() >= 17 * 60) {
+      var fehlt = coreIds(info.plan).filter(function (id) { return ids.indexOf(id) < 0; });
+      var offeneXp = bl.filter(function (b) {
+        return fehlt.indexOf(b.id) >= 0;
+      }).reduce(function (sum, b) { return sum + blockXp(b); }, 0) + 50;
+      var mHeute = multiplier(ev.serieGestern);
+      var mMorgen = multiplier(ev.serieGestern + 1);
+      var satzE = "Fertig gestempelt sind das +" + Math.round(offeneXp * mHeute) +
+        " XP, und die Serie steht morgen bei " + (ev.serieGestern + 1) +
+        " (×" + String(mMorgen).replace(".", ",") + ").";
+      // Unter drei Tagen gibt es keinen Multiplikator zu verlieren.
+      if (ev.serieGestern >= 3) {
+        satzE += " Bleibt es offen, fängt sie wieder bei null an — dann zählt " +
+          "morgen wieder ×1 statt ×" + String(mHeute).replace(".", ",") + ".";
+      }
+      html += '<div class="einsatz"><span class="eyebrow">Einsatz</span><span>' +
+        esc(satzE) + "</span></div>";
+    }
+
     /*  Am Abend zeigt die Seite, wann Schluss sein müsste — gerechnet vom
         nächsten Weckruf. Tagsüber stünde die Zeile nur herum.                 */
     if (view === 0 && PLAN.sleepHours) {
@@ -3729,6 +4011,43 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
         return '<span class="chip">' + esc(t) + "</span>";
       }).join("") + "</div>";
     }
+
+    /*  Der Freitagsblock heisst „Wochen-Review", hatte aber nichts zu prüfen.
+        Das Nötigste steht jetzt hier, wo die Woche ohnehin steht: welches
+        Prüfungsfach diese Woche keine Minute bekam. Gezählt werden nur die
+        Tage bis heute — was noch kommt, ist keine Lücke.                      */
+    var wochenAttr = {};
+    wk.days.forEach(function (dd) {
+      if (dd.future || !dd.info.counts) return;
+      var r = ev.perDay[ymd(dd.date)];
+      Object.keys((r && r.axp) || {}).forEach(function (id) {
+        wochenAttr[id] = (wochenAttr[id] || 0) + r.axp[id];
+      });
+    });
+    var ohne = GEPRUEFT.filter(function (id) { return !wochenAttr[id]; });
+    var mit = GEPRUEFT.filter(function (id) { return wochenAttr[id]; });
+    var wtag = (now.getDay() + 6) % 7;   // 0 = Montag
+    var blick = [];
+    if (!ohne.length) {
+      blick.push("<p>Alle fünf Prüfungsfächer sind diese Woche drangekommen.</p>");
+    } else if (mit.length || wtag >= 2) {
+      /*  Am Montagmorgen hat noch nichts stattgefunden — dort wäre die Zeile
+          nur Lärm. Ab Mittwoch ist eine leere Woche dagegen genau die Auskunft,
+          die zählt, auch wenn noch gar kein Fach dran war.                    */
+      var nam = function (l) {
+        return l.map(function (id) { return ATTR_BY[id].nm; }).join(" · ");
+      };
+      blick.push('<p><span class="leer">Diese Woche ohne Zeit: ' + esc(nam(ohne)) +
+        "</span>" + (mit.length
+          ? " — dran " + (mit.length === 1 ? "war " : "waren ") + esc(nam(mit)) + "."
+          : " — bisher keines.") + "</p>");
+    }
+    // Ab Mittwoch ohne Schwerpunkte: der Sonntagsblock hat sie gesetzt oder nicht.
+    if (!themen.length && wtag >= 2) {
+      blick.push("<p>Für diese Woche stehen keine Schwerpunkte. Zwei genügen — " +
+        "der Sonntagsblock <em>Wochenplanung</em> setzt sie.</p>");
+    }
+    if (blick.length) html += '<div class="wblick">' + blick.join("") + "</div>";
     html += "</section>";
 
     /* Attribute */
@@ -3759,14 +4078,18 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
             (letzte.was ? " (" + esc(letzte.was) + ")" : "") + "</div>"
           : "") +
         '<div class="ax mono">' + Math.round(ax) + " XP · " + fmtMin(ev.attrMin[at.id] || 0) + "</div>" +
-        '<div class="ax next">' + (st.open
+        '<div class="ax next">' + esc(st.open
           ? "Lernzeit reicht für Stufe " + st.next + " — " + huerde(st.next) + " von 5 Fragen richtig"
           : st.to
             ? "noch " + (st.to - Math.round(ax)) + " XP bis Stufe " + (st.xpLevel + 1) +
-              " · ≈ " + hoursFor(st.to - Math.round(ax))
+              " · ≈ " + hoursFor(st.to - Math.round(ax)) + " · " +
+              tempoDatum(st.to - Math.round(ax), tp.attrProTag[at.id] || 0, tp, now).txt
             : "höchste Stufe erreicht") + "</div></div>";
     });
     html += "</div></section>";
+
+    /* Was noch nicht sitzt — nur wenn etwas offen ist */
+    html += kontoKarte(now);
 
     /* Frag Claude */
     html += fragenKarte(ev, now);
@@ -3775,6 +4098,13 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
     html += notenKarte(now);
 
     /* Karriereplan */
+    /*  Woran eine gesperrte Phase hängt, stand in Stunden da. Ein Datum sagt,
+        ob die Stufe oder das Kalenderdatum die engere Schwelle ist — bei einem
+        Plan bis 2050 die eigentliche Frage.                                   */
+    var phasenDatum = function (m) {
+      var proTag = m.attr ? (tp.attrProTag[m.attr] || 0) : tp.proTag;
+      return tempoDatum(m.xp, proTag, tp, now).txt;
+    };
     var states = PHASES.map(function (ph) { return phaseState(ph, ev, rank); });
     var openN = states.filter(function (x) { return x.open; }).length;
     html += '<section class="card"><div class="card-head"><h2>Karriereplan</h2>' +
@@ -3801,7 +4131,8 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
           st.wait.getFullYear() + '</span>' +
           (st.missing.length
             ? st.missing.map(function (m) {
-                return '<span class="req">bis dahin ' + esc(m.nm) + "</span>";
+                return '<span class="req">bis dahin ' + esc(m.nm) +
+                  ' <em class="mono">' + esc(phasenDatum(m)) + "</em></span>";
               }).join("")
             : '<span class="req">Kommt von allein — bis dahin zählt die Phase davor</span>') +
           "</div>";
@@ -3809,7 +4140,8 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
         html += '<div class="ph-need"><span class="eyebrow">Dafür fehlt</span>' +
           st.missing.map(function (m) {
             return '<span class="req">' + esc(m.nm) +
-              ' <em class="mono">du hast ' + m.have + " · noch ≈ " + hoursFor(m.xp) + "</em></span>";
+              ' <em class="mono">du hast ' + m.have + " · noch ≈ " + hoursFor(m.xp) +
+              " · " + esc(phasenDatum(m)) + "</em></span>";
           }).join("") + "</div>";
       }
       html += "</li>";
@@ -3899,8 +4231,8 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
       '<textarea id="io" spellcheck="false" aria-label="Zustand als JSON">' +
       esc(ioEntwurf !== null ? ioEntwurf
           : JSON.stringify({ v: 4, d: state.d, f: state.f, n: state.n, w: state.w,
-                             q: state.q, g: state.g, t: state.t, p: state.p,
-                             zn: state.zn, zw: state.zw })) + "</textarea>" +
+                             q: state.q, g: state.g, m: state.m, t: state.t,
+                             p: state.p, zn: state.zn, zw: state.zw })) + "</textarea>" +
       '<div class="row" style="margin-top:10px">' +
       '<button class="btn" data-act="copy" type="button">' + icon("cards") + "Kopieren</button>" +
       '<button class="btn" data-act="merge" type="button">' + icon("check") + "Zusammenführen</button>" +
@@ -4093,6 +4425,18 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
     var habe = {};
     (state.g || []).forEach(function (e) { habe[e.id] = true; });
     (fremd.g || []).forEach(function (e) { if (!habe[e.id]) state.g.push(e); });
+    /*  Fehlerkonto: dieselbe Frage auf beiden Seiten wird zu einem Eintrag,
+        und der höhere Fehlerzähler gewinnt — eine Lücke verschwindet nicht
+        dadurch, dass ein anderes Gerät sie noch nicht kennt.                  */
+    (fremd.m || []).forEach(function (e) {
+      var da = (state.m || []).filter(function (x) {
+        return x.fach === e.fach && x.id === e.id;
+      })[0];
+      if (!da) { state.m = (state.m || []).concat([e]); return; }
+      da.n = Math.max(da.n, e.n);
+      da.ok = Math.min(da.ok, e.ok);
+      if (e.dat > da.dat) da.dat = e.dat;
+    });
     // Einen eigenen Stundenplan übernimmt das Zusammenführen nur, wenn hier
     // keiner steht — sonst überschriebe ein alter Stand die neuere Fassung.
     if (!state.p && fremd.p) state.p = fremd.p;
@@ -4133,6 +4477,28 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
       return;
     }
     if (act === "ffrisch") { frageEntwurf = null; render(); return; }
+    if (act === "mfrage") {
+      /*  Die Lücke wandert als Thema in die Frage-Werkstatt: Fach setzen, den
+          Fragetext als Thema, und die Art auf „Warum war das falsch?" — das
+          ist genau die Frage, die hier ansteht.                               */
+      var mf = kontoEintrag(el.getAttribute("data-fach"), el.getAttribute("data-id"));
+      var mq = mf && kontoFrage(mf);
+      if (!mq) return;
+      frage.fach = mf.fach; frage.art = "warum";
+      frage.thema = mq.q.slice(0, 600);
+      frageEntwurf = null; frageMerken(); render();
+      var ta = document.getElementById("ftext");
+      if (ta) { try { ta.scrollIntoView({ block: "center" }); } catch (e) { ta.focus(); } }
+      return;
+    }
+    if (act === "mdel") {
+      var df = el.getAttribute("data-fach"), di = el.getAttribute("data-id");
+      merke("Lücke von der Liste genommen");
+      state.m = (state.m || []).filter(function (x) {
+        return !(x.fach === df && x.id === di);
+      });
+      save(); render(); return;
+    }
     if (act === "undo") { rueckNehmen(); return; }
     if (act === "weckerAus") { weckerZurueck(); return; }
     if (act === "tstart") {

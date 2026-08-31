@@ -17,7 +17,11 @@ const HOOK = `  try { window.__T = { punkteZuNote:punkteZuNote, noteZuPunkte:not
     IHK_BLOECKE:IHK_BLOECKE, bestehen:bestehen,
     mindAusreichend:mindAusreichend, istUngenuegend:istUngenuegend,
     jahresvorschlag:jahresvorschlag, arbeitenSchnitt:arbeitenSchnitt,
-    jahrEnde:jahrEnde }; } catch (e) {}\n})();\n</script>`;
+    jahrEnde:jahrEnde, frageId:frageId, kontoBuchen:kontoBuchen,
+    kontoFaellig:kontoFaellig, kontoFrage:kontoFrage, kontoEintrag:kontoEintrag,
+    tempo:tempo, tempoDatum:tempoDatum, multiplier:multiplier, planAnwenden:planAnwenden,
+    SCHONFRIST:SCHONFRIST, AUS_KONTO:AUS_KONTO, today:today,
+    auswerten:auswerten }; } catch (e) {}\n})();\n</script>`;
 
 const kaputt = process.argv.includes("--ohne-fix");
 const ohneXp = process.argv.includes("--ohne-xp-fix");
@@ -658,6 +662,18 @@ function zoneFuerStunde(ziel) {
   while (o < -12) o += 24;
   return o === 0 ? "UTC" : o > 0 ? "Etc/GMT-" + o : "Etc/GMT+" + -o;
 }
+/*  Die Zone wird aus der UTC-Stunde gerechnet. Springt die Stunde zwischen
+    dieser Rechnung und dem Laden der Seite um, steht die Seite eine Stunde
+    daneben — bei 23 Uhr wird daraus 0 Uhr, und die Zeile sagt zu Recht etwas
+    anderes. Deshalb prüft jeder Lauf, welche Stunde die Seite wirklich sieht,
+    und wiederholt sich einmal, wenn sie nicht stimmt.                        */
+async function mitStunde(stunde, lauf) {
+  for (let versuch = 0; versuch < 3; versuch++) {
+    const r = await lauf(zoneFuerStunde(stunde));
+    if (r.stunde === stunde) return r;
+  }
+  throw new Error("Stunde " + stunde + " liess sich nicht stabil einstellen");
+}
 function planMitWeckruf(zeit, stunden) {
   const tag = { label:"Testtag", blocks: [
     { id:"morgen", t:zeit, nm:"Morgenroutine", kind:"morg", track:true, min:20 },
@@ -668,21 +684,25 @@ function planMitWeckruf(zeit, stunden) {
   return { sleepHours: stunden, days: alle, vacationDays: alle, freeDay: tag };
 }
 async function schlafZeile(stunde, plan) {
-  const st = JSON.parse(JSON.stringify(start));
-  if (plan) st.p = plan;
-  const c = await b.newContext({ viewport:{width:900,height:900}, colorScheme:"dark",
-                                 locale:"de-DE", timezoneId: zoneFuerStunde(stunde) });
-  const q = await c.newPage();
-  await q.addInitScript(`localStorage.setItem("lernquest.state.v4", ${JSON.stringify(JSON.stringify(st))})`);
-  await q.goto("file://" + process.cwd() + "/" + datei);
-  await q.waitForTimeout(400);
-  const r = await q.evaluate(() => {
-    const el = document.querySelector(".bett");
-    return el ? { txt: el.innerText.replace(/\s+/g, " ").trim(),
-                  spaet: el.classList.contains("spaet") } : null;
+  const r = await mitStunde(stunde, async zone => {
+    const st = JSON.parse(JSON.stringify(start));
+    if (plan) st.p = plan;
+    const c = await b.newContext({ viewport:{width:900,height:900}, colorScheme:"dark",
+                                   locale:"de-DE", timezoneId: zone });
+    const q = await c.newPage();
+    await q.addInitScript(`localStorage.setItem("lernquest.state.v4", ${JSON.stringify(JSON.stringify(st))})`);
+    await q.goto("file://" + process.cwd() + "/" + datei);
+    await q.waitForTimeout(400);
+    const erg = await q.evaluate(() => {
+      const el = document.querySelector(".bett");
+      return { stunde: new Date().getHours(),
+               zeile: el ? { txt: el.innerText.replace(/\s+/g, " ").trim(),
+                             spaet: el.classList.contains("spaet") } : null };
+    });
+    await c.close();
+    return erg;
   });
-  await c.close();
-  return r;
+  return r.zeile;
 }
 const wach6  = planMitWeckruf("6:00", 7.5);    // Schlafenszeit 22:30
 const spaet9 = planMitWeckruf("9:30", 7.5);    // Schlafenszeit 02:00
@@ -1138,7 +1158,336 @@ wahr("Die Karte nennt beide Zeugnisse", /zwei/i.test(trennung.satz));
 wahr("und sagt, dass die Schulnote nur auf Antrag draufsteht",
      /auf Antrag/.test(trennung.satz));
 
-/* ---- 38. Kein Skriptfehler ---------------------------------------------- */
+/* ---- 38. Fehlerkonto: was falsch war, wird gemerkt ----------------------
+   Bisher warf eine Prüfung ihren Inhalt weg — man konnte an Buchungssätzen
+   scheitern, mit fünf anderen Fragen bestehen und die Lücke nie wiedersehen. */
+const heuteKey = await p.evaluate(() => window.__T.ymd(window.__T.today()));
+const vorTagen = n => {
+  const x = new Date(); x.setDate(x.getDate() - n);
+  return x.getFullYear() + "-" + String(x.getMonth()+1).padStart(2,"0") + "-" +
+         String(x.getDate()).padStart(2,"0");
+};
+
+// Eine Kennung aus dem Fragetext: gleich für dieselbe Frage, verschieden sonst.
+const ids = await p.evaluate(() => {
+  const Q = window.__T.QUIZ.suk;
+  return { a: window.__T.frageId(Q[0]), a2: window.__T.frageId({ q: Q[0].q }),
+           b: window.__T.frageId(Q[1]), leer: window.__T.frageId(null) };
+});
+eq("Dieselbe Frage ergibt dieselbe Kennung", ids.a, ids.a2);
+wahr("verschiedene Fragen verschiedene", ids.a !== ids.b);
+wahr("und eine fehlende Frage stürzt nicht ab", typeof ids.leer === "string");
+
+// Falsch → Eintrag. Noch einmal falsch → Zähler hoch, Schonfrist von vorn.
+const gebucht = await p.evaluate(() => {
+  const st = window.__T.state(), Q = window.__T.QUIZ.suk;
+  st.m = [];
+  window.__T.kontoBuchen("suk", Q[0], false);
+  const nach1 = JSON.parse(JSON.stringify(st.m));
+  window.__T.kontoBuchen("suk", Q[0], false);
+  window.__T.kontoBuchen("suk", Q[1], false);
+  return { nach1: nach1, nach2: JSON.parse(JSON.stringify(st.m)) };
+});
+eq("Eine falsche Antwort legt einen Eintrag an", gebucht.nach1.length, 1);
+eq("mit Fach", gebucht.nach1[0].fach, "suk");
+eq("Zähler 1", gebucht.nach1[0].n, 1);
+eq("und dem heutigen Datum", gebucht.nach1[0].dat, heuteKey);
+eq("Zweimal falsch zählt hoch, legt aber nichts Neues an", gebucht.nach2[0].n, 2);
+eq("eine andere Frage schon", gebucht.nach2.length, 2);
+
+// Zweimal richtig legt die Lücke zurück, ein Fehler dazwischen setzt zurück.
+const zurueckgelegt = await p.evaluate(() => {
+  const st = window.__T.state(), Q = window.__T.QUIZ.suk;
+  st.m = [];
+  window.__T.kontoBuchen("suk", Q[0], false);
+  window.__T.kontoBuchen("suk", Q[0], true);
+  const nachEins = st.m.length ? st.m[0].ok : null;
+  window.__T.kontoBuchen("suk", Q[0], true);
+  const weg = st.m.length;
+  // Richtig auf etwas, das gar nicht auf der Liste steht, legt nichts an.
+  window.__T.kontoBuchen("suk", Q[2], true);
+  const immerNoch = st.m.length;
+  // Einmal richtig, dann falsch: der Zähler beginnt von vorn.
+  window.__T.kontoBuchen("suk", Q[3], false);
+  window.__T.kontoBuchen("suk", Q[3], true);
+  window.__T.kontoBuchen("suk", Q[3], false);
+  const rueckfall = st.m.filter(e => e.n === 2)[0];
+  return { nachEins, weg, immerNoch, okNachRueckfall: rueckfall ? rueckfall.ok : null };
+});
+eq("Einmal richtig zählt, löscht aber noch nicht", zurueckgelegt.nachEins, 1);
+eq("Zweimal richtig nimmt die Lücke von der Liste", zurueckgelegt.weg, 0);
+eq("Richtig ohne Eintrag legt keinen an", zurueckgelegt.immerNoch, 0);
+eq("Ein Rückfall setzt den Zähler zurück", zurueckgelegt.okNachRueckfall, 0);
+
+/* ---- 39. Schonfrist und Vorrang beim Ziehen ------------------------------
+   Der sofortige zweite Versuch darf nicht dieselben fünf Fragen sein, deren
+   Lösung gerade auf dem Bildschirm stand — deshalb die Schonfrist.          */
+const faellig = await p.evaluate(([heute, alt]) => {
+  const st = window.__T.state(), Q = window.__T.QUIZ.suk;
+  st.m = [
+    { id: window.__T.frageId(Q[0]), fach: "suk", n: 1, ok: 0, dat: heute },
+    { id: window.__T.frageId(Q[1]), fach: "suk", n: 1, ok: 0, dat: alt },
+    { id: window.__T.frageId(Q[2]), fach: "bwl", n: 1, ok: 0, dat: alt }
+  ];
+  return window.__T.kontoFaellig("suk", window.__T.today()).map(e => e.id);
+}, [heuteKey, vorTagen(4)]);
+eq("Ein Fehler von heute ist noch nicht fällig", faellig.length, 1);
+eq("einer von vor vier Tagen schon", faellig[0], ids.b);
+
+/*  Gezielt vorgelegt werden höchstens zwei. Messbar ist das nur mit Lücken,
+    die das Stufenband NICHT enthält — sonst kann die Zufallsfüllung weitere
+    treffen, und das ist kein Fehler: dort sind es normale Fragen.            */
+const vorrang = await p.evaluate(alt => {
+  const st = window.__T.state(), Q = window.__T.QUIZ.suk;
+  // Nur Fragen der Stufen 4 bis 6 auf die Liste, gezogen wird für Stufe 3.
+  const drausen = Q.filter(f => f.lv[0] > 3);
+  st.m = drausen.map(f => ({ id: window.__T.frageId(f), fach: "suk",
+                             n: 3, ok: 0, dat: alt }));
+  const merk = st.m.map(e => e.id);
+  const zug = window.__T.zieheFragen("suk", 3).map(window.__T.frageId);
+  return { faellig: drausen.length, anzahl: zug.length,
+           ausKonto: zug.filter(id => merk.indexOf(id) >= 0).length,
+           doppelt: zug.length !== new Set(zug).size };
+}, vorTagen(9));
+wahr("Es liegen mehr als zwei Lücken bereit", vorrang.faellig > 2);
+eq("Es bleiben fünf Fragen", vorrang.anzahl, 5);
+eq("gezielt vorgelegt werden genau zwei", vorrang.ausKonto, 2);
+wahr("und keine doppelt", !vorrang.doppelt);
+
+// Ohne fällige Lücke bleibt das Ziehen, was es war.
+const ohneKonto = await p.evaluate(() => {
+  window.__T.state().m = [];
+  const zug = window.__T.zieheFragen("suk", 3);
+  return { anzahl: zug.length, doppelt: zug.length !== new Set(zug).size };
+});
+eq("Ohne Merkliste weiterhin fünf Fragen", ohneKonto.anzahl, 5);
+wahr("und keine doppelt", !ohneKonto.doppelt);
+
+/* ---- 40. Die Karte zeigt nur, was es noch gibt --------------------------- */
+const karte = await p.evaluate(alt => {
+  const st = window.__T.state(), Q = window.__T.QUIZ.suk;
+  st.m = [
+    { id: window.__T.frageId(Q[0]), fach: "suk", n: 3, ok: 0, dat: alt },
+    { id: window.__T.frageId(Q[1]), fach: "suk", n: 1, ok: 1, dat: alt },
+    // Verwaist: diese Kennung gehört zu keiner Frage im Katalog.
+    { id: "gibtesnicht", fach: "suk", n: 9, ok: 0, dat: alt }
+  ];
+  window.__T.render();
+  const zeilen = Array.from(document.querySelectorAll(".mitem")).map(li => ({
+    zahl: li.querySelector(".mn").textContent,
+    frage: li.querySelector(".mq").textContent,
+    unten: li.querySelector(".mm").textContent
+  }));
+  return { zeilen,
+           kopf: document.querySelector(".mlist").closest(".card")
+                   .querySelector(".card-head .note").textContent,
+           ersteFrage: Q[0].q };
+}, vorTagen(9));
+eq("Zwei Zeilen, die verwaiste fehlt", karte.zeilen.length, 2);
+eq("Der häufigste Fehler steht oben", karte.zeilen[0].frage, karte.ersteFrage);
+eq("mit seinem Zähler", karte.zeilen[0].zahl, "3×");
+wahr("die Nebenzeile nennt Fach und Stand",
+     /SUK/.test(karte.zeilen[0].unten) && /3-mal falsch/.test(karte.zeilen[0].unten));
+wahr("und dass die Schonfrist um ist", /wieder fällig/.test(karte.zeilen[0].unten));
+wahr("Der Kopf zählt die Lücken", /2 Lücken/.test(karte.kopf));
+
+// „Als Thema" schiebt die Lücke in die Frage-Werkstatt.
+await p.click('.mitem [data-act="mfrage"]');
+await p.waitForTimeout(250);
+const uebernommen = await p.evaluate(() => ({
+  fach: window.__T.frage().fach, art: window.__T.frage().art,
+  thema: document.getElementById("fThema").value,
+  imText: document.getElementById("ftext").value
+}));
+eq("Das Fach der Lücke steht in der Werkstatt", uebernommen.fach, "suk");
+eq("und die Art passt zur Lage", uebernommen.art, "warum");
+eq("die Frage ist das Thema", uebernommen.thema, karte.ersteFrage);
+wahr("und steht in der fertigen Frage", uebernommen.imText.indexOf(karte.ersteFrage) >= 0);
+
+// „Erledigt" nimmt eine Zeile weg — der Katalog ist vorläufig.
+await p.click('.mitem [data-act="mdel"]');
+await p.waitForTimeout(250);
+eq("Erledigt nimmt die Zeile von der Liste",
+   await p.evaluate(() => document.querySelectorAll(".mitem").length), 1);
+
+// Ohne Lücken gibt es die Karte gar nicht.
+await p.evaluate(() => { window.__T.state().m = []; window.__T.render(); });
+await p.waitForTimeout(200);
+eq("Ohne Lücken keine Karte",
+   await p.evaluate(() => document.querySelectorAll(".mlist").length), 0);
+
+/* ---- 41. Tempo: aus Stunden werden Daten -------------------------------- */
+const td = await p.evaluate(() => {
+  const T = window.__T, now = T.today();
+  const reif = { reif: true }, jung = { reif: false };
+  const d = T.tempoDatum(100, 10, reif, now);   // 10 Tage
+  return {
+    datum: { art: d.art, tage: d.tage, txt: d.txt },
+    jung: T.tempoDatum(100, 10, jung, now).art,
+    null0: T.tempoDatum(100, 0, reif, now),
+    fern: T.tempoDatum(100000, 1, reif, now).art,
+    grenze: T.tempoDatum(730, 1, reif, now).art     // genau zwei Jahre
+  };
+});
+eq("Bekanntes Tempo ergibt ein Datum", td.datum.art, "datum");
+eq("und die richtige Zahl Tage", td.datum.tage, 10);
+wahr("im Klartext", /bei deinem Tempo etwa ab /.test(td.datum.txt));
+eq("Zu wenig Verlauf gibt keine Zahl", td.jung, "jung");
+eq("Tempo null auch nicht", td.null0.art, "null");
+wahr("sondern die eigentliche Auskunft", /fehlt Lernzeit/.test(td.null0.txt));
+eq("Über zwei Jahre wird nicht datiert", td.fern, "fern");
+eq("genau zwei Jahre noch", td.grenze, "datum");
+
+// Aus dem echten Verlauf: das Fenster zählt nur Tage, die zählen.
+const tp = await p.evaluate(() => {
+  const T = window.__T, st = T.state();
+  return T.tempo(T.auswerten(st, T.today()), T.today(), 28);
+});
+wahr("Das Tempofenster hat Tage gesehen", tp.gezaehlt > 0);
+wahr("und liefert Punkte je Tag", tp.proTag > 0);
+
+// Die Attributkarte nennt das Datum jetzt neben den Stunden.
+const axNext = await p.evaluate(() =>
+  Array.from(document.querySelectorAll(".attr .ax.next")).map(x => x.textContent));
+wahr("Mindestens eine Attributzeile nennt eine Hochrechnung",
+     axNext.some(t => /bei deinem Tempo etwa ab |fehlt Lernzeit|über zwei Jahre|zu wenig Verlauf/.test(t)));
+
+/* ---- 42. Der Wochenblick nennt das vergessene Fach ----------------------- */
+/*  Ein eigener Stundenplan, an jedem Wochentag derselbe: Morgenroutine, Anki
+    und ein Deutschblock. Damit bekommt genau ein Prüfungsfach Zeit, und die
+    vier anderen fehlen — unabhängig davon, welcher Wochentag heute ist.      */
+const nurDeutsch = (() => {
+  const tag = { label:"Testtag", tag:"Test", blocks: [
+    { id:"morgen",  t:"6:00",  nm:"Morgenroutine", kind:"morg", track:true, min:20 },
+    { id:"anki",    t:"17:00", nm:"Anki",          kind:"anki", track:true, min:15 },
+    { id:"deutsch", t:"18:00", nm:"Deutsch",       kind:"deep", track:true, min:60 }
+  ]};
+  const alle = {};
+  ["mo","di","mi","do","fr","sa","so"].forEach(k => { alle[k] = tag; });
+  return { core:["morgen","anki"], days: alle, vacationDays: alle, freeDay: tag };
+})();
+const blick = await p.evaluate(plan => {
+  const T = window.__T, st = T.state();
+  const heute = new Date();
+  const bisher = (heute.getDay() + 6) % 7;
+  const mo = new Date(heute); mo.setDate(heute.getDate() - bisher);
+  st.p = plan; st.d = {}; st.w = {}; st.m = [];
+  for (let i = 0; i <= bisher; i++) {
+    const x = new Date(mo); x.setDate(mo.getDate() + i);
+    st.d[T.ymd(x)] = ["morgen", "anki", "deutsch"];
+  }
+  st.updatedAt = Date.now() + 5000;
+  return { wtag: bisher };
+}, nurDeutsch);
+await p.evaluate(() => { window.__T.planAnwenden(); window.__T.render(); });
+await p.waitForTimeout(250);
+const blickTxt = await p.evaluate(() => {
+  const box = document.querySelector(".wblick");
+  return box ? box.innerText.replace(/\s+/g, " ").trim() : null;
+});
+wahr("Der Wochenblick steht da", !!blickTxt);
+wahr("und nennt die Fächer ohne Zeit", /Diese Woche ohne Zeit/.test(blickTxt));
+wahr("SUK gehört dazu", /SUK/.test(blickTxt));
+wahr("WiSo und Englisch auch", /WiSo/.test(blickTxt) && /Englisch/.test(blickTxt));
+wahr("Deutsch nicht — das Fach hatte Zeit",
+     !/ohne Zeit:[^—]*Deutsch/.test(blickTxt));
+
+/*  Eine ganz leere Woche schweigt am Montag, ab Mittwoch aber nicht mehr:
+    dort ist gerade das Nichts die Auskunft.                                  */
+const leereWoche = await p.evaluate(() => {
+  const T = window.__T, st = T.state();
+  st.d = {}; st.updatedAt = Date.now() + 6000;
+  T.render();
+  const box = document.querySelector(".wblick");
+  return { wtag: (new Date().getDay() + 6) % 7,
+           txt: box ? box.innerText.replace(/\s+/g, " ").trim() : null };
+});
+if (leereWoche.wtag >= 2) {
+  wahr("Ab Mittwoch meldet auch die leere Woche",
+       leereWoche.txt && /bisher keines/.test(leereWoche.txt));
+} else {
+  wahr("Am Wochenanfang schweigt die leere Woche",
+       !leereWoche.txt || !/ohne Zeit/.test(leereWoche.txt));
+}
+
+/* ---- 43. Was heute Abend auf dem Spiel steht -----------------------------
+   Der Multiplikator wurde bisher erst sichtbar, wenn er weg war. Dieselbe
+   Festzeitzone wie bei der Schlafenszeile, damit der Lauf nicht davon abhängt,
+   wann am Tag er startet.                                                    */
+
+/*  Ein Fallstrick, der beim Bauen auffiel: evaluate() läuft bis EINSCHLIESSLICH
+    heute. An einem Abend mit offenem Kern ist ev.streak deshalb längst 0 — die
+    Seite könnte gar nicht sagen, wo die Serie steht. Genau dafür gibt es
+    serieGestern, und genau dieser Unterschied wird hier festgehalten.        */
+async function einsatzZeile(stunde, tageVorher, opt) {
+  const o = opt || {};
+  const st = JSON.parse(JSON.stringify(start));
+  st.p = planMitWeckruf("6:00", 7.5);
+  st.d = {};
+  const heute = new Date();
+  const key = d => d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") +
+                   "-" + String(d.getDate()).padStart(2,"0");
+  for (let i = 1; i <= tageVorher; i++) {
+    const x = new Date(heute); x.setDate(heute.getDate() - i);
+    st.d[key(x)] = ["morgen", "lesen"];
+  }
+  if (o.heuteFertig) st.d[key(heute)] = ["morgen", "lesen"];
+  if (o.frei) st.f[key(heute)] = "frei";
+  return await mitStunde(stunde, async zone => {
+    const c = await b.newContext({ viewport:{width:900,height:900}, colorScheme:"dark",
+                                   locale:"de-DE", timezoneId: zone });
+    const q = await c.newPage();
+    await q.addInitScript(`localStorage.setItem("lernquest.state.v4", ${JSON.stringify(JSON.stringify(st))})`);
+    await q.goto("file://" + process.cwd() + "/" + datei);
+    await q.waitForTimeout(400);
+    const r = await q.evaluate(() => {
+      const el = document.querySelector(".einsatz");
+      const ev = window.__T.auswerten(window.__T.state(), window.__T.today());
+      return { stunde: new Date().getHours(),
+               txt: el ? el.innerText.replace(/\s+/g, " ").trim() : null,
+               serie: ev.streak, serieGestern: ev.serieGestern,
+               riss: ev.letzterRiss,
+               kopf: (document.querySelector(".gauge.mint .cap") || {}).textContent || "" };
+    });
+    await c.close();
+    return r;
+  });
+}
+
+const eMittag = await einsatzZeile(12, 9);
+eq("Mittags steht keine Einsatzzeile da", eMittag.txt, null);
+eq("Der offene Kern hat die Serie heute schon auf null gesetzt", eMittag.serie, 0);
+eq("serieGestern hält den Stand von gestern fest", eMittag.serieGestern, 9);
+
+const eAbend = await einsatzZeile(18, 9);
+wahr("Ab dem späten Nachmittag steht sie da", !!eAbend.txt);
+wahr("und nennt, was der Kern noch einbringt", /Fertig gestempelt sind das \+\d+ XP/.test(eAbend.txt));
+wahr("wo die Serie morgen stünde", /Serie steht morgen bei 10 \(×1,5\)/.test(eAbend.txt));
+wahr("und was ein Abbruch kostet",
+     /fängt sie wieder bei null an/.test(eAbend.txt) &&
+     /×1 statt ×1,5/.test(eAbend.txt));
+
+/*  Unter drei Tagen gibt es keinen Multiplikator zu verlieren — dann wäre der
+    zweite Satz blosses Nörgeln.                                              */
+const eKurz = await einsatzZeile(18, 1);
+wahr("Bei kurzer Serie steht die Zeile trotzdem da", !!eKurz.txt);
+wahr("aber ohne Drohung", !/fängt sie wieder bei null an/.test(eKurz.txt));
+wahr("und nennt weiter den Stand von morgen", /Serie steht morgen bei 2/.test(eKurz.txt));
+
+const eFertig = await einsatzZeile(18, 9, { heuteFertig: true });
+eq("Ist der Kern erledigt, verschwindet sie", eFertig.txt, null);
+eq("und die Serie zählt weiter", eFertig.serie, 10);
+
+const eFrei = await einsatzZeile(18, 9, { frei: true });
+eq("An einem frei markierten Tag steht sie nicht da", eFrei.txt, null);
+
+/*  Eine gerissene Serie war bisher eine stumme Null. */
+wahr("Die Anzeige nennt die zuletzt gerissene Serie",
+     /zuletzt \d+ Tage?, gerissen am /.test(eMittag.kopf));
+wahr("und weiterhin den Bestwert", /Bestwert /.test(eMittag.kopf));
+wahr("Bei laufender Serie steht das nicht da", !/gerissen am/.test(eFertig.kopf));
+
+/* ---- 44. Kein Skriptfehler ---------------------------------------------- */
 eq("Seitenfehler", errs, []);
 
 await ctx.close(); await b.close();

@@ -159,6 +159,40 @@ await p.waitForTimeout(2400);
 wahr("und das Aufgehaltene geht danach raus",
      await p.evaluate(() => window.__pub.length) > vorTimer);
 
+/* ---- Das Fehlerkonto überlebt den Austausch mit dem Widget --------------
+   Die Merkliste steht in `m`. Fehlte der Schlüssel im JSON-Feld oder beim
+   Zusammenführen, wäre sie nach einem Hin und Her mit dem Mac-Widget weg.   */
+await p.evaluate(() => {
+  window.__S().m = [{ id: "abc123", fach: "suk", n: 3, ok: 1, dat: "2026-08-20" }];
+  window.__S().updatedAt = Date.now() + 1000;
+});
+await p.evaluate(() => {
+  // Neu zeichnen, damit das Austauschfeld den frischen Stand trägt.
+  document.querySelector('[data-act="mprev"]').click();
+  document.querySelector('[data-act="mnext"]').click();
+});
+await p.waitForTimeout(200);
+const ioText = await p.inputValue("#io");
+const ioObj = JSON.parse(ioText);
+eq("Das Austauschfeld führt die Merkliste mit", (ioObj.m || []).length, 1);
+eq("mit allen Feldern", ioObj.m[0],
+   { id: "abc123", fach: "suk", n: 3, ok: 1, dat: "2026-08-20" });
+
+// Zusammenführen: eine fremde Lücke kommt dazu, eine bekannte behält den
+// höheren Fehlerzähler.
+const fremd = JSON.parse(ioText);
+fremd.m = [{ id: "abc123", fach: "suk", n: 7, ok: 0, dat: "2026-08-25" },
+           { id: "neu999", fach: "bwl", n: 1, ok: 0, dat: "2026-08-26" }];
+await p.fill("#io", JSON.stringify(fremd));
+await p.click('[data-act="merge"]');
+await p.waitForTimeout(300);
+const nachMerge = await p.evaluate(() => window.__S().m.slice()
+  .sort((a, b) => (a.id < b.id ? -1 : 1)));
+eq("Nach dem Zusammenführen stehen beide Lücken da", nachMerge.length, 2);
+eq("der höhere Fehlerzähler gewinnt", nachMerge[0].n, 7);
+eq("das jüngere Datum auch", nachMerge[0].dat, "2026-08-25");
+eq("und die fremde Lücke ist dabei", nachMerge[1].fach, "bwl");
+
 eq("Seitenfehler", errs, []);
 
 await ctx.close(); await b.close();

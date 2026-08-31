@@ -27,6 +27,7 @@ Was sie zusätzlich kann:
 | **Punkte und Stufen** | Jede Minute zählt gewichtet: Deep Work ×1,6, Anki ×1,2, Wiederholen ×1,0, Routine ×0,8, Lesen ×0,7 |
 | **Acht Attribute** | Fünf Prüfungsfächer und drei Grundwerte, gespeist aus den Blöcken, die auf sie einzahlen |
 | **Stufenprüfungen** | Lernzeit macht prüfungsberechtigt, fünf Fragen vergeben die Stufe — ab Stufe 4 muss jede sitzen |
+| **Fehlerkonto** | Was in einer Stufenprüfung falsch war, wird gemerkt und nach drei Tagen gezielt wieder vorgelegt; zweimal richtig schliesst die Lücke |
 | **Noten** | Note *oder* IHK-Punkte eintragen, Schnitt je Fach, Prognose der Abschlussnote und die Restnote fürs Ziel |
 | **Zeugnisnoten** | Eigene Gruppe mit Berufsfachlicher Kompetenz — BWL, WiSo und SUK stehen im Zeugnis zusammengefasst; daneben steht, was die eigenen Klassenarbeiten ergeben |
 | **Jahresabschluss** | Zum Schuljahresende schlägt die Karte je Zeugnisfach den Schnitt der Arbeiten dieses Jahres vor; ein Klick trägt sie als Jahresnote zum 31. Juli ein |
@@ -38,6 +39,9 @@ Was sie zusätzlich kann:
 | **Rückgängig** | Eine Minute lang lässt sich jeder Handgriff zurücknehmen, der etwas wegnimmt |
 | **Monat** | Blätterbar und klickbar; ein Tag mit Notiz bekommt eine Ecke |
 | **Schlafenszeit** | Ab 19:00 steht unter dem Tagesplan, wann Schluss sein müsste — rückwärts vom nächsten Weckruf, `sleepHours` aus dem Plan |
+| **Einsatz** | Ab 17:00 bei offenem Kern: was er noch einbringt und was ein Abbruch den Multiplikator kostet |
+| **Tempo** | Aus den letzten vier Wochen ein Datum statt einer Stundenzahl — je Attributstufe und je gesperrter Karriere-Phase |
+| **Wochenblick** | Welches Prüfungsfach diese Woche keine Minute bekam, direkt unter dem Wochenkalender |
 | **Eigener Stundenplan** | Zeiten, Blöcke, Ferien und Prüfungstermine lassen sich in der Seite selbst ändern — dieselben Schlüssel wie `lernplan-config.json` |
 | **Frage-Werkstatt** | Baut aus dem eigenen Stand eine fertige Frage an Claude — Fach, Stufe, Schnitt, Wochen-Schwerpunkt, Prüfungsabstand — in fünf Sorten, kopierbar |
 
@@ -55,9 +59,9 @@ zuerst das, was gerade nicht dran war.
 
 Der Zustand teilt sich mit `~/.lernplan-widget.json` alle Schlüssel: `d` Häkchen,
 `f` Markierungen, `n` Tagesnotizen, `w` Wochen-Schwerpunkte, `t` laufender Timer.
-Artefakt-eigen sind `q` (bestandene Stufenprüfungen), `g` (Noten), `zn` (Zielnote),
-`zw` (Wochenziel) und `p` (eigener Stundenplan) — das Widget lässt sie beim
-Einlesen einfach fallen.
+Artefakt-eigen sind `q` (bestandene Stufenprüfungen), `g` (Noten), `m`
+(Fehlerkonto), `zn` (Zielnote), `zw` (Wochenziel) und `p` (eigener Stundenplan)
+— das Widget lässt sie beim Einlesen einfach fallen.
 
 **Der eigene Stundenplan** liegt unter `p` und enthält **nur, was vom eingebauten
 Plan abweicht**; beim Laden wird er darübergelegt. So erreichen spätere
@@ -96,6 +100,28 @@ kann rechnerisch bei 2,5 landen und trotzdem durchfallen — die Karte zeigt das
 jetzt statt es zu verschweigen. Je Bedingung drei Zustände: *steht fest*,
 *verletzt*, *hängt an den offenen Blöcken*. Solange nichts eingetragen ist,
 steht ein Satz da und keine Liste aus vier „offen".
+
+**Das Fehlerkonto ist die einzige Wiederholung, die die Seite selbst steuert.**
+Bisher warf eine Stufenprüfung ihren Inhalt weg: gespeichert wurde nur die
+bestandene Stufe, und der zweite Versuch zog mit Absicht *andere* Fragen. Wer an
+Buchungssätzen scheiterte, konnte mit fünf anderen Fragen bestehen — die Lücke
+blieb unberührt. Jetzt landet jede falsche Antwort unter `m`, mit einer Kennung
+aus dem Fragetext (nicht dem Listenindex: der Katalog wird später getauscht).
+Nach drei Tagen Schonfrist kommt sie wieder — **gezielt höchstens zwei** der
+fünf Fragen, damit eine Stufenprüfung eine Stufenprüfung bleibt. Zweimal richtig,
+und der Eintrag fällt heraus; ein Rückfall setzt den Zähler zurück.
+
+**Der Einsatz macht sichtbar, was ein Abbruch kostet.** Der Multiplikator geht
+über ×1,2 bis ×2 und war an einem einzigen Abend weg, ohne dass vorher etwas
+davon zu sehen war. Dafür brauchte `evaluate()` einen neuen Wert: der Durchlauf
+endet *einschliesslich* heute, also ist `streak` an einem Abend mit offenem Kern
+längst 0 — `serieGestern` hält den Stand davor fest. Unter drei Tagen Serie steht
+der zweite Satz nicht da: dort gibt es nichts zu verlieren, und es wäre Nörgeln.
+
+**Das Tempo kommt aus den letzten vier Wochen**, nicht aus dem ganzen Verlauf.
+Drei Fälle bekommen bewusst keine Zahl: unter sieben gezählten Tagen („noch zu
+wenig Verlauf"), Tempo null in diesem Fach („dafür fehlt Lernzeit in diesem
+Fach" — das ist die eigentliche Auskunft) und alles jenseits von zwei Jahren.
 
 **Zeugnisnoten rechnen je Schuljahr.** Das Schuljahr kommt aus dem Datum, August
 bis Juli: `2026-07-29` gehört zu 2025/26. Jedes Jahr bekommt einen eigenen Block
@@ -179,14 +205,16 @@ Ziellinie, kein Hebel.
 ```sh
 cd lernplan-widget/lernquest/test
 npm i playwright-core
-node test.mjs        # 248 Prüfungen: Notenrechnung, Zeugnis je Schuljahr, XP-Konto,
+node test.mjs        # 314 Prüfungen: Notenrechnung, Zeugnis je Schuljahr, XP-Konto,
                      # Kalenderwoche, Blockzeiten, Fragenkatalog, Rückgängig, Fokus,
                      # Zusammenführen, Schlafenszeit, eigener Stundenplan,
                      # abgelaufener Timer, Schriftladen, Scroll-Anker,
                      # Frage-Werkstatt, IHK-Gewichte, Bestehensregel,
-                     # Jahresabschluss, Trennung von Schul- und IHK-Note
-node savetest.mjs    # 28: Wecker wird beim Start vorgelegt, nichts wird
-                     # während Prüfung, Timer oder Wecker veröffentlicht
+                     # Jahresabschluss, Trennung von Schul- und IHK-Note,
+                     # Fehlerkonto samt Schonfrist, Einsatzzeile, Tempo, Wochenblick
+node savetest.mjs    # 34: Wecker wird beim Start vorgelegt, nichts wird
+                     # während Prüfung, Timer oder Wecker veröffentlicht,
+                     # das Fehlerkonto übersteht den Austausch
 
 # Die beiden Regressionswächter — sie bauen die Datei mit dem alten Fehler:
 node test.mjs --ohne-fix      # der Tag sprang beim Veröffentlichen auf heute
