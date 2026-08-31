@@ -29,6 +29,7 @@ Was sie zusätzlich kann:
 | **Stufenprüfungen** | Lernzeit macht prüfungsberechtigt, fünf Fragen vergeben die Stufe — ab Stufe 4 muss jede sitzen |
 | **Noten** | Note *oder* IHK-Punkte eintragen, Schnitt je Fach, Prognose der Abschlussnote und die Restnote fürs Ziel |
 | **Zeugnisnoten** | Eigene Gruppe mit Berufsfachlicher Kompetenz — BWL, WiSo und SUK stehen im Zeugnis zusammengefasst; daneben steht, was die eigenen Klassenarbeiten ergeben |
+| **Jahresabschluss** | Zum Schuljahresende schlägt die Karte je Zeugnisfach den Schnitt der Arbeiten dieses Jahres vor; ein Klick trägt sie als Jahresnote zum 31. Juli ein |
 | **Karriereplan** | Die sechs Phasen des CFO-Plans, gesperrt bis Datum und Fachstufen stimmen |
 | **Wochenkalender** | Sieben Knöpfe — jeder vergangene Tag ist einen Klick zum Nachtragen entfernt |
 | **Fokus-Timer** | `▶` je Block, läuft über die Blockdauer; der Weckton wird beim Start in der Audio-Uhr vorgelegt und klingelt auch im Hintergrund-Tab |
@@ -102,7 +103,26 @@ mit eigenem Schnitt, das jüngste oben; Deutsch 2026 wird also nicht still mit
 Deutsch 2027 gemittelt. Auch die Gegenprobe der Berufsfachlichen Kompetenz zieht
 nur Klassenarbeiten **desselben** Schuljahres heran. Ein Fach, das ich nicht
 vorgesehen habe, trägt man unter *Weiteres Fach* ein; sein Name wird zur Kennung
-(`zg:x:religion`), zwei Zusatzfächer stehen daher als zwei Zeilen da.
+(`zg:x:religion`), zwei Zusatzfächer stehen daher als zwei Zeilen da. Eine
+Zeugnisnote zählt immer einfach — die Gewicht-Auswahl weicht deshalb einem
+Hinweis, statt die Eingabe hinterher still zu überschreiben.
+
+**Der Jahresabschluss schlägt vor, er trägt nicht ein.** Sobald das laufende
+Schuljahr Klassenarbeiten hat und noch keine Zeugnisnote trägt, steht über den
+Jahresblöcken ein Feld je Zeugnisfach, vorbelegt mit dem Schnitt der Arbeiten
+dieses Jahres — ab Juni als Zeugniszeit, davor als Vorschau. *Als Jahresnote
+eintragen* schreibt daraus gewöhnliche `zg:`-Einträge zum 31. Juli; die
+Klassenarbeiten bleiben, wo sie sind. Die Zahl im Feld ist ein Anhaltspunkt:
+die Zeugnisnote setzt die Lehrkraft, und mündliche Mitarbeit geht mit ein.
+
+**Zwei Zeugnisse, zwei Rechnungen.** Am Ende der Ausbildung gibt es ein
+Berufsschulzeugnis und ein IHK-Zeugnis. Die IHK-Note entsteht allein aus den
+vier Prüfungsbereichen; Schulnoten gehen dort nicht ein, die Berufsschulnote
+wird auf dem IHK-Zeugnis nur auf Antrag als eigene Zeile ausgewiesen. Die
+Abschlussnote der Berufsschule rechnet die Seite bewusst **nicht** aus: dafür
+müsste ihre Gewichtung an der Berufsschulordnung geprüft sein, und dieser
+Rechtstext war aus der Arbeitsumgebung nicht erreichbar. Lieber keine Zahl als
+eine ungeprüfte.
 
 **Punkte sind ein Konto, kein Fenster.** Gezählt wird ab dem ersten Eintrag.
 Vorher lagen 400 Tage davor — ab dem 401. wäre der Anfang wieder herausgefallen
@@ -159,11 +179,12 @@ Ziellinie, kein Hebel.
 ```sh
 cd lernplan-widget/lernquest/test
 npm i playwright-core
-node test.mjs        # 222 Prüfungen: Notenrechnung, Zeugnis je Schuljahr, XP-Konto,
+node test.mjs        # 248 Prüfungen: Notenrechnung, Zeugnis je Schuljahr, XP-Konto,
                      # Kalenderwoche, Blockzeiten, Fragenkatalog, Rückgängig, Fokus,
                      # Zusammenführen, Schlafenszeit, eigener Stundenplan,
                      # abgelaufener Timer, Schriftladen, Scroll-Anker,
-                     # Frage-Werkstatt, IHK-Gewichte, Bestehensregel
+                     # Frage-Werkstatt, IHK-Gewichte, Bestehensregel,
+                     # Jahresabschluss, Trennung von Schul- und IHK-Note
 node savetest.mjs    # 28: Wecker wird beim Start vorgelegt, nichts wird
                      # während Prüfung, Timer oder Wecker veröffentlicht
 

@@ -15,7 +15,9 @@ const HOOK = `  try { window.__T = { punkteZuNote:punkteZuNote, noteZuPunkte:not
     schwaechstesFach:schwaechstesFach, frageBauen:frageBauen,
     frage:function(){return frage;}, FRAGEARTEN:FRAGEARTEN,
     IHK_BLOECKE:IHK_BLOECKE, bestehen:bestehen,
-    mindAusreichend:mindAusreichend, istUngenuegend:istUngenuegend }; } catch (e) {}\n})();\n</script>`;
+    mindAusreichend:mindAusreichend, istUngenuegend:istUngenuegend,
+    jahresvorschlag:jahresvorschlag, arbeitenSchnitt:arbeitenSchnitt,
+    jahrEnde:jahrEnde }; } catch (e) {}\n})();\n</script>`;
 
 const kaputt = process.argv.includes("--ohne-fix");
 const ohneXp = process.argv.includes("--ohne-xp-fix");
@@ -992,7 +994,151 @@ eq("Ohne Eintrag keine Bedingungsliste", leer.zeilen, 0);
 eq("sondern ein Hinweis im Kopf", leer.kopf, "noch nichts eingetragen");
 wahr("und ein erklärender Satz", leer.satz);
 
-/* ---- 35. Kein Skriptfehler ---------------------------------------------- */
+/* ---- 35. Zeugnisnoten zählen einfach ------------------------------------
+   Auf dem Zeugnis steht je Fach genau eine Note. Bliebe die Gewicht-Auswahl
+   von der letzten Klassenarbeit auf ×3 stehen, wiche der Jahresschnitt von
+   dem ab, was auf dem Papier steht.                                        */
+await p.evaluate(() => { window.__T.state().g = []; window.__T.render(); });
+await p.waitForTimeout(150);
+await p.selectOption("#gFach", "zg:deutsch");
+await p.waitForTimeout(150);
+const gewFeld = await p.evaluate(() => ({
+  auswahl: !!document.querySelector("#gGew"),
+  fest: (document.querySelector(".gfest") || {}).textContent || null
+}));
+wahr("Für eine Zeugnisnote gibt es keine Gewicht-Auswahl", !gewFeld.auswahl);
+eq("sondern den Hinweis", gewFeld.fest, "zählt einfach");
+
+// Über den Umweg der Klassenarbeit ×3 einstellen und dann aufs Zeugnis wechseln:
+// die stehen gebliebene Auswahl darf den Eintrag nicht erreichen.
+await p.selectOption("#gFach", "deutsch");
+await p.waitForTimeout(120);
+await p.selectOption("#gGew", "3");
+await p.selectOption("#gFach", "zg:deutsch");
+await p.waitForTimeout(120);
+await p.fill("#gWas", "Jahreszeugnis 2026");
+await p.fill("#gNote", "2.4");
+await p.fill("#gDat", "2026-07-29");
+await p.click('[data-act="gadd"]');
+await p.waitForTimeout(200);
+const zgEintrag = await p.evaluate(() => window.__T.state().g.slice(-1)[0]);
+eq("Die Zeugnisnote wird mit Gewicht 1 gespeichert", zgEintrag.gew, 1);
+eq("mit der eingetragenen Note", zgEintrag.n, 2.4);
+
+/* ---- 36. Der Jahresabschluss -------------------------------------------
+   Zum Schuljahresende schlägt die Seite vor, was die Klassenarbeiten des
+   Jahres ergeben — sie trägt aber nichts von selbst ein.                   */
+
+// Das laufende Schuljahr bestimmt, welche Arbeiten der Vorschlag sieht.
+const jetztJahr = await p.evaluate(() => window.__T.schuljahr(window.__T.ymd(new Date())));
+const jahrAb = Number(jetztJahr.slice(0, 4));
+const inJahr = m => `${m >= 8 ? jahrAb : jahrAb + 1}-${String(m).padStart(2, "0")}-12`;
+const vorjahr = `${jahrAb - 1}-10-12`;
+
+eq("Das Schuljahr endet am 31. Juli",
+   await p.evaluate(j => window.__T.jahrEnde(j), jetztJahr), `${jahrAb + 1}-07-31`);
+
+await p.evaluate(([a, b, c, d, v]) => {
+  window.__T.state().g = [
+    { id:"j1", fach:"bwl",     was:"KA Beschaffung", n:2.0, p:null, dat:a, gew:1 },
+    { id:"j2", fach:"wiso",    was:"KA SV",          n:3.0, p:null, dat:b, gew:1 },
+    { id:"j3", fach:"suk",     was:"KA KLR",         n:1.0, p:null, dat:c, gew:1 },
+    { id:"j4", fach:"deutsch", was:"Erörterung",     n:2.0, p:null, dat:d, gew:1 },
+    // Aus dem Vorjahr — darf den Vorschlag nicht verschieben.
+    { id:"j0", fach:"bwl",     was:"altes Jahr",     n:6.0, p:null, dat:v, gew:1 }
+  ];
+  window.__T.render();
+}, [inJahr(9), inJahr(10), inJahr(11), inJahr(9), vorjahr]);
+await p.waitForTimeout(220);
+
+const vor = await p.evaluate(() => {
+  const box = document.querySelector(".jabs");
+  if (!box) return null;
+  return {
+    titel: box.querySelector(".zj").textContent,
+    felder: Array.from(box.querySelectorAll(".jgrid .gf")).map(l => ({
+      nm: l.querySelector("span").textContent,
+      wert: l.querySelector("input").value
+    }))
+  };
+});
+wahr("Der Jahresabschluss erscheint", !!vor);
+eq("und nennt das laufende Schuljahr", vor.titel, "Jahresabschluss " + jetztJahr);
+const feld = nm => vor.felder.filter(f => f.nm === nm)[0];
+// BFK aus BWL 2,0 · WiSo 3,0 · SUK 1,0 — der Sechser aus dem Vorjahr zählt nicht.
+eq("Berufsfachliche Kompetenz aus den Arbeiten des Jahres", feld("Berufsfachliche Kompetenz").wert, "2");
+eq("Deutsch aus dem eigenen Fach", feld("Deutsch").wert, "2");
+eq("Gemeinschaftskunde bleibt leer", feld("Gemeinschaftskunde").wert, "");
+wahr("Weiteres Fach steht nicht im Vorschlag", !feld("Weiteres Fach"));
+
+eq("Die Rechnung ohne Jahresgrenze wäre schlechter",
+   await p.evaluate(j => Math.round(
+     window.__T.arbeitenSchnitt(window.__T.state().g, ["bwl"], j) * 100) / 100, jetztJahr), 2);
+
+// Ein Feld von Hand überschreiben — der Vorschlag ist ein Vorschlag.
+await p.fill("#ja-zg\\:gk", "1.5");
+await p.waitForTimeout(150);
+await p.click('[data-act="jaadd"]');
+await p.waitForTimeout(250);
+
+const nachher2 = await p.evaluate(() => {
+  const zg = window.__T.state().g.filter(e => String(e.fach).indexOf("zg:") === 0);
+  return {
+    eintraege: zg.map(e => ({ fach:e.fach, n:e.n, dat:e.dat, gew:e.gew, was:e.was, p:e.p })),
+    blockWeg: !document.querySelector(".jabs"),
+    jahre: Array.from(document.querySelectorAll(".zjahr .zj")).map(x => x.textContent),
+    klassenarbeiten: window.__T.state().g.filter(e => e.fach === "bwl").length
+  };
+});
+eq("Drei Jahresnoten eingetragen", nachher2.eintraege.length, 3);
+const bfk = nachher2.eintraege.filter(e => e.fach === "zg:bfk")[0];
+eq("Datum ist das Schuljahresende", bfk.dat, `${jahrAb + 1}-07-31`);
+eq("beschriftet als Jahreszeugnis", bfk.was, `Jahreszeugnis ${jahrAb + 1}`);
+eq("Gewicht 1", bfk.gew, 1);
+eq("ohne Punkte", bfk.p, null);
+eq("Das überschriebene Feld gilt",
+   nachher2.eintraege.filter(e => e.fach === "zg:gk")[0].n, 1.5);
+eq("Der Eintrag landet im richtigen Schuljahr", nachher2.jahre, ["Schuljahr " + jetztJahr]);
+wahr("Der Block verschwindet danach", nachher2.blockWeg);
+eq("Die Klassenarbeiten bleiben unangetastet", nachher2.klassenarbeiten, 2);
+
+// Ist das Jahr abgeschlossen, wird nicht ein zweites Mal gefragt.
+eq("Kein zweiter Vorschlag im selben Jahr",
+   await p.evaluate(() => window.__T.jahresvorschlag(window.__T.state().g, new Date())), null);
+
+/* ---- 37. Zeugnisnoten und IHK-Prognose bleiben getrennt -----------------
+   Zwei Zeugnisse, zwei Rechnungen: eine Schulnote darf die Abschlussprognose
+   nicht bewegen. Dieser Test hält das fest, damit es nicht irgendwann
+   versehentlich zusammenläuft.                                             */
+const trennung = await p.evaluate(() => {
+  const st = window.__T.state();
+  const ihk = [{ id:"p1", fach:"ihk:t1", was:"Teil 1", n:2.0, p:null, dat:"2027-03-04", gew:1 }];
+  st.g = ihk.slice(); window.__T.render();
+  const ohne = { pr: window.__T.prognose(st.g, 1.9), be: window.__T.bestehen(st.g) };
+  st.g = ihk.concat([
+    { id:"s1", fach:"zg:bfk",     was:"Jahreszeugnis", n:6.0, p:null, dat:"2027-07-31", gew:1 },
+    { id:"s2", fach:"zg:deutsch", was:"Jahreszeugnis", n:6.0, p:null, dat:"2027-07-31", gew:1 }
+  ]);
+  window.__T.render();
+  const mit = { pr: window.__T.prognose(st.g, 1.9), be: window.__T.bestehen(st.g) };
+  return {
+    aktuell: [ohne.pr.aktuell, mit.pr.aktuell],
+    schlecht: [ohne.pr.schlecht, mit.pr.schlecht],
+    punkte: [ohne.be.punkte, mit.be.punkte],
+    steht: [ohne.be.steht, mit.be.steht],
+    satz: document.querySelector(".zeug .note.tiny:last-of-type").textContent
+  };
+});
+eq("Zwei Sechser im Zeugnis ändern die Prognose nicht",
+   trennung.aktuell[0], trennung.aktuell[1]);
+eq("auch nicht den schlechtesten Fall", trennung.schlecht[0], trennung.schlecht[1]);
+eq("und nicht die Bestehensrechnung", trennung.punkte[0], trennung.punkte[1]);
+eq("auch nicht deren Ergebnis", trennung.steht[0], trennung.steht[1]);
+wahr("Die Karte nennt beide Zeugnisse", /zwei/i.test(trennung.satz));
+wahr("und sagt, dass die Schulnote nur auf Antrag draufsteht",
+     /auf Antrag/.test(trennung.satz));
+
+/* ---- 38. Kein Skriptfehler ---------------------------------------------- */
 eq("Seitenfehler", errs, []);
 
 await ctx.close(); await b.close();

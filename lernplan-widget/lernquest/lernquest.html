@@ -421,6 +421,19 @@ button { font:inherit; color:inherit; cursor:pointer; }
 .zeug .pb .pbv { color:var(--amber); font-weight:600; width:52px; }
 /*  Je Schuljahr ein eigener Block mit eigenem Schnitt — zwei Zeugnisse dürfen
     nicht ineinanderlaufen. */
+.jabs { margin-top:13px; padding:13px 15px 15px; border-radius:12px;
+        background:var(--panel-2); border:1px solid var(--rule-2); }
+.jabs.faellig { background:var(--amber-soft); border-color:var(--amber); }
+.jabs .zkopf { margin-bottom:6px; }
+.jabs .note.tiny { margin:0 0 12px; }
+.jgrid { display:grid; gap:10px; margin-bottom:12px;
+         grid-template-columns:repeat(auto-fit,minmax(122px,1fr)); align-items:end; }
+/* "Gemeinschaftskunde" reicht auf einem schmalen Gerät bis an den Rand — auf
+   einem noch schmaleren darf es umbrechen statt hinauszuragen. */
+.jgrid .gf > span { overflow-wrap:anywhere; }
+.jtip { margin:9px 0 0; line-height:1.45; }
+.gfest { display:flex; align-items:center; min-height:38px; font-size:12.5px;
+         color:var(--ink-3); }
 .zjahr { margin-top:14px; }
 .zjahr + .zjahr { margin-top:18px; padding-top:14px; border-top:1px dashed var(--rule-2); }
 .zkopf { display:flex; align-items:baseline; gap:12px; flex-wrap:wrap; }
@@ -644,9 +657,7 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
   <button class="exx" data-act="examClose" type="button" aria-label="Prüfung schließen">✕</button>
 </dialog>
 
-<script type="application/json" id="state">
-{"v":4,"d":{},"f":{"2026-08-28":"frei"},"n":{},"w":{},"q":{},"g":[{"id":"zg26bfk","fach":"zg:bfk","was":"Jahreszeugnis 2026","n":1.9,"p":null,"dat":"2026-07-29","gew":1},{"id":"zg26de","fach":"zg:deutsch","was":"Jahreszeugnis 2026","n":2.4,"p":null,"dat":"2026-07-29","gew":1},{"id":"zg26en","fach":"zg:englisch","was":"Jahreszeugnis 2026","n":2.8,"p":null,"dat":"2026-07-29","gew":1},{"id":"zg26gk","fach":"zg:gk","was":"Jahreszeugnis 2026","n":2.2,"p":null,"dat":"2026-07-29","gew":1}],"t":null,"p":null,"zn":1.9,"zw":990,"updatedAt":1787933705023}
-</script>
+<script type="application/json" id="state">{"v":4,"d":{"2026-08-31":["morgen"]},"f":{"2026-08-28":"frei"},"n":{},"w":{},"q":{},"g":[{"id":"zg26bfk","fach":"zg:bfk","was":"Jahreszeugnis 2026","n":1.9,"p":null,"dat":"2026-07-29","gew":1},{"id":"zg26de","fach":"zg:deutsch","was":"Jahreszeugnis 2026","n":2.4,"p":null,"dat":"2026-07-29","gew":1},{"id":"zg26en","fach":"zg:englisch","was":"Jahreszeugnis 2026","n":2.8,"p":null,"dat":"2026-07-29","gew":1},{"id":"zg26gk","fach":"zg:gk","was":"Jahreszeugnis 2026","n":2.2,"p":null,"dat":"2026-07-29","gew":1}],"t":null,"p":null,"zn":1.9,"zw":990,"updatedAt":1788160917877}</script>
 
 <script id="app">
 /* ===========================================================================
@@ -1170,8 +1181,8 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
   var ZEUGNIS = [
     { id: "bfk", nm: "Berufsfachliche Kompetenz", de: "BWL, WiSo und SUK zusammen",
       ausF: ["bwl", "wiso", "suk"] },
-    { id: "deutsch", nm: "Deutsch", de: "" },
-    { id: "englisch", nm: "Englisch", de: "" },
+    { id: "deutsch", nm: "Deutsch", de: "", ausF: ["deutsch"] },
+    { id: "englisch", nm: "Englisch", de: "", ausF: ["englisch"] },
     { id: "gk", nm: "Gemeinschaftskunde", de: "" },
     { id: "sport", nm: "Sport", de: "" },
     { id: "sonst", nm: "Weiteres Fach", de: "" }
@@ -1188,6 +1199,56 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
     var von = Number(m[2]) >= 8 ? Number(m[1]) : Number(m[1]) - 1;
     return von + "/" + pad((von + 1) % 100);
   }
+  /*  Das Schuljahr endet am 31. Juli — das ist das Datum, unter dem eine
+      Jahresnote gespeichert wird, und "2026/27" endet im Juli 2027.         */
+  function jahrEnde(jahr) {
+    var m = /^(\d{4})/.exec(String(jahr || ""));
+    return m ? (Number(m[1]) + 1) + "-07-31" : null;
+  }
+
+  /*  Der Schnitt der Klassenarbeiten eines Schuljahrs zu einem Zeugnisfach.
+      Zweimal gebraucht: als Gegenprobe unter der Zeugniszeile und als
+      Vorschlag beim Jahresabschluss — deshalb hier, nicht dort.             */
+  function arbeitenSchnitt(list, faecher, jahr) {
+    if (!faecher || !faecher.length) return null;
+    return schnitt((list || []).filter(function (e) {
+      return faecher.indexOf(e.fach) >= 0 && schuljahr(e.dat) === jahr;
+    }));
+  }
+
+  /*  Zum Schuljahresende steht auf dem Zeugnis je Fach eine Note. Die setzt
+      die Lehrkraft, und mündliche Mitarbeit geht mit ein — die Seite kann sie
+      also nicht ausrechnen. Sie kann nur vorschlagen, was die Klassenarbeiten
+      des Jahres ergeben, und das Eintragen abnehmen.
+
+      Gezeigt wird der Block, solange das laufende Schuljahr Arbeiten hat und
+      noch keine Zeugnisnote trägt. Ab Juni ist Zeugniszeit, davor ist es eine
+      Vorschau — und sobald die Noten eingetragen sind, verschwindet er von
+      selbst, weil die Bedingung nicht mehr greift.                          */
+  function jahresvorschlag(list, now) {
+    var gl = list || [];
+    var jahr = schuljahr(ymd(now));
+    var ende = jahrEnde(jahr);
+    if (!jahr || !ende) return null;
+    var schon = gl.filter(function (e) {
+      return istZeugnis(e) && schuljahr(e.dat) === jahr;
+    });
+    if (schon.length) return null;
+    var arbeiten = gl.filter(function (e) {
+      return !istZeugnis(e) && !istIhk(e) && schuljahr(e.dat) === jahr;
+    });
+    if (!arbeiten.length) return null;
+    var monat = Number(String(ymd(now)).slice(5, 7));
+    return {
+      jahr: jahr, ende: ende, faellig: monat >= 6 && monat <= 7,
+      reihen: ZEUGNIS.filter(function (z) { return z.id !== "sonst"; })
+        .map(function (z) {
+          return { id: "zg:" + z.id, nm: z.nm,
+                   aus: arbeitenSchnitt(gl, z.ausF, jahr) };
+        })
+    };
+  }
+
   /*  Ein selbst benanntes Zeugnisfach bekommt seine eigene Kennung aus dem
       Namen — sonst fielen zwei verschiedene Zusatzfächer in denselben Topf.  */
   function kennung(s) {
@@ -2790,6 +2851,9 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
      Schnitt in den offenen Prüfungsblöcken für das Ziel noch nötig ist.      */
   var gForm = { fach: "", was: "", n: "", p: "", dat: "", gew: "1" };
   var gMsg = null;
+  // Wie gForm: die Felder des Jahresabschlusses werden bei jedem render() neu
+  // gebaut, die Eingaben liegen deshalb hier und nicht nur im DOM.
+  var jaForm = {}, jaMsg = null;
   /*  Jedes Eingabefeld braucht seinen Entwurf: render() ersetzt das DOM, und
       ohne diese Zwischenspeicher wäre Getipptes beim nächsten Klick weg.
       Notiz und Schwerpunkte hängen am Tag bzw. an der Woche — sonst zeigte ein
@@ -3051,12 +3115,18 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
       'min="0" max="100" inputmode="numeric" placeholder="83" value="' + esc(gForm.p) + '"></label>' +
       '<label class="gf f-d"><span>Datum</span><input id="gDat" type="date" value="' +
       esc(gForm.dat || ymd(now)) + '"></label>' +
-      '<label class="gf f-g"><span>Gewicht</span><select id="gGew">' +
-      [["0.5", "×0,5 klein"], ["1", "×1 normal"], ["2", "×2 Klassenarbeit"], ["3", "×3 Abschluss"]]
-        .map(function (o) {
-          return '<option value="' + o[0] + '"' + (gForm.gew === o[0] ? " selected" : "") +
-            ">" + o[1] + "</option>";
-        }).join("") + "</select></label>" +
+      /*  Auf dem Zeugnis steht je Fach genau eine Note, ohne Gewicht. Die
+          Auswahl weicht deshalb einem Hinweis — sichtbar, statt die Eingabe
+          hinterher still zu überschreiben.                                  */
+      (String(gForm.fach).indexOf("zg:") === 0
+        ? '<label class="gf f-g"><span>Gewicht</span>' +
+          '<span class="gfest">zählt einfach</span></label>'
+        : '<label class="gf f-g"><span>Gewicht</span><select id="gGew">' +
+          [["0.5", "×0,5 klein"], ["1", "×1 normal"], ["2", "×2 Klassenarbeit"],
+           ["3", "×3 Abschluss"]].map(function (o) {
+            return '<option value="' + o[0] + '"' + (gForm.gew === o[0] ? " selected" : "") +
+              ">" + o[1] + "</option>";
+          }).join("") + "</select></label>") +
       '<button class="btn prim f-b" data-act="gadd" type="button">' + icon("plus", 15) +
       "Eintragen</button></div>" +
       '<p class="gtip note' + (gMsg ? " bad" : "") + '" id="gtip">' + esc(gHinweis()) + "</p>";
@@ -3118,10 +3188,39 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
         ? jListe.length + (jListe.length === 1 ? " Schuljahr" : " Schuljahre")
         : "noch nichts eingetragen") + "</span></div>";
 
-    if (!jListe.length) {
+    /*  Der Jahresabschluss sagt schon, wie eine Zeugnisnote hereinkommt —
+        daneben wäre der Hinweis auf das Formular oben nur Doppelung.        */
+    var jv = jahresvorschlag(gl, now);
+    if (!jListe.length && !jv) {
       h += '<p class="note tiny">Noch keine Zeugnisnote eingetragen. Oben im Feld ' +
         "<em>Fach</em> stehen sie unter <em>Berufsschulzeugnis</em> — BWL, WiSo und " +
         "SUK zusammen als Berufsfachliche Kompetenz.</p>";
+    }
+
+    if (jv) {
+      h += '<div class="jabs' + (jv.faellig ? " faellig" : "") + '">' +
+        '<div class="zkopf"><span class="zj">Jahresabschluss ' + esc(jv.jahr) + "</span>" +
+        '<span class="note mono">' + (jv.faellig ? "Zeugniszeit" : "Vorschau") +
+        "</span></div>" +
+        '<p class="note tiny">' +
+        (jv.faellig
+          ? "Liegt das Zeugnis vor dir, trag die Noten hier ein — gespeichert werden " +
+            "sie als Jahresnote zum " + jv.ende.split("-").reverse().join(".") + ". "
+          : "Zeugnisse kommen Ende Juli — bis dahin ist das hier eine Vorschau. ") +
+        "Vorgeschlagen ist der Schnitt deiner Klassenarbeiten aus diesem Schuljahr. " +
+        "Die Zeugnisnote setzt die Lehrkraft, und mündliche Mitarbeit geht mit ein — " +
+        "die Zahl ist ein Anhaltspunkt, keine Note.</p>" +
+        '<div class="jgrid">' + jv.reihen.map(function (r) {
+          var wert = jaForm[r.id] !== undefined ? jaForm[r.id] : vorschlagWert(r.aus);
+          return '<label class="gf"><span>' + esc(r.nm) + "</span>" +
+            '<input id="ja-' + esc(r.id) + '" type="number" step="0.1" min="1" max="6" ' +
+            'inputmode="decimal" placeholder="—" value="' + esc(wert) + '"></label>';
+        }).join("") + "</div>" +
+        '<button class="btn prim" data-act="jaadd" type="button">' + icon("check", 15) +
+        "Als Jahresnote eintragen</button>" +
+        '<p class="jtip note' + (jaMsg ? " bad" : "") + '">' +
+        esc(jaMsg || "Leere Felder werden übersprungen. Später überschreiben geht " +
+                     "über das Formular oben.") + "</p></div>";
     }
     jListe.forEach(function (j) {
       var imJahr = jahre[j];
@@ -3140,9 +3239,7 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
           var treffer = imJahr.filter(function (e) { return e.fach === f.id; });
           /*  Gegenprobe nur mit Klassenarbeiten aus demselben Schuljahr — sonst
               hielte die Seite dem Zeugnis Arbeiten vor, die es nie bewertet hat. */
-          var eigen = f.ausF ? schnitt(gl.filter(function (e) {
-            return f.ausF.indexOf(e.fach) >= 0 && schuljahr(e.dat) === j;
-          })) : null;
+          var eigen = arbeitenSchnitt(gl, f.ausF, j);
           var unten = [];
           if (f.de) unten.push(esc(f.de));
           if (eigen !== null) unten.push("deine Klassenarbeiten ergeben " + num(eigen, 2));
@@ -3153,11 +3250,17 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
         }).join("") + "</ul></div>";
     });
 
-    if (jListe.length) {
+    if (jListe.length || jv) {
       h += '<p class="note tiny">Je Zeile eine Note, gleich gewichtet — so steht es ' +
-        "auf dem Zeugnis, und jedes Schuljahr rechnet für sich. Diese Rechnung ist " +
-        "unabhängig von der IHK-Prognose darunter: das Weiterbildungsstipendium hängt " +
-        "an der Abschlussprüfung, nicht am Berufsschulzeugnis.</p>";
+        "auf dem Zeugnis, und jedes Schuljahr rechnet für sich. Am Ende der " +
+        "Ausbildung bekommst du <strong>zwei</strong> Zeugnisse: eines von der " +
+        "Berufsschule mit diesen Noten und eines von der IHK. Die IHK-Note entsteht " +
+        "allein aus den vier Prüfungsbereichen unten — Schulnoten gehen dort nicht " +
+        "ein; die Berufsschulnote wird auf dem IHK-Zeugnis nur auf Antrag zusätzlich " +
+        "ausgewiesen, als eigene Zeile. Am Weiterbildungsstipendium hängt die " +
+        "IHK-Prüfung. Die Abschlussnote der Berufsschule rechnet diese Seite " +
+        "bewusst nicht aus: dafür müsste ihre Gewichtung an der Berufsschulordnung " +
+        "geprüft sein, und das war hier nicht möglich.</p>";
     }
     h += "</div>";
 
@@ -3269,7 +3372,10 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
       fach: fach, was: gForm.was.trim(),
       n: hatNote ? Math.round(Number(nt) * 10) / 10 : punkteZuNote(pk),
       p: pk !== null && isFinite(pk) ? Math.round(Number(pk)) : null,
-      dat: gForm.dat || ymd(today()), gew: Number(gForm.gew) || 1
+      dat: gForm.dat || ymd(today()),
+      // Eine Zeugnisnote zählt einfach, egal was in der Auswahl stehen blieb:
+      // sonst wiche der Jahresschnitt von dem ab, was auf dem Papier steht.
+      gew: fach.indexOf("zg:") === 0 ? 1 : (Number(gForm.gew) || 1)
     };
     state.g = (state.g || []).concat([eintrag]);
     // Fach und Gewicht bleiben stehen — meist kommen mehrere Noten am Stück.
@@ -3278,6 +3384,43 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
     save(); render();
     var el = document.getElementById("gWas");
     if (el) el.focus();
+  }
+
+  /*  Der Vorschlag steht auf eine Stelle gerundet im Feld — mit Punkt, weil
+      ein Zahlenfeld nichts anderes annimmt.                                 */
+  function vorschlagWert(x) {
+    return x === null || x === undefined || !isFinite(x)
+      ? "" : String(Math.round(Number(x) * 10) / 10);
+  }
+
+  /*  Aus den Feldern werden ganz normale Zeugniseinträge — dieselbe Form wie
+      von Hand eingetragen, nur mit dem Datum des Schuljahresendes. Die
+      Klassenarbeiten bleiben unangetastet: sie zählen weiter für XP und den
+      Schulschnitt, die Jahresnote ist ein eigener Datensatz.                */
+  function jahresAbschluss() {
+    var jv = jahresvorschlag(state.g || [], today());
+    if (!jv) return;
+    var neu = [], fehler = null;
+    jv.reihen.forEach(function (r) {
+      var roh = jaForm[r.id] !== undefined ? jaForm[r.id] : vorschlagWert(r.aus);
+      roh = String(roh).replace(",", ".").trim();
+      if (!roh) return;
+      var nt = Number(roh);
+      if (!isFinite(nt) || nt < 1 || nt > 6) {
+        if (!fehler) fehler = r.nm + ": Noten gehen von 1,0 bis 6,0.";
+        return;
+      }
+      neu.push({
+        id: "g" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+        fach: r.id, was: "Jahreszeugnis " + jv.ende.slice(0, 4),
+        n: Math.round(nt * 10) / 10, p: null, dat: jv.ende, gew: 1
+      });
+    });
+    if (fehler) { jaMsg = fehler; render(); return; }
+    if (!neu.length) { jaMsg = "Kein Feld ausgefüllt."; render(); return; }
+    state.g = (state.g || []).concat(neu);
+    jaForm = {}; jaMsg = null;
+    save(); render();
   }
 
   /*  Steigt eine Stufe, ändert sich sonst lautlos eine Zahl. Beim ersten
@@ -4013,6 +4156,7 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
     else if (act === "today") { setView(0); render(); }
     else if (act === "day") { setView(Number(el.getAttribute("data-off")) || 0); render(); }
     else if (act === "gadd") noteEintragen();
+    else if (act === "jaadd") jahresAbschluss();
     else if (act === "gdel") {
       var gi = el.getAttribute("data-id");
       var weg = (state.g || []).filter(function (x) { return x.id === gi; })[0];
@@ -4065,6 +4209,9 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
     if (t.id === "gNote") { gForm.n = t.value; gMsg = null; gTipp(); }
     else if (t.id === "gPkt") { gForm.p = t.value; gMsg = null; gTipp(); }
     else if (t.id === "gWas") gForm.was = t.value;
+    else if (t.id.indexOf("ja-") === 0) {
+      jaForm[t.id.slice(3)] = t.value; jaMsg = null;
+    }
     else if (t.id === "gDat") gForm.dat = t.value;
     else if (t.id === "notiz") {
       notizEntwurf = { key: dayInfo(shownDate(), state.f).key, text: t.value };
@@ -4081,7 +4228,15 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
     if (!t || !t.id) return;
     if (t.id === "fFach") { frage.fach = t.value; frageEntwurf = null; frageMerken(); render(); }
     else if (t.id === "fArt") { frage.art = t.value; frageEntwurf = null; frageMerken(); render(); }
-    else if (t.id === "gFach") { gForm.fach = t.value; gMsg = null; gTipp(); }
+    else if (t.id === "gFach") {
+      gForm.fach = t.value; gMsg = null;
+      /*  Wechselt die Art des Fachs, ändert sich das Formular selbst: neben
+          einer Zeugnisnote steht kein Gewicht. Nur dann lohnt das Neuzeichnen
+          — sonst reicht die eine Hinweiszeile.                              */
+      var zg = String(t.value).indexOf("zg:") === 0;
+      var zeigtGewicht = !!document.getElementById("gGew");
+      if (zg === zeigtGewicht) render(); else gTipp();
+    }
     else if (t.id === "gGew") gForm.gew = t.value;
     else if (t.id === "gZiel") {
       var z = Number(t.value);
