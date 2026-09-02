@@ -370,6 +370,37 @@ button { font:inherit; color:inherit; cursor:pointer; }
 .mitem .mm { font-size:11px; color:var(--ink-3); }
 .mtools { display:flex; flex-direction:column; gap:6px; flex:none; }
 .mtools .btn { min-height:32px; padding:0 10px; font-size:12px; white-space:nowrap; }
+.musel { font:inherit; font-size:12px; min-height:32px; border-radius:8px; max-width:170px;
+         border:1px solid var(--rule); background:var(--sunk); color:var(--ink); padding:0 6px; }
+.musel:focus-visible { outline:2px solid var(--amber); outline-offset:1px; }
+
+/* Verteilung der Ursachen: je Fach ein Balken, dessen Abschnitte sich nach der
+   Anzahl teilen. Eine Zahl je Ursache wäre genauer, ein Balken ist schneller
+   zu lesen — die Zahl steht deshalb im Abschnitt selbst. */
+.uvert { margin-top:18px; padding-top:15px; border-top:1px solid var(--rule); }
+.ulist { list-style:none; margin:11px 0 0; padding:0; display:flex;
+         flex-direction:column; gap:8px; }
+.uz { display:flex; align-items:center; gap:11px; }
+.uz .un { flex:none; width:104px; font-size:13px; color:var(--ink-2); }
+.uz .ub { flex:1; display:flex; gap:3px; min-width:0; }
+.uz .uc { flex:none; width:26px; text-align:right; font-size:12px; color:var(--ink-3); }
+.us { min-width:0; overflow:hidden; white-space:nowrap; text-overflow:ellipsis;
+      font-size:11px; line-height:26px; height:26px; padding:0 7px; border-radius:6px;
+      border:1px solid; }
+.u-wissen    { background:var(--blue-soft);  border-color:var(--blue);  color:var(--ink); }
+.u-verstehen { background:var(--amber-soft); border-color:var(--amber); color:var(--ink); }
+.u-flucht    { background:var(--coral-soft); border-color:var(--coral); color:var(--ink); }
+.u-zeit      { background:var(--mint-soft);  border-color:var(--mint);  color:var(--ink); }
+.uwarn { margin:13px 0 0; padding:11px 13px; border-radius:10px; font-size:13px;
+         line-height:1.5; background:var(--coral-soft); border:1px solid var(--coral);
+         color:var(--ink); }
+@media (max-width: 620px) {
+  /* Fach und Summe in eine Zeile, der Balken darunter — sonst stünde die
+     Summe allein auf einer dritten Zeile und sähe aus wie ein eigener Wert. */
+  .uz { flex-wrap:wrap; gap:6px 11px; }
+  .uz .un { width:auto; flex:1; }
+  .uz .ub { flex:0 0 100%; order:1; }
+}
 @media (max-width:640px) {
   .mitem { flex-wrap:wrap; }
   .mtools { flex-direction:row; width:100%; }
@@ -505,7 +536,7 @@ button { font:inherit; color:inherit; cursor:pointer; }
 .exopt:hover:not([disabled]) { border-color:var(--ink-3); background:var(--sunk); }
 .exopt:focus-visible { outline:2px solid var(--amber); outline-offset:2px; }
 .exopt.right { border-color:var(--mint); background:var(--mint-soft); color:var(--ink); }
-.exopt.wrong { border-color:var(--deep); background:rgba(240,111,94,0.14); }
+.exopt.wrong { border-color:var(--coral); background:var(--coral-soft); }
 .exopt.dim { opacity:.5; }
 .exnum { display:flex; gap:9px; align-items:center; flex-wrap:wrap; }
 .exnum input { font:inherit; font-family:"IBM Plex Mono",monospace; font-size:17px;
@@ -515,8 +546,21 @@ button { font:inherit; color:inherit; cursor:pointer; }
 .exwhy { margin-top:15px; padding:12px 14px; border-radius:10px; font-size:14px;
          line-height:1.5; background:var(--panel-2); border-left:3px solid var(--ink-3); }
 .exwhy.ok { border-left-color:var(--mint); }
-.exwhy.no { border-left-color:var(--deep); }
+.exwhy.no { border-left-color:var(--coral); }
 .exwhy b { color:var(--ink); }
+/* Woran es lag — steht zwischen Erklärung und Weiter, damit die Tabfolge
+   Ursache → Weiter lautet. Farben nur aus den vorhandenen Tokens. */
+.exu { margin-top:14px; }
+.exu .eyebrow { display:block; margin-bottom:7px; }
+.exurow { display:flex; flex-wrap:wrap; gap:7px; }
+.exub { font:inherit; font-size:13px; cursor:pointer; min-height:32px; padding:0 12px;
+        border-radius:8px; border:1px solid var(--rule); background:var(--panel-2);
+        color:var(--ink-2); }
+.exub:hover { border-color:var(--ink-3); color:var(--ink); }
+.exub:focus-visible { outline:2px solid var(--amber); outline-offset:2px; }
+.exub.an { border-color:var(--amber); background:var(--amber-soft); color:var(--ink);
+           font-weight:600; }
+.exub.ghost { border-style:dashed; }
 .exbtns { display:flex; gap:9px; margin-top:16px; }
 .exbtns .btn, .exres .btn, .exnum .btn { font:inherit; cursor:pointer; min-height:38px; padding:0 16px;
        border-radius:9px; border:1px solid var(--amber); background:var(--amber);
@@ -529,7 +573,7 @@ button { font:inherit; color:inherit; cursor:pointer; }
 .exres .big { font-family:"Chakra Petch",sans-serif; font-size:44px; font-weight:700;
               line-height:1; margin-bottom:8px; }
 .exres.ok .big { color:var(--mint); }
-.exres.no .big { color:var(--deep); }
+.exres.no .big { color:var(--coral); }
 .exres h3 { font-size:19px; font-weight:600; margin-bottom:8px; }
 .exres p { font-size:14px; color:var(--ink-2); margin:0 auto; max-width:44ch; line-height:1.5; }
 .exres .exbtns { justify-content:center; }
@@ -2546,7 +2590,11 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
             id: String(e.id).slice(0, 24), fach: String(e.fach || ""),
             n: Math.max(1, Math.min(99, Math.round(Number(e.n)) || 1)),
             ok: Math.max(0, Math.min(9, Math.round(Number(e.ok)) || 0)),
-            dat: /^\d{4}-\d{2}-\d{2}$/.test(e.dat) ? e.dat : ""
+            dat: /^\d{4}-\d{2}-\d{2}$/.test(e.dat) ? e.dat : "",
+            /*  u: woran es lag. Genau die vier bekannten Werte oder nichts —
+                ein unbekannter würde später als eigene Spalte in der
+                Verteilung auftauchen und die Prozente still verfälschen.    */
+            u: uArt(e.u) ? String(e.u) : null
           };
         })
         .filter(function (e) {
@@ -2687,6 +2735,30 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
      Katalog später gegen echte Klausuren getauscht wird; ein Hash aus dem
      Fragetext übersteht das Umsortieren, und ein Eintrag zu einer Frage, die es
      nicht mehr gibt, passt schlicht nicht mehr und wird übergangen.           */
+  /*  Woran es lag, ist wichtiger als was falsch war: vier Ursachen verlangen
+      vier verschiedene Antworten. Wer den Stoff nicht kannte, muss lernen; wer
+      ihn falsch angewandt hat, muss üben; wer sich verrechnet hat, braucht
+      keine Minute Stoff mehr, sondern eine Kontrollroutine; wer nicht fertig
+      wurde, muss am Tempo arbeiten. Ohne die Unterscheidung sieht alles nach
+      „mehr lernen" aus — und genau das ist bei zweien davon vergeudete Zeit.
+
+      Eine Liste statt vier verstreuter Zeichenketten, damit Prüfung, Knöpfe
+      und Auswahlfeld dieselbe Quelle haben. In der Prüfung stehen die
+      ausgeschriebenen Sätze: unter Zeitdruck liest niemand „flucht" richtig. */
+  var U_ARTEN = [
+    { id: "wissen",    nm: "kannte ich nicht",
+      de: "der Stoff fehlte — dafür ist Lernzeit da" },
+    { id: "verstehen", nm: "falsch verstanden",
+      de: "gewusst, aber falsch angewandt — dafür sind Aufgaben da" },
+    { id: "flucht",    nm: "Flüchtigkeitsfehler",
+      de: "gewusst, verrechnet oder verlesen — dafür hilft kein Lernen" },
+    { id: "zeit",      nm: "nicht geschafft",
+      de: "die Zeit reichte nicht — dafür ist Üben unter Zeit da" }
+  ];
+  function uArt(id) {
+    return U_ARTEN.filter(function (a) { return a.id === id; })[0] || null;
+  }
+
   var SCHONFRIST = 3;      // Tage, bevor ein Fehler wieder drankommt
   var AUS_KONTO = 2;       // höchstens zwei der fünf Fragen von der Merkliste
   var ZURUECKGELEGT = 2;   // zweimal richtig, dann ist die Lücke geschlossen
@@ -2709,8 +2781,11 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
     if (!richtig) {
       if (da) { da.n += 1; da.ok = 0; da.dat = ymd(today()); }
       else {
+        /*  u gehört mit hinein, auch wenn noch niemand etwas gewählt hat:
+            normalize() setzt das Feld ohnehin, und ein Eintrag ohne es käme
+            beim nächsten Laden anders zurück, als er weggeschrieben wurde.  */
         state.m = (state.m || []).concat([
-          { id: id, fach: attrId, n: 1, ok: 0, dat: ymd(today()) }
+          { id: id, fach: attrId, n: 1, ok: 0, dat: ymd(today()), u: null }
         ]);
       }
       save();
@@ -2732,6 +2807,38 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
       return e.fach === attrId && (!e.dat || e.dat <= grenze);
     });
   }
+  /*  Wie sich die Lücken auf die vier Ursachen verteilen. Fenster: 90 Tage,
+      gerechnet über das Datum des letzten Fehlers. Wer keine Ursache trägt,
+      wird nicht geraten, sondern getrennt gezählt — sonst sähe eine kaum
+      ausgefüllte Liste aus wie eine Aussage.                                 */
+  var U_FENSTER = 90;
+  function uVerteilung(now, tage) {
+    var grenze = ymd(addDays(now || today(), -(tage || U_FENSTER)));
+    var proFach = {}, gesamt = {}, mitUrsache = 0, ohne = 0;
+    (state.m || []).forEach(function (e) {
+      if (!kontoFrage(e)) return;              // verwaiste zählen nicht mit
+      if (e.dat && e.dat < grenze) return;
+      if (!e.u) { ohne++; return; }
+      mitUrsache++;
+      gesamt[e.u] = (gesamt[e.u] || 0) + 1;
+      proFach[e.fach] = proFach[e.fach] || {};
+      proFach[e.fach][e.u] = (proFach[e.fach][e.u] || 0) + 1;
+    });
+    return { proFach: proFach, gesamt: gesamt, mitUrsache: mitUrsache, ohne: ohne };
+  }
+  /*  Die eine Aussage, die aus der Verteilung folgt: liegt der Anteil der
+      Flüchtigkeitsfehler bei mindestens 30 %, ist mehr Stoff die falsche
+      Antwort. Unter acht zugeordneten Lücken sagt die Seite dazu nichts —
+      bei fünf Einträgen wären zwei Flüchtigkeitsfehler schon 40 % und die
+      Warnung reines Rauschen. Gerechnet über alle Fächer zusammen: je Fach
+      kämen acht kaum je zusammen.                                            */
+  var FLUCHT_ANTEIL = 0.3, FLUCHT_MIND = 8;
+  function fluchtAnteil(v) {
+    if (!v || v.mitUrsache < FLUCHT_MIND) return null;
+    var a = (v.gesamt.flucht || 0) / v.mitUrsache;
+    return a >= FLUCHT_ANTEIL ? Math.round(a * 100) : null;
+  }
+
   /*  Zu einem Eintrag die Frage aus dem Katalog. Findet sich keine — der
       Katalog wurde getauscht —, ist der Eintrag verwaist und wird übergangen. */
   function kontoFrage(e) {
@@ -2858,8 +2965,26 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
       html += '<div class="exwhy ' + (richtig ? "ok" : "no") + '">' +
         "<b>" + (richtig ? "Richtig" : "Falsch") + "</b> " + esc(f.why) +
         (f.t === "num" && !richtig ? " <b>Lösung: " + f.a + (f.unit ? " " + esc(f.unit) : "") + "</b>" : "") +
-        "</div>" +
-        '<div class="exbtns"><button class="btn" data-act="examNext" type="button">' +
+        "</div>";
+      /*  Nur bei einer falschen Antwort, und nur hier: gleich nach dem Fehler
+          weiss man noch, woran es lag — eine Woche später rät man. Die Reihe
+          steht zwischen Erklärung und Weiter, damit die Tabfolge Ursache →
+          Weiter lautet; examFokus() bleibt auf Weiter, der Haupthandlung.
+          Überspringen ist gleichberechtigt: eine geratene Ursache wäre
+          schlechter als keine.                                              */
+      if (!richtig) {
+        var jetztU = (kontoEintrag(exam.attr, frageId(f)) || {}).u || null;
+        html += '<div class="exu"><span class="eyebrow">Woran lag es?</span>' +
+          '<div class="exurow">' + U_ARTEN.map(function (a) {
+            var an = a.id === jetztU;
+            return '<button class="exub' + (an ? " an" : "") + '" data-act="exU" data-u="' +
+              a.id + '" type="button" aria-pressed="' + (an ? "true" : "false") +
+              '" title="' + esc(a.de) + '">' + esc(a.nm) + "</button>";
+          }).join("") +
+          '<button class="exub ghost" data-act="exU" data-u="" type="button">überspringen</button>' +
+          "</div></div>";
+      }
+      html += '<div class="exbtns"><button class="btn" data-act="examNext" type="button">' +
         (exam.i + 1 >= n ? "Ergebnis" : "Weiter") + "</button></div>";
     }
     if (QUIZ_VORLAEUFIG) {
@@ -3379,21 +3504,80 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
       }
         if (x.e.dat) teile.push("zuletzt " + x.e.dat.split("-").reverse().join("."));
         teile.push(reif ? "wieder fällig" : "noch in der Schonfrist");
+        if (x.e.u) teile.push(uArt(x.e.u).nm);
         return '<li class="mitem">' +
           '<span class="mn mono">' + x.e.n + "×</span>" +
           '<span class="mb"><span class="mq">' + esc(x.f.q) + "</span>" +
           '<span class="mw">' + esc(x.f.why) + "</span>" +
           '<span class="mm mono">' + esc(teile.join(" · ")) + "</span></span>" +
           '<span class="mtools">' +
+          /*  Nachträglich änderbar: in der Prüfung schätzt man unter Zeitdruck,
+              und beim Wiederlesen sieht man oft erst, dass es kein Wissens-,
+              sondern ein Rechenfehler war.                                  */
+          '<select class="musel" data-act="muset" data-fach="' + esc(x.e.fach) +
+          '" data-id="' + esc(x.e.id) + '" aria-label="Ursache für: ' +
+          esc(x.f.q.slice(0, 60)) + '">' +
+          '<option value=""' + (x.e.u ? "" : " selected") + ">woran lag es?</option>" +
+          U_ARTEN.map(function (a) {
+            return '<option value="' + a.id + '"' + (x.e.u === a.id ? " selected" : "") +
+              ">" + esc(a.nm) + "</option>";
+          }).join("") + "</select>" +
           '<button class="btn" data-act="mfrage" data-fach="' + esc(x.e.fach) +
           '" data-id="' + esc(x.e.id) + '" type="button">als Thema</button>' +
           '<button class="btn ghost" data-act="mdel" data-fach="' + esc(x.e.fach) +
           '" data-id="' + esc(x.e.id) + '" type="button">erledigt</button>' +
           "</span></li>";
       }).join("") + "</ul>" +
+      uKarte(now) +
       '<p class="note tiny">Der Fragenkatalog ist vorläufig — wer einer Frage ' +
       "widerspricht, nimmt sie mit <em>erledigt</em> von der Liste. " +
       "<em>Als Thema</em> setzt die Lücke oben in die Frage-Werkstatt.</p></section>";
+  }
+
+  /*  Die Verteilung steht unter der Liste, nicht in einer eigenen Karte: sie
+      ist die Zusammenfassung genau dieser Zeilen, und zwei Karten nebeneinander
+      liessen offen, welche welche zählt.                                      */
+  function uKarte(now) {
+    var v = uVerteilung(now, U_FENSTER);
+    var faecher = Object.keys(v.proFach);
+    if (!v.mitUrsache) {
+      return '<p class="note tiny">Noch keine Ursache zugeordnet. Die Auswahl in ' +
+        "jeder Zeile — oder gleich in der Prüfung, direkt nach der falschen " +
+        "Antwort — macht daraus eine Verteilung: <em>kannte ich nicht</em> " +
+        "verlangt Lernzeit, <em>Flüchtigkeitsfehler</em> verlangt eine " +
+        "Kontrollroutine. Dieselbe Zahl, zwei völlig verschiedene Antworten.</p>";
+    }
+    var h = '<div class="uvert"><div class="proghead">' +
+      '<span class="eyebrow">Woran es lag · letzte ' + U_FENSTER + " Tage</span>" +
+      '<span class="note mono">' + v.mitUrsache +
+      (v.mitUrsache === 1 ? " Lücke zugeordnet" : " Lücken zugeordnet") +
+      (v.ohne ? " · " + v.ohne + " offen" : "") + "</span></div>";
+
+    h += '<ul class="ulist">' + faecher.map(function (fid) {
+      var at = ATTR_BY[fid], zeile = v.proFach[fid];
+      var summe = U_ARTEN.reduce(function (s, a) { return s + (zeile[a.id] || 0); }, 0);
+      return '<li class="uz"><span class="un">' + esc(at ? at.nm : fid) + "</span>" +
+        '<span class="ub">' + U_ARTEN.map(function (a) {
+          var c = zeile[a.id] || 0;
+          if (!c) return "";
+          return '<span class="us u-' + a.id + '" style="flex:' + c +
+            '" title="' + esc(a.nm) + ": " + c + '">' + esc(a.nm) + " " + c + "</span>";
+        }).join("") + "</span>" +
+        '<span class="uc mono">' + summe + "</span></li>";
+    }).join("") + "</ul>";
+
+    var proz = fluchtAnteil(v);
+    if (proz !== null) {
+      h += '<p class="uwarn">' + proz + " % deiner zugeordneten Lücken sind " +
+        "Flüchtigkeitsfehler. Den Stoff kannst du — hier bringt mehr Lernen " +
+        "nichts. Was hilft, ist eine Kontrollroutine: Aufgabenstellung zweimal " +
+        "lesen, Einheit und Grössenordnung des Ergebnisses prüfen, am Ende die " +
+        "Rechnung rückwärts überschlagen.</p>";
+    } else if (v.mitUrsache < FLUCHT_MIND) {
+      h += '<p class="note tiny">Ab ' + FLUCHT_MIND + " zugeordneten Lücken steht " +
+        "hier, ob sich ein Muster zeigt. Darunter wäre jede Aussage geraten.</p>";
+    }
+    return h + "</div>";
   }
 
   function notenKarte(now) {
@@ -4521,6 +4705,8 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
       da.n = Math.max(da.n, e.n);
       da.ok = Math.min(da.ok, e.ok);
       if (e.dat > da.dat) da.dat = e.dat;
+      // Die Ursache füllt nur eine Lücke: hier zugeordnet heisst hier gültig.
+      if (!da.u && e.u) da.u = e.u;
     });
     // Einen eigenen Stundenplan übernimmt das Zusammenführen nur, wenn hier
     // keiner steht — sonst überschriebe ein alter Stand die neuere Fassung.
@@ -4540,6 +4726,19 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
       var fn = exam.fragen[exam.i];
       var v = Number(document.getElementById("exNum").value);
       antwort(isFinite(v) && Math.abs(v - fn.a) <= (fn.tol || 0), null); return;
+    }
+    /*  Die Ursache landet auf dem Eintrag, den antwort() gerade angelegt hat.
+        Kein render(): der Dialog liegt darüber und die Seite darunter ist
+        inert — sie neu zu bauen wäre Arbeit, die niemand sieht.             */
+    if (act === "exU") {
+      var uf = exam && exam.fragen[exam.i];
+      var ue = uf && kontoEintrag(exam.attr, frageId(uf));
+      if (!ue) return;
+      var uw = el.getAttribute("data-u") || null;
+      ue.u = ue.u === uw ? null : uw;   // zweiter Klick nimmt sie zurück
+      save(); zeigeExam();
+      sag(ue.u ? "Ursache: " + uArt(ue.u).nm + "." : "Ohne Ursache vermerkt.");
+      return;
     }
     if (act === "examNext") { exam.i++; exam.beantwortet = false; exam.gewaehlt = null; zeigeExam(); return; }
     if (act === "examRetry") {
@@ -4676,6 +4875,17 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
   });
   document.addEventListener("change", function (e) {
     var t = e.target;
+    /*  Die Ursachen-Auswahl trägt Fach und Frage als data-Attribute statt einer
+        Kennung: eine aus beiden zusammengesetzte id gäbe es nur, um sie hier
+        wieder auseinanderzunehmen. Deshalb vor der id-Abfrage.               */
+    if (t && t.getAttribute && t.getAttribute("data-act") === "muset") {
+      var me = kontoEintrag(t.getAttribute("data-fach"), t.getAttribute("data-id"));
+      if (!me) return;
+      me.u = uArt(t.value) ? t.value : null;
+      save(); render();
+      sag(me.u ? "Ursache: " + uArt(me.u).nm + "." : "Ursache entfernt.");
+      return;
+    }
     if (!t || !t.id) return;
     if (t.id === "fFach") { frage.fach = t.value; frageEntwurf = null; frageMerken(); render(); }
     else if (t.id === "fArt") { frage.art = t.value; frageEntwurf = null; frageMerken(); render(); }

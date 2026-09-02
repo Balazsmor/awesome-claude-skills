@@ -28,6 +28,7 @@ Was sie zusätzlich kann:
 | **Acht Attribute** | Fünf Prüfungsfächer und drei Grundwerte, gespeist aus den Blöcken, die auf sie einzahlen |
 | **Stufenprüfungen** | Lernzeit macht prüfungsberechtigt, fünf Fragen vergeben die Stufe — ab Stufe 4 muss jede sitzen |
 | **Fehlerkonto** | Was in einer Stufenprüfung falsch war, wird gemerkt und nach drei Tagen gezielt wieder vorgelegt; zweimal richtig schliesst die Lücke |
+| **Woran es lag** | Vier Ursachen je Lücke — nicht gewusst, falsch verstanden, verrechnet, nicht geschafft. Direkt nach der falschen Antwort wählbar, später änderbar; daraus eine Verteilung je Fach über 90 Tage |
 | **Noten** | Note *oder* IHK-Punkte eintragen, Schnitt je Fach, Prognose der Abschlussnote und die Restnote fürs Ziel |
 | **Zeugnisnoten** | Eigene Gruppe mit Berufsfachlicher Kompetenz — BWL, WiSo und SUK stehen im Zeugnis zusammengefasst; daneben steht, was die eigenen Klassenarbeiten ergeben |
 | **Jahresabschluss** | Zum Schuljahresende schlägt die Karte je Zeugnisfach den Schnitt der Arbeiten dieses Jahres vor; ein Klick trägt sie als Jahresnote zum 31. Juli ein |
@@ -61,8 +62,18 @@ zuerst das, was gerade nicht dran war.
 Der Zustand teilt sich mit `~/.lernplan-widget.json` alle Schlüssel: `d` Häkchen,
 `f` Markierungen, `n` Tagesnotizen, `w` Wochen-Schwerpunkte, `t` laufender Timer.
 Artefakt-eigen sind `q` (bestandene Stufenprüfungen), `g` (Noten), `m`
-(Fehlerkonto), `zn` (Zielnote), `zw` (Wochenziel) und `p` (eigener Stundenplan)
-— das Widget lässt sie beim Einlesen einfach fallen.
+(Fehlerkonto, je Eintrag `u` für die Ursache), `zn` (Zielnote), `zw`
+(Wochenziel) und `p` (eigener Stundenplan) — das Widget lässt sie beim Einlesen
+einfach fallen.
+
+**Beim Laden gewinnt nicht mehr einer von beiden Ständen.** Der neuere ist die
+Grundlage, der ältere füllt über `zusammenfuehren()` die Lücken — sonst verlor
+eine Routine, die in den eingebetteten Zustand schreibt, ihren Eintrag, sobald
+daneben ein Tab mit neuerem lokalem Stand offen war. Der Preis: eine Löschung,
+die es nie in eine Veröffentlichung geschafft hat, sieht wie eine Lücke aus und
+kommt zurück. Das Schema steht auf 5 (`lernquest.state.v5`); der alte Schlüssel
+wird beim ersten Start einmal mitgelesen. Fürs Mac-Widget ändert sich nichts:
+`parseState()` liest die Versionszahl gar nicht und schreibt immer 4 zurück.
 
 **Der eigene Stundenplan** liegt unter `p` und enthält **nur, was vom eingebauten
 Plan abweicht**; beim Laden wird er darübergelegt. So erreichen spätere
@@ -219,7 +230,7 @@ Ziellinie, kein Hebel.
 ```sh
 cd lernplan-widget/lernquest/test
 npm i playwright-core
-node test.mjs        # 338 Prüfungen: Notenrechnung, Zeugnis je Schuljahr, XP-Konto,
+node test.mjs        # 375 Prüfungen: Notenrechnung, Zeugnis je Schuljahr, XP-Konto,
                      # Kalenderwoche, Blockzeiten, Fragenkatalog, Rückgängig, Fokus,
                      # Zusammenführen, Schlafenszeit, eigener Stundenplan,
                      # abgelaufener Timer, Schriftladen, Scroll-Anker,
@@ -228,7 +239,7 @@ node test.mjs        # 338 Prüfungen: Notenrechnung, Zeugnis je Schuljahr, XP-K
                      # Fehlerkonto samt Schonfrist, Einsatzzeile, Tempo, Wochenblick,
                      # Scroll-Anker des Kern-Knopfs, Fokuskette und Ansage der
                      # Stufenprüfung, Zielgrösse nach WCAG 2.2
-node savetest.mjs    # 34: Wecker wird beim Start vorgelegt, nichts wird
+node savetest.mjs    # 41: Wecker wird beim Start vorgelegt, nichts wird
                      # während Prüfung, Timer oder Wecker veröffentlicht,
                      # das Fehlerkonto übersteht den Austausch
 

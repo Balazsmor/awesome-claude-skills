@@ -13,7 +13,7 @@ const HOOK = `  try { window.__T = { punkteZuNote:punkteZuNote, noteZuPunkte:not
     ymd:ymd, planMischen:planMischen, planDelta:planDelta, planPruefen:planPruefen,
     PLAN_BASIS:PLAN_BASIS, plan:function(){return PLAN;},
     schwaechstesFach:schwaechstesFach, frageBauen:frageBauen,
-    frage:function(){return frage;}, FRAGEARTEN:FRAGEARTEN,
+    frage:function(){return frage;}, FRAGEARTEN:FRAGEARTEN, exam:function(){return exam;},
     IHK_BLOECKE:IHK_BLOECKE, bestehen:bestehen,
     mindAusreichend:mindAusreichend, istUngenuegend:istUngenuegend,
     jahresvorschlag:jahresvorschlag, arbeitenSchnitt:arbeitenSchnitt,
@@ -22,6 +22,8 @@ const HOOK = `  try { window.__T = { punkteZuNote:punkteZuNote, noteZuPunkte:not
     tempo:tempo, tempoDatum:tempoDatum, multiplier:multiplier, planAnwenden:planAnwenden,
     SCHONFRIST:SCHONFRIST, AUS_KONTO:AUS_KONTO, today:today,
     normalize:normalize, zusammenfuehren:zusammenfuehren,
+    U_ARTEN:U_ARTEN, uArt:uArt, uVerteilung:uVerteilung,
+    fluchtAnteil:fluchtAnteil, FLUCHT_MIND:FLUCHT_MIND, U_FENSTER:U_FENSTER,
     auswerten:auswerten }; } catch (e) {}\n})();\n</script>`;
 
 const kaputt = process.argv.includes("--ohne-fix");
@@ -1813,7 +1815,187 @@ eq("mit seinem Inhalt", alt.st.d["2026-01-05"], ["morgen"]);
   wahr("Ein Häkchen überlebt das Neuladen", steht);
 }
 
-/* ---- 50. Kein Skriptfehler ---------------------------------------------- */
+/* ---- 50. Woran es lag: die Fehler-Taxonomie ------------------------------
+   Das Fehlerkonto wusste, WAS falsch war, nicht WARUM. Vier Ursachen
+   verlangen vier verschiedene Antworten — bei zweien davon ist mehr Lernen
+   vergeudete Zeit.                                                          */
+
+/*  normalize() ist eine Whitelist: was sie nicht kennt, ist beim nächsten
+    Laden still weg. Genau die vier Werte dürfen durch.                      */
+const uNorm = await p.evaluate(() => {
+  const roh = { m: [
+    { id: "a1", fach: "suk", n: 1, ok: 0, dat: "2026-08-01", u: "flucht" },
+    { id: "a2", fach: "bwl", n: 1, ok: 0, dat: "2026-08-01", u: "Flucht" },
+    { id: "a3", fach: "bwl", n: 1, ok: 0, dat: "2026-08-01", u: "faulheit" },
+    { id: "a4", fach: "wiso", n: 1, ok: 0, dat: "2026-08-01" },
+    { id: "a5", fach: "wiso", n: 1, ok: 0, dat: "2026-08-01", u: { boes: 1 } }
+  ] };
+  return window.__T.normalize(roh).m.map(e => e.u);
+});
+eq("normalize lässt genau die bekannten Ursachen durch",
+   uNorm, ["flucht", null, null, null, null]);
+eq("Vier Ursachen, nicht mehr", await p.evaluate(() => window.__T.U_ARTEN.length), 4);
+eq("und alle mit ausgeschriebenem Namen",
+   await p.evaluate(() => window.__T.U_ARTEN.map(a => a.id)),
+   ["wissen", "verstehen", "flucht", "zeit"]);
+
+/*  Zusammenführen: die Ursache füllt nur eine Lücke. Wer hier schon zugeordnet
+    hat, hat die Frage vor sich gehabt — der fremde Stand überstimmt das nicht. */
+const uMerge = await p.evaluate(() => {
+  const s = window.__T.state();
+  const sicher = JSON.parse(JSON.stringify(s.m || []));
+  s.m = [{ id: "z1", fach: "suk", n: 1, ok: 0, dat: "2026-08-01", u: "wissen" },
+         { id: "z2", fach: "suk", n: 1, ok: 0, dat: "2026-08-01", u: null }];
+  window.__T.zusammenfuehren(window.__T.normalize({ m: [
+    { id: "z1", fach: "suk", n: 1, ok: 0, dat: "2026-08-01", u: "flucht" },
+    { id: "z2", fach: "suk", n: 1, ok: 0, dat: "2026-08-01", u: "zeit" }
+  ] }));
+  const raus = s.m.map(e => e.u);
+  s.m = sicher;
+  return raus;
+});
+eq("Zusammenführen: hier zugeordnet schlägt fremd, sonst füllt fremd auf",
+   uMerge, ["wissen", "zeit"]);
+
+/*  Die Verteilung zählt über 90 Tage und rät nichts: was keine Ursache trägt,
+    wird getrennt ausgewiesen statt einsortiert.                             */
+const uV = await p.evaluate(() => {
+  const T = window.__T, s = T.state();
+  const sicher = JSON.parse(JSON.stringify(s.m || []));
+  const echte = (T.QUIZ.suk || []).slice(0, 6).map(f => T.frageId(f));
+  const heute = T.ymd(T.today());
+  const alt = T.ymd(T.addDays(T.today(), -120));
+  s.m = [
+    { id: echte[0], fach: "suk", n: 1, ok: 0, dat: heute, u: "flucht" },
+    { id: echte[1], fach: "suk", n: 1, ok: 0, dat: heute, u: "flucht" },
+    { id: echte[2], fach: "suk", n: 1, ok: 0, dat: heute, u: "wissen" },
+    { id: echte[3], fach: "suk", n: 1, ok: 0, dat: heute, u: null },
+    { id: echte[4], fach: "suk", n: 1, ok: 0, dat: alt,   u: "zeit" },
+    { id: "verwaist", fach: "suk", n: 1, ok: 0, dat: heute, u: "wissen" }
+  ];
+  const v = T.uVerteilung(T.today(), T.U_FENSTER);
+  s.m = sicher;
+  return v;
+});
+eq("Nur zugeordnete Lücken werden gezählt", uV.mitUrsache, 3);
+eq("Ohne Ursache wird getrennt ausgewiesen", uV.ohne, 1);
+eq("Ausserhalb des Fensters zählt nicht mit", uV.gesamt.zeit, undefined);
+eq("Eine verwaiste Frage zählt auch nicht", uV.gesamt.wissen, 1);
+eq("und die Aufteilung je Fach stimmt", uV.proFach.suk, { flucht: 2, wissen: 1 });
+
+/*  Die Flucht-Regel: 30 % und mindestens acht. Unter acht sagt die Seite
+    nichts — bei fünf Einträgen wären zwei schon 40 % und die Warnung Rauschen. */
+const fl = await p.evaluate(() => {
+  const T = window.__T;
+  const bau = (flucht, rest) => ({ mitUrsache: flucht + rest, gesamt: { flucht } });
+  return {
+    knapp:   T.fluchtAnteil(bau(2, 5)),    // 29 %, 7 Einträge
+    achtNein: T.fluchtAnteil(bau(2, 6)),   // 25 %, 8 Einträge
+    achtJa:  T.fluchtAnteil(bau(3, 5)),    // 38 %, 8 Einträge
+    vieleJa: T.fluchtAnteil(bau(9, 11)),   // 45 %, 20 Einträge
+    mind: T.FLUCHT_MIND
+  };
+});
+eq("Unter acht Einträgen keine Aussage", fl.knapp, null);
+eq("Acht Einträge, aber unter 30 %: keine Warnung", fl.achtNein, null);
+eq("Acht Einträge und 38 %: Warnung", fl.achtJa, 38);
+eq("und bei 45 % auch", fl.vieleJa, 45);
+eq("Die Schwelle steht bei acht", fl.mind, 8);
+
+/*  Und der Weg durch die Oberfläche: nach einer falschen Antwort stehen die
+    vier Knöpfe im Dialog, ein Klick schreibt die Ursache, ein zweiter nimmt
+    sie zurück. Nach einer richtigen Antwort steht dort nichts.              */
+async function ursachenLauf() {
+  const st = JSON.parse(JSON.stringify(start));
+  st.q = { suk: 2 };
+  for (let i = 1; i < 200; i++) st.d[tagD(i)] = ["morgen", "anki", "lesen", "deepA", "deepB", "wdh"];
+  const c = await b.newContext({ viewport:{width:1180,height:1000}, colorScheme:"dark",
+                                 locale:"de-DE" });
+  const q = await c.newPage();
+  await q.addInitScript(`localStorage.setItem("lernquest.state.v5", ${JSON.stringify(JSON.stringify(st))})`);
+  await q.goto("file://" + process.cwd() + "/" + datei);
+  await q.waitForSelector('[data-act="exam"][data-attr="suk"]', { timeout: 30000 });
+  await q.click('[data-act="exam"][data-attr="suk"]');
+  await q.waitForSelector("#examBody .exq", { timeout: 30000 });
+
+  /*  Bewusst falsch antworten, nicht auf Glück hoffen: bei einer Auswahlfrage
+      irgendeine, die nicht die richtige ist, bei einer Rechenfrage eine Zahl
+      weit ausserhalb jeder Toleranz.                                        */
+  const wahl = await q.evaluate(() => {
+    const f = window.__T.exam().fragen[window.__T.exam().i];
+    return f.t === "num" ? -1 : (f.k + 1) % f.a.length;
+  });
+  if (wahl < 0) {
+    await q.fill("#exNum", "-999999");
+    await q.click('[data-act="examNum"]');
+  } else {
+    await q.click('.exopt[data-i="' + wahl + '"]');
+  }
+  await q.waitForTimeout(200);
+
+  const warFalsch = await q.locator(".exwhy.no").count() === 1;
+  const knoepfe = await q.evaluate(() =>
+    Array.from(document.querySelectorAll(".exu .exub")).map(e => e.textContent));
+  await q.click('.exu .exub[data-u="flucht"]');
+  await q.waitForTimeout(200);
+  const gesetzt = await q.evaluate(() => (window.__T.state().m.filter(e => e.u)[0] || {}).u || null);
+  const gemerkt = await q.evaluate(() =>
+    document.querySelector('.exu .exub[data-u="flucht"]').getAttribute("aria-pressed"));
+  const sagt = await q.evaluate(() => document.getElementById("exsage").textContent);
+  await q.click('.exu .exub[data-u="flucht"]');
+  await q.waitForTimeout(200);
+  const zurueck = await q.evaluate(() => (window.__T.state().m.filter(e => e.u)[0] || {}).u || null);
+
+  // Nach einer richtigen Antwort darf dort nichts stehen — die Frage sass ja.
+  await q.click('[data-act="examNext"]');
+  await q.waitForTimeout(150);
+  const wahl2 = await q.evaluate(() => {
+    const f = window.__T.exam().fragen[window.__T.exam().i];
+    return f.t === "num" ? -1 : f.k;
+  });
+  if (wahl2 < 0) {
+    const zahl = await q.evaluate(() => String(window.__T.exam().fragen[window.__T.exam().i].a));
+    await q.fill("#exNum", zahl);
+    await q.click('[data-act="examNum"]');
+  } else {
+    await q.click('.exopt[data-i="' + wahl2 + '"]');
+  }
+  await q.waitForTimeout(200);
+  const beiRichtig = await q.locator(".exu").count();
+
+  await c.close();
+  return { warFalsch, knoepfe, gesetzt, zurueck, gemerkt, sagt, beiRichtig };
+}
+const ul = await ursachenLauf();
+wahr("Die absichtlich falsche Antwort war falsch", ul.warFalsch);
+eq("Nach einer falschen Antwort stehen fünf Knöpfe", ul.knoepfe.length, 5);
+eq("mit ausgeschriebenen Namen", ul.knoepfe.slice(0, 4),
+   ["kannte ich nicht", "falsch verstanden", "Flüchtigkeitsfehler", "nicht geschafft"]);
+eq("und überspringen daneben", ul.knoepfe[4], "überspringen");
+eq("Ein Klick schreibt die Ursache", ul.gesetzt, "flucht");
+eq("und markiert den Knopf", ul.gemerkt, "true");
+wahr("und sagt sie an", /Flüchtigkeitsfehler/.test(ul.sagt));
+eq("Ein zweiter Klick nimmt sie zurück", ul.zurueck, null);
+eq("Nach einer richtigen Antwort steht dort nichts", ul.beiRichtig, 0);
+
+/*  Ein frisch gebuchter Eintrag muss normalize() unverändert überstehen —
+    Feld für Feld und in derselben Reihenfolge. Fehlte `u` beim Anlegen,
+    käme der Eintrag beim nächsten Laden anders zurück, als er
+    weggeschrieben wurde, und das Austauschfeld zeigte ihn ohne das Feld.  */
+const frischRund = await p.evaluate(() => {
+  const T = window.__T, s = T.state();
+  const sicher = JSON.parse(JSON.stringify(s.m || []));
+  s.m = [];
+  T.kontoBuchen("suk", T.QUIZ.suk[0], false);
+  const roh = JSON.stringify(s.m);
+  const durch = JSON.stringify(T.normalize({ m: JSON.parse(roh) }).m);
+  s.m = sicher;
+  return { roh, durch };
+});
+eq("Ein frisch gebuchter Eintrag übersteht normalize() unverändert",
+   frischRund.durch, frischRund.roh);
+
+/* ---- 51. Kein Skriptfehler ---------------------------------------------- */
 eq("Seitenfehler", errs, []);
 
 await ctx.close(); await b.close();

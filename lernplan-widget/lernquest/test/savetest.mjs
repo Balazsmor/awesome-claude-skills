@@ -168,7 +168,7 @@ wahr("und das Aufgehaltene geht danach raus",
    Die Merkliste steht in `m`. Fehlte der Schlüssel im JSON-Feld oder beim
    Zusammenführen, wäre sie nach einem Hin und Her mit dem Mac-Widget weg.   */
 await p.evaluate(() => {
-  window.__S().m = [{ id: "abc123", fach: "suk", n: 3, ok: 1, dat: "2026-08-20" }];
+  window.__S().m = [{ id: "abc123", fach: "suk", n: 3, ok: 1, dat: "2026-08-20", u: null }];
   window.__S().updatedAt = Date.now() + 1000;
 });
 await p.evaluate(() => {
@@ -181,13 +181,13 @@ const ioText = await p.inputValue("#io");
 const ioObj = JSON.parse(ioText);
 eq("Das Austauschfeld führt die Merkliste mit", (ioObj.m || []).length, 1);
 eq("mit allen Feldern", ioObj.m[0],
-   { id: "abc123", fach: "suk", n: 3, ok: 1, dat: "2026-08-20" });
+   { id: "abc123", fach: "suk", n: 3, ok: 1, dat: "2026-08-20", u: null });
 
 // Zusammenführen: eine fremde Lücke kommt dazu, eine bekannte behält den
 // höheren Fehlerzähler.
 const fremd = JSON.parse(ioText);
-fremd.m = [{ id: "abc123", fach: "suk", n: 7, ok: 0, dat: "2026-08-25" },
-           { id: "neu999", fach: "bwl", n: 1, ok: 0, dat: "2026-08-26" }];
+fremd.m = [{ id: "abc123", fach: "suk", n: 7, ok: 0, dat: "2026-08-25", u: "flucht" },
+           { id: "neu999", fach: "bwl", n: 1, ok: 0, dat: "2026-08-26", u: "wissen" }];
 await p.fill("#io", JSON.stringify(fremd));
 await p.click('[data-act="merge"]');
 await p.waitForTimeout(300);
@@ -197,6 +197,9 @@ eq("Nach dem Zusammenführen stehen beide Lücken da", nachMerge.length, 2);
 eq("der höhere Fehlerzähler gewinnt", nachMerge[0].n, 7);
 eq("das jüngere Datum auch", nachMerge[0].dat, "2026-08-25");
 eq("und die fremde Lücke ist dabei", nachMerge[1].fach, "bwl");
+// Die Ursache füllt nur Lücken: hier stand keine, also zieht die fremde ein.
+eq("Die fremde Ursache füllt die Lücke", nachMerge[0].u, "flucht");
+eq("und kommt mit einer neuen Lücke gleich mit", nachMerge[1].u, "wissen");
 
 /* ---- Die veröffentlichte Datei trägt denselben Stand --------------------
    Die drei Abnahmepunkte, die sonst von Hand geprüft würden: buildDoc() liest
