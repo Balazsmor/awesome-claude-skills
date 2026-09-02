@@ -5,7 +5,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 // in der veröffentlichten Datei.
 const HOOK = `  try { window.__T = { punkteZuNote:punkteZuNote, noteZuPunkte:noteZuPunkte,
     schnitt:schnitt, prognose:prognose, num:num, notenName:notenName,
-    view:function(){return view;}, PLAN:PLAN, QUIZ:QUIZ,
+    view:function(){return view;}, setView:setView, PLAN:PLAN, QUIZ:QUIZ,
     isoWeek:isoWeek, timerLeft:timerLeft, blockZeit:blockZeit, tagesLage:tagesLage,
     zieheFragen:zieheFragen, state:function(){return state;}, render:render,
     ZEUGNIS:ZEUGNIS, schuljahr:schuljahr, kennung:kennung, hhmm:hhmm,
@@ -21,11 +21,18 @@ const HOOK = `  try { window.__T = { punkteZuNote:punkteZuNote, noteZuPunkte:not
     kontoFaellig:kontoFaellig, kontoFrage:kontoFrage, kontoEintrag:kontoEintrag,
     tempo:tempo, tempoDatum:tempoDatum, multiplier:multiplier, planAnwenden:planAnwenden,
     SCHONFRIST:SCHONFRIST, AUS_KONTO:AUS_KONTO, today:today,
+    normalize:normalize, zusammenfuehren:zusammenfuehren,
     auswerten:auswerten }; } catch (e) {}\n})();\n</script>`;
 
 const kaputt = process.argv.includes("--ohne-fix");
 const ohneXp = process.argv.includes("--ohne-xp-fix");
 let src = readFileSync("lernquest.html", "utf8").replace("})();\n</script>", HOOK);
+/*  Den eingebetteten Stand leeren. Bisher war der Lauf nur zufällig hermetisch:
+    „der neuere gewinnt" warf ihn vollständig weg. Seit load() Lücken füllt,
+    flössen sonst die echten Noten aus dem veröffentlichten Artefakt in jeden
+    Testlauf ein — und der Lauf hinge davon ab, was gerade darin steht.        */
+const LEER_STATE = /(<script type="application\/json" id="state">)[\s\S]*?(<\/script>)/;
+src = src.replace(LEER_STATE, "$1{}$2");
 if (kaputt) {
   // Den Tagesspeicher stilllegen — so sah die Seite vor der Behebung aus.
   src = src.replace("sessionStorage.setItem(VIEW_KEY,", "void 0 && sessionStorage.setItem(VIEW_KEY,");
@@ -55,7 +62,7 @@ const tagD = n => { const x = new Date(heuteD); x.setDate(heuteD.getDate() - n);
 const start = { v:4, d:{}, f:{}, n:{}, w:{}, q:{}, g:[], t:null, zn:1.9, zw:900,
                 updatedAt: Date.now() + 1000 };
 for (let i = 1; i < 6; i++) start.d[tagD(i)] = ["morgen", "anki", "lesen"];
-await p.addInitScript(`localStorage.setItem("lernquest.state.v4", ${JSON.stringify(JSON.stringify(start))})`);
+await p.addInitScript(`localStorage.setItem("lernquest.state.v5", ${JSON.stringify(JSON.stringify(start))})`);
 await p.goto("file://" + process.cwd() + "/" + datei);
 await p.waitForTimeout(400);
 
@@ -122,8 +129,15 @@ eq("Nach dem Neuladen derselbe Tag", nachher.tag, vorher.tag);
 eq("Nach dem Neuladen view", nachher.v, -1);
 
 /* ---- 6. Zurück zu heute ------------------------------------------------- */
-wahr("Knopf heute sichtbar", await p.locator('[data-act="today"]').count() === 1);
-await p.click('[data-act="today"]');
+/*  Im Wächterlauf --ohne-fix steht die Seite nach dem Neuladen wieder auf
+    heute — dann gibt es den Knopf nicht, und ein blindes click() liess den
+    ganzen Lauf in einen Timeout rennen. Ein abgestürzter Wächter sagt aber
+    nichts: man unterscheidet den alten Fehler nicht mehr von einem neuen.
+    Deshalb wird der Fehlschlag vermerkt und weitergelaufen.                 */
+const heuteDa = await p.locator('[data-act="today"]').count() === 1;
+wahr("Knopf heute sichtbar", heuteDa);
+if (heuteDa) await p.click('[data-act="today"]');
+else await p.evaluate(() => { window.__T.setView(0); window.__T.render(); });
 await p.waitForTimeout(150);
 eq("Wieder heute", await p.evaluate(() => window.__T.view()), 0);
 wahr("Knopf heute wieder weg", await p.locator('[data-act="today"]').count() === 0);
@@ -156,7 +170,7 @@ await p.selectOption("#gGew", "2");
 await p.click('[data-act="gadd"]');
 await p.waitForTimeout(250);
 const eintrag = await p.evaluate(() => {
-  const st = JSON.parse(localStorage.getItem("lernquest.state.v4"));
+  const st = JSON.parse(localStorage.getItem("lernquest.state.v5"));
   return { anzahl: st.g.length, e: st.g[0],
            liste: document.querySelectorAll(".glist .gitem").length,
            suk: document.querySelectorAll(".gavg .ga")[1].querySelector(".gav").textContent };
@@ -174,7 +188,7 @@ await p.selectOption("#gGew", "1");
 await p.fill("#gNote", "3.4");
 await p.click('[data-act="gadd"]');
 await p.waitForTimeout(220);
-eq("Zwei Noten", await p.evaluate(() => JSON.parse(localStorage.getItem("lernquest.state.v4")).g.length), 2);
+eq("Zwei Noten", await p.evaluate(() => JSON.parse(localStorage.getItem("lernquest.state.v5")).g.length), 2);
 eq("Gesamtschnitt gewichtet", await p.evaluate(() =>
   document.querySelector(".card-head .note.mono").textContent.indexOf("2,47") >= 0 ||
   Array.from(document.querySelectorAll(".card-head .note.mono")).some(e => /Schnitt Schule 2,47/.test(e.textContent))), true);
@@ -200,7 +214,7 @@ wahr("Satz nennt den nötigen Schnitt", /1,87/.test(prog.satz));
 await p.click(".glist .gitem .gdel");
 await p.waitForTimeout(220);
 eq("Nach dem Löschen zwei", await p.evaluate(() =>
-  JSON.parse(localStorage.getItem("lernquest.state.v4")).g.length), 2);
+  JSON.parse(localStorage.getItem("lernquest.state.v5")).g.length), 2);
 
 /* ---- 11. Aufgaben sind konkret ------------------------------------------ */
 const det = await p.evaluate(() => {
@@ -214,7 +228,6 @@ const det = await p.evaluate(() => {
     };
   });
   return { tage: raus,
-           sichtbar: document.querySelectorAll(".quest .dtl").length,
            fokus: document.querySelectorAll(".focus").length,
            ankiKonkret: Object.keys(P.days).every(k =>
              P.days[k].blocks.filter(b => b.kind === "anki")
@@ -225,7 +238,34 @@ Object.keys(det.tage).forEach(k => {
   eq("Kein Block ohne Untertitel am " + k, det.tage[k].ohneSub, 0);
 });
 wahr("Anki-Blöcke nennen ihr Thema", det.ankiKonkret);
-wahr("Detailtext im Tag sichtbar", det.sichtbar >= 1);
+/*  Die Anleitung hängt am Tag, und die Ferienpläne tragen keine. Fiel der Lauf
+    in die Sommerferien, stand hier „kein Detailtext" — eine Aussage über den
+    Kalender, nicht über die Seite. Gemessen wird deshalb am jüngsten Tag,
+    dessen Plan überhaupt Anleitungen mitbringt und der noch offen ist.       */
+const schultag = `(function () {
+  var T = window.__T;
+  for (var o = 0; o > -400; o--) {
+    var info = T.dayInfo(T.addDays(T.today(), o), T.state().f);
+    var ids = T.state().d[info.key] || [];
+    var bl = info.plan.blocks || [];
+    var hat = bl.filter(function (x) { return x.det; }).length;
+    // Ausserhalb des Kerns muss noch etwas offen bleiben — sonst stünde nach
+    // dem Abhaken „Reinen Tisch" statt „Tag gerettet".
+    var ausserhalb = bl.filter(function (x) {
+      return x.track && T.PLAN.core.indexOf(x.id) < 0;
+    }).length;
+    if (hat && ausserhalb && !ids.length) return o;
+  }
+  return 0;
+})()`;
+const sicht = await p.evaluate(`(function () {
+  var T = window.__T, off = ${schultag};
+  T.setView(off); T.render();
+  var n = document.querySelectorAll(".quest .dtl").length;
+  T.setView(0); T.render();
+  return { off: off, n: n };
+})()`);
+wahr("Detailtext im Tag sichtbar (Tag " + sicht.off + ")", sicht.n >= 1);
 eq("Stoffhinweis steht", det.fokus, 1);
 
 /* ---- 12. Kalenderwoche nach ISO 8601 ------------------------------------ */
@@ -690,7 +730,7 @@ async function schlafZeile(stunde, plan) {
     const c = await b.newContext({ viewport:{width:900,height:900}, colorScheme:"dark",
                                    locale:"de-DE", timezoneId: zone });
     const q = await c.newPage();
-    await q.addInitScript(`localStorage.setItem("lernquest.state.v4", ${JSON.stringify(JSON.stringify(st))})`);
+    await q.addInitScript(`localStorage.setItem("lernquest.state.v5", ${JSON.stringify(JSON.stringify(st))})`);
     await q.goto("file://" + process.cwd() + "/" + datei);
     await q.waitForTimeout(400);
     const erg = await q.evaluate(() => {
@@ -744,7 +784,7 @@ async function mitTimer(vorMin, dauerMin) {
   const c = await b.newContext({ viewport:{width:900,height:900}, colorScheme:"dark",
                                  locale:"de-DE" });
   const q = await c.newPage();
-  await q.addInitScript(`localStorage.setItem("lernquest.state.v4", ${JSON.stringify(JSON.stringify(st))})`);
+  await q.addInitScript(`localStorage.setItem("lernquest.state.v5", ${JSON.stringify(JSON.stringify(st))})`);
   await q.goto("file://" + process.cwd() + "/" + datei);
   //  Der Takt schlägt erst nach einer Sekunde — vorher steht der Wecker
   //  noch nicht da, obwohl der Timer schon abgelaufen ist.
@@ -1437,7 +1477,7 @@ async function einsatzZeile(stunde, tageVorher, opt) {
     const c = await b.newContext({ viewport:{width:900,height:900}, colorScheme:"dark",
                                    locale:"de-DE", timezoneId: zone });
     const q = await c.newPage();
-    await q.addInitScript(`localStorage.setItem("lernquest.state.v4", ${JSON.stringify(JSON.stringify(st))})`);
+    await q.addInitScript(`localStorage.setItem("lernquest.state.v5", ${JSON.stringify(JSON.stringify(st))})`);
     await q.goto("file://" + process.cwd() + "/" + datei);
     await q.waitForTimeout(400);
     const r = await q.evaluate(() => {
@@ -1498,8 +1538,16 @@ async function kernSprung() {
   const c = await b.newContext({ viewport:{width:390,height:780}, colorScheme:"dark",
                                  locale:"de-DE" });
   const q = await c.newPage();
-  await q.addInitScript(`localStorage.setItem("lernquest.state.v4", ${JSON.stringify(JSON.stringify(st))})`);
+  await q.addInitScript(`localStorage.setItem("lernquest.state.v5", ${JSON.stringify(JSON.stringify(st))})`);
   await q.goto("file://" + process.cwd() + "/" + datei);
+  await q.waitForSelector(".attrs", { timeout: 30000 });
+  /*  Gemessen wird an einem Tag mit Anleitungen — nur die verschwinden beim
+      Abhaken und machen die Seite kürzer. In den Ferien gäbe es nichts zu
+      messen, und der Test spräche über den Kalender statt über die Seite.   */
+  const tag = await q.evaluate(`(function () {
+    var T = window.__T, off = ${schultag};
+    T.setView(off); T.render(); return off;
+  })()`);
   await q.waitForSelector('[data-act="kern"]', { timeout: 30000 });
   await q.locator('[data-act="kern"]').scrollIntoViewIfNeeded();
   await q.waitForTimeout(250);
@@ -1514,10 +1562,11 @@ async function kernSprung() {
     stempel: (document.querySelector(".tagfuss .stamp") || {}).textContent || null }));
   await c.close();
   return { versatz: Math.round(nach.fuss - vor.fuss),
-           kuerzer: vor.hoehe - nach.hoehe, stempel: nach.stempel };
+           kuerzer: vor.hoehe - nach.hoehe, stempel: nach.stempel, tag: tag };
 }
 const ks = await kernSprung();
-wahr("Die Seite wird durch den Kern-Knopf spürbar kürzer", ks.kuerzer > 20);
+wahr("Die Seite wird durch den Kern-Knopf spürbar kürzer (Tag " + ks.tag + ")",
+     ks.kuerzer > 20);
 wahr("aber die Fusszeile bleibt stehen (Versatz " + ks.versatz + " px)",
      Math.abs(ks.versatz) <= 4);
 eq("und trägt danach den Stempel", ks.stempel, "Tag gerettet");
@@ -1566,7 +1615,7 @@ async function pruefungsLauf() {
   const c = await b.newContext({ viewport:{width:1180,height:900}, colorScheme:"dark",
                                  locale:"de-DE" });
   const q = await c.newPage();
-  await q.addInitScript(`localStorage.setItem("lernquest.state.v4", ${JSON.stringify(JSON.stringify(st))})`);
+  await q.addInitScript(`localStorage.setItem("lernquest.state.v5", ${JSON.stringify(JSON.stringify(st))})`);
   await q.goto("file://" + process.cwd() + "/" + datei);
   await q.waitForSelector(".attrs", { timeout: 30000 });
   const lage = () => q.evaluate(() => ({
@@ -1655,7 +1704,7 @@ async function zuKlein(breite) {
   const c = await b.newContext({ viewport:{width:breite,height:900}, colorScheme:"dark",
                                  locale:"de-DE" });
   const q = await c.newPage();
-  await q.addInitScript(`localStorage.setItem("lernquest.state.v4", ${JSON.stringify(JSON.stringify(start))})`);
+  await q.addInitScript(`localStorage.setItem("lernquest.state.v5", ${JSON.stringify(JSON.stringify(start))})`);
   await q.goto("file://" + process.cwd() + "/" + datei);
   await q.waitForSelector(".attrs", { timeout: 30000 });
   const raus = await q.evaluate(() => {
@@ -1677,7 +1726,94 @@ async function zuKlein(breite) {
 eq("Auf 1180 px ist nichts Anfassbares kleiner als 24×24", await zuKlein(1180), []);
 eq("auf 390 px auch nicht", await zuKlein(390), []);
 
-/* ---- 49. Kein Skriptfehler ---------------------------------------------- */
+/* ---- 49. Beim Laden geht nichts mehr verloren ----------------------------
+   Vorher galt Alles-oder-nichts: der ältere Stand wurde ganz verworfen. Eine
+   Routine, die sonntags in den eingebetteten Stand schreibt, verlor ihren
+   Eintrag, sobald daneben ein Tab mit neuerem lokalem Stand offen war.
+   Geprüft wird an einer eigenen Vorschaudatei, deren eingebetteter Stand
+   bekannt ist — die reguläre trägt dort bewusst nur `{}`.                   */
+async function ladeLauf(eingebettet, lokal, schluessel) {
+  const roh = readFileSync("lernquest.html", "utf8").replace("})();\n</script>", HOOK)
+    .replace(LEER_STATE, "$1" + JSON.stringify(eingebettet).replace(/</g, "\\u003c") + "$2");
+  writeFileSync("preview-laden.html",
+`<!doctype html><html lang="de"><head><meta charset="utf-8"><style>*{margin:0}</style></head><body>\n${roh}\n</body></html>`);
+  const c = await b.newContext({ viewport:{width:1180,height:900}, colorScheme:"dark",
+                                 locale:"de-DE" });
+  const q = await c.newPage();
+  const f = [];
+  q.on("pageerror", e => f.push(e.message));
+  if (lokal) {
+    await q.addInitScript(`localStorage.setItem(${JSON.stringify(schluessel)}, ${JSON.stringify(JSON.stringify(lokal))})`);
+  }
+  await q.goto("file://" + process.cwd() + "/preview-laden.html");
+  await q.waitForSelector(".attrs", { timeout: 30000 });
+  const st = await q.evaluate(() => JSON.parse(JSON.stringify(window.__T.state())));
+  const rund = await q.evaluate(() => {
+    const s = window.__T.state();
+    return JSON.stringify(window.__T.normalize(JSON.parse(JSON.stringify(s)))) === JSON.stringify(s);
+  });
+  await c.close();
+  return { st, rund, fehler: f };
+}
+
+const embSonntag = { v:5, d:{ "2026-01-04":["morgen","anki"] }, f:{}, n:{}, w:{}, q:{},
+                     g:[{ id:"gA", fach:"bwl", was:"Sonntagsarbeit", n:2, p:null,
+                          dat:"2026-01-04", gew:1 }],
+                     m:[], t:null, p:null, zn:1.7, zw:900, updatedAt: 1000 };
+const locNeuer = { v:5, d:{ "2026-01-05":["morgen"] }, f:{}, n:{}, w:{}, q:{},
+                   g:[{ id:"gB", fach:"suk", was:"Montagsarbeit", n:3, p:null,
+                        dat:"2026-01-05", gew:1 }],
+                   m:[], t:null, p:null, zn:1.4, zw:900, updatedAt: 2000 };
+
+const zus = await ladeLauf(embSonntag, locNeuer, "lernquest.state.v5");
+eq("Der lokale Tag steht", zus.st.d["2026-01-05"], ["morgen"]);
+eq("und der eingebettete Sonntag auch", zus.st.d["2026-01-04"], ["morgen","anki"]);
+eq("Beide Noten sind da", zus.st.g.map(e => e.id).sort(), ["gA","gB"]);
+eq("Bei Streit gewinnt der neuere Stand", zus.st.zn, 1.4);
+wahr("Der Zustand übersteht normalize() unverändert", zus.rund);
+eq("Kein Skriptfehler beim Zusammenführen", zus.fehler, []);
+
+/*  Andersherum: ist der eingebettete Stand der neuere, gibt er den Ton an —
+    und der lokale füllt trotzdem seine Lücken auf.                          */
+const umgekehrt = await ladeLauf(
+  Object.assign({}, embSonntag, { updatedAt: 3000 }), locNeuer, "lernquest.state.v5");
+eq("Umgekehrt gewinnt der eingebettete", umgekehrt.st.zn, 1.7);
+eq("und der lokale Tag bleibt erhalten", umgekehrt.st.d["2026-01-05"], ["morgen"]);
+
+/*  Umstieg auf Schema 5: unter dem neuen Schlüssel steht noch nichts, der
+    alte wird einmal mitgelesen. Ohne das stünde die Seite nach dem Umstieg
+    leer da.                                                                 */
+const alt = await ladeLauf({}, locNeuer, "lernquest.state.v4");
+eq("Der alte Schlüssel wird einmal mitgelesen", alt.st.g.length, 1);
+eq("mit seinem Inhalt", alt.st.d["2026-01-05"], ["morgen"]);
+
+/*  Und der Grundfall, der über allem steht: ein Häkchen überlebt das
+    Neuladen. Ohne diese Zeile prüft niemand, ob der Zustand überhaupt
+    ankommt — jede Veröffentlichung lädt die Ansicht neu.
+
+    Hier bewusst ohne addInitScript: das läuft bei JEDER Navigation, also auch
+    beim reload(), und setzte den Startstand zurück. Der Test hätte damit sein
+    eigenes Zurücksetzen gemessen statt die Seite. Ohne Seed startet die Seite
+    aus dem geleerten eingebetteten Stand — genau richtig.                   */
+{
+  const c = await b.newContext({ viewport:{width:1180,height:900}, colorScheme:"dark",
+                                 locale:"de-DE" });
+  const q = await c.newPage();
+  await q.goto("file://" + process.cwd() + "/" + datei);
+  await q.waitForSelector(".quests .stampbox", { timeout: 30000 });
+  const kennung = await q.evaluate(() =>
+    document.querySelector('.quest .stampbox[data-act="toggle"]').getAttribute("data-id"));
+  await q.click('.stampbox[data-act="toggle"][data-id="' + kennung + '"]');
+  await q.waitForTimeout(250);
+  await q.reload();
+  await q.waitForSelector(".quests", { timeout: 30000 });
+  const steht = await q.evaluate(k =>
+    document.querySelector('.quest[data-id="' + k + '"]').classList.contains("done"), kennung);
+  await c.close();
+  wahr("Ein Häkchen überlebt das Neuladen", steht);
+}
+
+/* ---- 50. Kein Skriptfehler ---------------------------------------------- */
 eq("Seitenfehler", errs, []);
 
 await ctx.close(); await b.close();

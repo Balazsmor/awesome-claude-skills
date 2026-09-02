@@ -704,7 +704,11 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
 
   var FONTS = "https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700" +
               "&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap";
-  var LS_KEY = "lernquest.state.v4";
+  /*  Schema 5 heisst: der Zustand kann Felder tragen, die Schema 4 nicht kannte.
+      Der alte Schlüssel wird beim ersten Start einmal mitgelesen und dann
+      liegen gelassen — nicht gelöscht, damit ein Rückweg offen bleibt.        */
+  var LS_KEY = "lernquest.state.v5";
+  var LS_KEY_V4 = "lernquest.state.v4";
 
   /* ---- Plan ---------------------------------------------------------------
      PLAN_BASIS ist der eingebaute Grundplan. Was im Zustand unter `p` steht,
@@ -2345,7 +2349,7 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
   }
 
   /* ---- Zustand ---------------------------------------------------------- */
-  var state = { v: 4, d: {}, f: {}, n: {}, w: {}, q: {}, g: [], m: [], t: null,
+  var state = { v: 5, d: {}, f: {}, n: {}, w: {}, q: {}, g: [], m: [], t: null,
                 p: null, zn: 1.9, zw: 900, updatedAt: 0 };
   var saveMode = "lokal";  // "lokal" | "geteilt"
   var statusTxt = "nur auf diesem Gerät";
@@ -2461,12 +2465,19 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
     if (!el) return null;
     try { return JSON.parse(el.textContent || "{}"); } catch (e) { return null; }
   }
+  /*  Beim Wechsel auf Schema 5 steht unter dem neuen Schlüssel noch nichts.
+      Dann zählt einmal der alte — sonst stünde die Seite nach dem Umstieg
+      leer da und der eingebettete Stand wäre die einzige Quelle.              */
   function readLocal() {
-    try { return JSON.parse(localStorage.getItem(LS_KEY) || "null"); } catch (e) { return null; }
+    try {
+      var roh = localStorage.getItem(LS_KEY);
+      if (roh === null) roh = localStorage.getItem(LS_KEY_V4);
+      return JSON.parse(roh || "null");
+    } catch (e) { return null; }
   }
   var gid = 0;
   function normalize(o) {
-    var s = { v: 4, d: {}, f: {}, n: {}, w: {}, q: {}, g: [], m: [], t: null,
+    var s = { v: 5, d: {}, f: {}, n: {}, w: {}, q: {}, g: [], m: [], t: null,
               p: null, zn: 1.9, zw: 900, updatedAt: 0 };
     if (!o || typeof o !== "object") return s;
     if (o.d && typeof o.d === "object") {
@@ -2574,11 +2585,30 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
     s.updatedAt = Number(o.updatedAt) || 0;
     return s;
   }
+  /*  Der neuere Stand ist die Grundlage — so überlebt ein Klick, dessen
+      Veröffentlichung nicht durchkam. Der ältere wird aber nicht mehr
+      weggeworfen, sondern füllt über zusammenfuehren() die Lücken.
+
+      Grund: Alles-oder-nichts kostete regelmässig Daten. Schreibt eine Routine
+      sonntags in den eingebetteten Stand und steht daneben ein Tab mit einem
+      neueren lokalen offen, war der Sonntagseintrag beim nächsten Klick weg.
+
+      Der Preis steht ehrlich hier: Eine Löschung, die es nie in eine
+      Veröffentlichung geschafft hat, sieht beim Zusammenführen aus wie eine
+      Lücke und kommt zurück. Dieser Fall verlangt eine gescheiterte
+      Veröffentlichung; der Sonntagseintrag ging jede Woche verloren. Ein
+      Grabstein je gelöschtem Eintrag wäre die saubere Lösung — er wäre aber
+      neuer Zustand, den das Mac-Widget nicht kennt und beim Einlesen fallen
+      liesse, und damit ausgerechnet dort unwirksam, wo er gebraucht würde.
+
+      zusammenfuehren() arbeitet auf `state` — die Grundlage muss also zuerst
+      stehen. Was es nicht anfasst (t, zn, zw), bleibt beim neueren Stand:
+      dieselbe Regel wie beim Zusammenführen von Hand.                        */
   function load() {
     var emb = normalize(readEmbedded()), loc = normalize(readLocal());
-    // Der neuere Stand gewinnt — so überlebt ein Klick, dessen Veröffentlichung
-    // nicht durchkam, und ein fremdes Gerät bringt seinen Stand mit.
-    state = loc.updatedAt > emb.updatedAt ? loc : emb;
+    var neuer = loc.updatedAt > emb.updatedAt ? loc : emb;
+    state = neuer;
+    zusammenfuehren(neuer === loc ? emb : loc);
     planAnwenden();
   }
   function writeLocal() {
@@ -4281,7 +4311,7 @@ footer { margin-top:26px; padding-top:16px; border-top:1px solid var(--rule-2);
       "Von dort einfügen und einlesen, oder hier kopieren und dort ablegen.</p>" +
       '<textarea id="io" spellcheck="false" aria-label="Zustand als JSON">' +
       esc(ioEntwurf !== null ? ioEntwurf
-          : JSON.stringify({ v: 4, d: state.d, f: state.f, n: state.n, w: state.w,
+          : JSON.stringify({ v: 5, d: state.d, f: state.f, n: state.n, w: state.w,
                              q: state.q, g: state.g, m: state.m, t: state.t,
                              p: state.p, zn: state.zn, zw: state.zw })) + "</textarea>" +
       '<div class="row" style="margin-top:10px">' +

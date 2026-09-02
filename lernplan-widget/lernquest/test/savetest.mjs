@@ -5,7 +5,12 @@ import { readFileSync, writeFileSync } from "node:fs";
 const src = readFileSync("lernquest.html", "utf8")
   .replace("})();\n</script>",
     "  try { window.__EXAM = function () { return exam; };\n" +
-    "        window.__S = function () { return state; }; } catch (e) {}\n})();\n</script>");
+    "        window.__N = normalize;\n" +
+    "        window.__DOC = buildDoc;\n" +
+    "        window.__S = function () { return state; }; } catch (e) {}\n})();\n</script>")
+  /*  Eigener Ausgangsstand statt des eingebetteten — seit load() Lücken füllt,
+      brächte der veröffentlichte Stand sonst seine Noten in jeden Lauf mit.   */
+  .replace(/(<script type="application\/json" id="state">)[\s\S]*?(<\/script>)/, "$1{}$2");
 writeFileSync("preview-save.html",
 `<!doctype html><html lang="de"><head><meta charset="utf-8"><style>*{margin:0}</style></head><body>\n${src}\n</body></html>`);
 
@@ -55,9 +60,9 @@ await p.addInitScript(`
   window.webkitAudioContext = window.AudioContext;
   window.__pub = [];
   window.claude = { use: function () { return Promise.resolve({
-    publish: function (html) { window.__pub.push(html.length); return Promise.resolve(); }
+    publish: function (html) { window.__pub.push(html); return Promise.resolve(); }
   }); } };
-  localStorage.setItem("lernquest.state.v4", ${JSON.stringify(JSON.stringify(seed))});
+  localStorage.setItem("lernquest.state.v5", ${JSON.stringify(JSON.stringify(seed))});
 `);
 await p.goto("file://" + process.cwd() + "/preview-save.html");
 await p.waitForTimeout(500);
@@ -91,14 +96,14 @@ eq("Status sagt es", await p.evaluate(()=>{
   const e=document.getElementById("savestate"); return e ? e.textContent : null; }),
   "wird nach der Prüfung gesichert");
 eq("Stufe steht lokal schon", await p.evaluate(()=>
-  JSON.parse(localStorage.getItem("lernquest.state.v4")).q.suk), 2);
+  JSON.parse(localStorage.getItem("lernquest.state.v5")).q.suk), 2);
 
 // Schliessen holt die Veröffentlichung nach
 await p.click('.exres [data-act="examClose"]');
 await p.waitForTimeout(2200);
 eq("Nach dem Schliessen veröffentlicht", await p.evaluate(()=>window.__pub.length), 2);
 eq("Prüfungsstand im veröffentlichten Stand", await p.evaluate(()=>
-  JSON.parse(localStorage.getItem("lernquest.state.v4")).q.suk), 2);
+  JSON.parse(localStorage.getItem("lernquest.state.v5")).q.suk), 2);
 /* ---- Der Ton wird beim Start vorgelegt, nicht beim Klingeln ------------- */
 const vorTimer = await p.evaluate(() => window.__pub.length);
 eq("Vor dem Start kein Audio", await p.evaluate(() => window.__audio.erzeugt), 0);
@@ -192,6 +197,33 @@ eq("Nach dem Zusammenführen stehen beide Lücken da", nachMerge.length, 2);
 eq("der höhere Fehlerzähler gewinnt", nachMerge[0].n, 7);
 eq("das jüngere Datum auch", nachMerge[0].dat, "2026-08-25");
 eq("und die fremde Lücke ist dabei", nachMerge[1].fach, "bwl");
+
+/* ---- Die veröffentlichte Datei trägt denselben Stand --------------------
+   Die drei Abnahmepunkte, die sonst von Hand geprüft würden: buildDoc() liest
+   nur `#app-style` und `#app` — ein zweites <style> oder <script> verschwände
+   spurlos beim ersten Speichern. Und was normalize() nicht kennt, löscht es
+   still. Beides fällt erst auf, wenn Daten schon weg sind, deshalb hier.    */
+await p.evaluate(() => { window.__S().updatedAt = Date.now() + 2000; });
+const doc = await p.evaluate(() => window.__DOC());
+writeFileSync("preview-doc.html", doc);
+const vorher = await p.evaluate(() => JSON.parse(JSON.stringify(window.__S())));
+wahr("Der Rundlauf durch normalize() ändert nichts",
+     await p.evaluate(() => JSON.stringify(window.__N(JSON.parse(JSON.stringify(window.__S())))) ===
+                            JSON.stringify(window.__S())));
+
+const c2 = await b.newContext({ viewport:{width:1180,height:1000}, locale:"de-DE" });
+const q2 = await c2.newPage();
+const errs2 = []; q2.on("pageerror", e => errs2.push(e.message));
+await q2.goto("file://" + process.cwd() + "/preview-doc.html");
+await q2.waitForSelector(".attrs", { timeout: 30000 });
+eq("Die gebaute Datei hat genau ein <style>",
+   await q2.evaluate(() => document.querySelectorAll("style").length), 1);
+eq("und genau zwei <script>",
+   await q2.evaluate(() => document.querySelectorAll("script").length), 2);
+eq("Sie trägt denselben Zustand",
+   await q2.evaluate(() => JSON.parse(JSON.stringify(window.__S()))), vorher);
+eq("Kein Skriptfehler in der gebauten Datei", errs2, []);
+await c2.close();
 
 eq("Seitenfehler", errs, []);
 
